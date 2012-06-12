@@ -22,7 +22,6 @@
 package org.jboss.cluster.proxy.util;
 
 import java.io.Serializable;
-import java.net.InetAddress;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -34,39 +33,73 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class Node implements Serializable {
 
-	private static final AtomicInteger counter = new AtomicInteger(0);
-	private long id;
-	private String name;
-	private int port;
-	private InetAddress address;
-	private int status = -1;
-
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
+	private static final AtomicInteger counter = new AtomicInteger(0);
+	private long id;
+	private String balancer;
+	private String jvmRoute = "Mandatory";
+	private String domain = "";
+	private String hostname = "localhost";
+	private int port = 8009;
+	private String type = "nio";
+	/**
+	 * Tell how to flush the packets. On: Send immediately, Auto wait for
+	 * flushwait time before sending, Off don't flush. Default: "Off"
+	 */
+	private boolean flushpackets = false;
+	/**
+	 * Time to wait before flushing. Value in milliseconds. Default: 10
+	 */
+	private int flushwait = 10;
+	/**
+	 * Time to wait for a pong answer to a ping. 0 means we don't try to ping
+	 * before sending. Value in secondes Default: 10
+	 */
+	private int ping = 10_000;
+	/**
+	 * soft max inactive connection over that limit after ttl are closed.
+	 * Default depends on the mpm configuration (See below for more information)
+	 */
+	private int smax;
+	/**
+	 * max time in seconds to life for connection above smax. Default 60
+	 * seconds.
+	 */
+	private int ttl = 60_000;
+	/**
+	 * Max time httpd will wait for the backend connection. Default 0 no timeout
+	 * value in seconds.
+	 */
+	private int timeout = 0;
+	/**
+	 * Number of time the worker was chosen by the balancer logic
+	 */
+	private int elected;
+
+	/**
+	 * Number of bytes read from the back-end
+	 */
+	private long read;
+	/**
+	 * Number of bytes send to the back-end
+	 */
+	private long transfered;
+	/**
+	 * Number of opened connections
+	 */
+	private int connected;
+	/**
+	 * Load factor received via the STATUS messages
+	 */
+	private int load;
 
 	/**
 	 * Create a new instance of {@code Node}
 	 */
 	public Node() {
-		this("unknown", -1, null);
-	}
-
-	/**
-	 * Create a new instance of {@code Node}
-	 * 
-	 * @param name
-	 *            the node name
-	 * @param port
-	 *            the node port
-	 * @param address
-	 *            the node IP address
-	 */
-	public Node(String name, int port, InetAddress address) {
-		this.name = name;
-		this.port = port;
-		this.address = address;
 		this.id = counter.getAndIncrement();
 	}
 
@@ -90,25 +123,6 @@ public class Node implements Serializable {
 	}
 
 	/**
-	 * Getter for name
-	 * 
-	 * @return the name
-	 */
-	public String getName() {
-		return this.name;
-	}
-
-	/**
-	 * Setter for the name
-	 * 
-	 * @param name
-	 *            the name to set
-	 */
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	/**
 	 * Getter for port
 	 * 
 	 * @return the port
@@ -128,41 +142,325 @@ public class Node implements Serializable {
 	}
 
 	/**
-	 * Getter for address
+	 * Getter for jvmRoute
 	 * 
-	 * @return the address
+	 * @return the jvmRoute
 	 */
-	public InetAddress getAddress() {
-		return this.address;
+	public String getJvmRoute() {
+		return this.jvmRoute;
 	}
 
 	/**
-	 * Setter for the address
+	 * Setter for the jvmRoute
 	 * 
-	 * @param address
-	 *            the address to set
+	 * @param jvmRoute
+	 *            the jvmRoute to set
 	 */
-	public void setAddress(InetAddress address) {
-		this.address = address;
+	public void setJvmRoute(String jvmRoute) {
+		this.jvmRoute = jvmRoute;
 	}
 
 	/**
-	 * Getter for status
+	 * Getter for domain
 	 * 
-	 * @return the status
+	 * @return the domain
 	 */
-	public int getStatus() {
-		return this.status;
+	public String getDomain() {
+		return this.domain;
 	}
 
 	/**
-	 * Setter for the status
+	 * Setter for the domain
 	 * 
-	 * @param status
-	 *            the status to set
+	 * @param domain
+	 *            the domain to set
 	 */
-	public void setStatus(int status) {
-		this.status = status;
+	public void setDomain(String domain) {
+		this.domain = domain;
 	}
 
+	/**
+	 * Getter for hostname
+	 * 
+	 * @return the hostname
+	 */
+	public String getHostname() {
+		return this.hostname;
+	}
+
+	/**
+	 * Setter for the hostname
+	 * 
+	 * @param hostname
+	 *            the hostname to set
+	 */
+	public void setHostname(String hostname) {
+		this.hostname = hostname;
+	}
+
+	/**
+	 * Getter for type
+	 * 
+	 * @return the type
+	 */
+	public String getType() {
+		return this.type;
+	}
+
+	/**
+	 * Setter for the type
+	 * 
+	 * @param type
+	 *            the type to set
+	 */
+	public void setType(String type) {
+		this.type = type;
+	}
+
+	/**
+	 * Getter for flushpackets
+	 * 
+	 * @return the flushpackets
+	 */
+	public boolean isFlushpackets() {
+		return this.flushpackets;
+	}
+
+	/**
+	 * Setter for the flushpackets
+	 * 
+	 * @param flushpackets
+	 *            the flushpackets to set
+	 */
+	public void setFlushpackets(boolean flushpackets) {
+		this.flushpackets = flushpackets;
+	}
+
+	/**
+	 * Getter for flushwait
+	 * 
+	 * @return the flushwait
+	 */
+	public int getFlushwait() {
+		return this.flushwait;
+	}
+
+	/**
+	 * Setter for the flushwait
+	 * 
+	 * @param flushwait
+	 *            the flushwait to set
+	 */
+	public void setFlushwait(int flushwait) {
+		this.flushwait = flushwait;
+	}
+
+	/**
+	 * Getter for ping
+	 * 
+	 * @return the ping
+	 */
+	public int getPing() {
+		return this.ping;
+	}
+
+	/**
+	 * Setter for the ping
+	 * 
+	 * @param ping
+	 *            the ping to set
+	 */
+	public void setPing(int ping) {
+		this.ping = ping;
+	}
+
+	/**
+	 * Getter for smax
+	 * 
+	 * @return the smax
+	 */
+	public int getSmax() {
+		return this.smax;
+	}
+
+	/**
+	 * Setter for the smax
+	 * 
+	 * @param smax
+	 *            the smax to set
+	 */
+	public void setSmax(int smax) {
+		this.smax = smax;
+	}
+
+	/**
+	 * Getter for ttl
+	 * 
+	 * @return the ttl
+	 */
+	public int getTtl() {
+		return this.ttl;
+	}
+
+	/**
+	 * Setter for the ttl
+	 * 
+	 * @param ttl
+	 *            the ttl to set
+	 */
+	public void setTtl(int ttl) {
+		this.ttl = ttl;
+	}
+
+	/**
+	 * Getter for timeout
+	 * 
+	 * @return the timeout
+	 */
+	public int getTimeout() {
+		return this.timeout;
+	}
+
+	/**
+	 * Setter for the timeout
+	 * 
+	 * @param timeout
+	 *            the timeout to set
+	 */
+	public void setTimeout(int timeout) {
+		this.timeout = timeout;
+	}
+
+	/**
+	 * Getter for balancer
+	 * 
+	 * @return the balancer
+	 */
+	public String getBalancer() {
+		return this.balancer;
+	}
+
+	/**
+	 * Setter for the balancer
+	 * 
+	 * @param balancer
+	 *            the balancer to set
+	 */
+	public void setBalancer(String balancer) {
+		this.balancer = balancer;
+	}
+
+	/**
+	 * Getter for elected
+	 * 
+	 * @return the elected
+	 */
+	public int getElected() {
+		return this.elected;
+	}
+
+	/**
+	 * Setter for the elected
+	 * 
+	 * @param elected
+	 *            the elected to set
+	 */
+	public void setElected(int elected) {
+		this.elected = elected;
+	}
+
+	/**
+	 * Getter for read
+	 * 
+	 * @return the read
+	 */
+	public long getRead() {
+		return this.read;
+	}
+
+	/**
+	 * Setter for the read
+	 * 
+	 * @param read
+	 *            the read to set
+	 */
+	public void setRead(long read) {
+		this.read = read;
+	}
+
+	/**
+	 * Getter for transfered
+	 * 
+	 * @return the transfered
+	 */
+	public long getTransfered() {
+		return this.transfered;
+	}
+
+	/**
+	 * Setter for the transfered
+	 * 
+	 * @param transfered
+	 *            the transfered to set
+	 */
+	public void setTransfered(long transfered) {
+		this.transfered = transfered;
+	}
+
+	/**
+	 * Getter for connected
+	 * 
+	 * @return the connected
+	 */
+	public int getConnected() {
+		return this.connected;
+	}
+
+	/**
+	 * Setter for the connected
+	 * 
+	 * @param connected
+	 *            the connected to set
+	 */
+	public void setConnected(int connected) {
+		this.connected = connected;
+	}
+
+	/**
+	 * Getter for load
+	 * 
+	 * @return the load
+	 */
+	public int getLoad() {
+		return this.load;
+	}
+
+	/**
+	 * Setter for the load
+	 * 
+	 * @param load
+	 *            the load to set
+	 */
+	public void setLoad(int load) {
+		this.load = load;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		// TODO complete node name
+		StringBuilder sb = new StringBuilder("Node: [x:y]").append("], Balancer: ")
+				.append(this.balancer).append(", JVMRoute: ").append(this.jvmRoute)
+				.append(", Domain: [").append(this.domain).append("], Host: ")
+				.append(this.hostname).append(", Port: ").append(this.port).append(", Type: ")
+				.append(this.type).append(", flush-packets: ").append(this.flushpackets ? 1 : 0)
+				.append(", flush-wait: ").append(this.flushwait).append(", Ping: ")
+				.append(this.ping).append(", smax: ").append(this.smax).append(", TTL: ")
+				.append(this.ttl).append(", Timeout: ").append(this.timeout);
+		return sb.toString();
+	}
 }
