@@ -39,7 +39,7 @@ public class Node implements Serializable {
 	private String name;
 	private int port;
 	private InetAddress address;
-	private int status = 0;
+	private int status = -1;
 
 	/**
 	 * 

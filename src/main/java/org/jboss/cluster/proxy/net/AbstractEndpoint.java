@@ -117,9 +117,9 @@ public abstract class AbstractEndpoint implements Serializable {
 	protected int sendfileSize = -1;
 
 	/**
-	 * Server socket port.
+	 * Server socket port. Default value is 8080
 	 */
-	protected int port;
+	protected int port = 8080;
 
 	/**
 	 * Address for the server socket.

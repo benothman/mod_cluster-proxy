@@ -122,6 +122,10 @@ public class NioEndpoint extends AbstractEndpoint {
 			this.recycledHandshakeProcessors = new ConcurrentLinkedQueue<>();
 		}
 
+		if (this.nodes == null) {
+			this.nodes = new ConcurrentHashMap<>();
+		}
+
 		ExecutorService executorService = (ExecutorService) this.executor;
 		AsynchronousChannelGroup threadGroup = AsynchronousChannelGroup
 				.withThreadPool(executorService);
