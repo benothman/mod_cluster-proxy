@@ -33,56 +33,47 @@ import java.io.Serializable;
 public class Balancer implements Serializable {
 
 	/**
-	 * 
-	 */
+     *
+     */
 	private static final long serialVersionUID = 1L;
-
 	/**
 	 * The number of the Balancer
 	 */
 	private int number;
-
 	/**
 	 * Name of the balancer. max size: 40 Default: "mycluster"
 	 */
 	private String name = "mycluster";
-
 	/**
 	 * Yes: use JVMRoute to stick a request to a node, No: ignore JVMRoute.
 	 * Default: "Yes"
 	 */
 	private boolean stickySession = true;
-
 	/**
 	 * Name of the cookie containing the sessionid. Max size: 30 Default:
 	 * "JSESSIONID"
 	 */
 	private String stickySessionCookie = "JSESSIONID";
-
 	/**
 	 * Name of the parametre containing the sessionid. Max size: 30. Default:
 	 * "jsessionid"
 	 */
 	private String stickySessionPath = "jsessionid";
-
 	/**
 	 * Yes: remove the sessionid (cookie or parameter) when the request can't be
 	 * routed to the right node. No: send it anyway. Default: "No"
 	 */
 	private boolean stickySessionRemove = false;
-
 	/**
 	 * Yes: Return an error if the request can't be routed according to
 	 * JVMRoute, No: Route it to another node. Default: "Yes"
 	 */
 	private boolean stickySessionForce = true;
-
 	/**
 	 * value in seconds: time to wait for an available worker. Default: "0" no
 	 * wait.
 	 */
 	private int waitWorker = 0;
-
 	/**
 	 * value: number of attemps to send the request to the backend server.
 	 * Default: "1"
@@ -274,13 +265,12 @@ public class Balancer implements Serializable {
 	 */
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder("balancer: [").append(this.number).append("], Name: ")
+		return new StringBuilder("balancer: [").append(this.number).append("], Name: ")
 				.append(this.name).append(", Sticky: ").append(this.stickySession ? 1 : 0)
 				.append(" [").append(this.stickySessionCookie).append("]/[")
 				.append(this.stickySessionPath).append("], remove: ")
 				.append(this.stickySessionRemove ? 1 : 0).append(", force: ")
 				.append(this.stickySessionForce ? 1 : 0).append(", Timeout: ")
-				.append(this.waitWorker).append(", Maxtry: ").append(this.maxattempts);
-		return sb.toString();
+				.append(this.waitWorker).append(", Maxtry: ").append(this.maxattempts).toString();
 	}
 }

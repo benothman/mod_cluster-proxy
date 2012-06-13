@@ -34,9 +34,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Node implements Serializable {
 
 	/**
-	 * 
-	 */
+     *
+     */
 	private static final long serialVersionUID = 1L;
+	/**
+     *
+     */
 	private static final AtomicInteger counter = new AtomicInteger(0);
 	private long id;
 	private String balancer;
@@ -44,7 +47,10 @@ public class Node implements Serializable {
 	private String domain = "";
 	private String hostname = "localhost";
 	private int port = 8009;
-	private String type = "nio";
+	/**
+	 * Protocol using by the connector (AJP/http/https).
+	 */
+	private String type = "http";
 	/**
 	 * Tell how to flush the packets. On: Send immediately, Auto wait for
 	 * flushwait time before sending, Off don't flush. Default: "Off"
@@ -70,15 +76,14 @@ public class Node implements Serializable {
 	 */
 	private int ttl = 60_000;
 	/**
-	 * Max time httpd will wait for the backend connection. Default 0 no timeout
-	 * value in seconds.
+	 * Max time the proxy will wait for the backend connection. Default 0 no
+	 * timeout value in seconds.
 	 */
 	private int timeout = 0;
 	/**
 	 * Number of time the worker was chosen by the balancer logic
 	 */
 	private int elected;
-
 	/**
 	 * Number of bytes read from the back-end
 	 */

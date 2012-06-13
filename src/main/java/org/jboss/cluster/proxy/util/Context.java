@@ -33,10 +33,9 @@ import java.io.Serializable;
 public class Context implements Serializable {
 
 	/**
-	 * 
-	 */
+     *
+     */
 	private static final long serialVersionUID = 1L;
-
 	/**
 	 * Context: (String) URL to be mapped.
 	 */

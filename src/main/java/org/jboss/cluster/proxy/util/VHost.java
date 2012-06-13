@@ -23,6 +23,7 @@ package org.jboss.cluster.proxy.util;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -39,13 +40,16 @@ public class VHost implements Serializable {
 	 */
 	private static final long serialVersionUID = 1L;
 
-	private List<String> alias;
+	/**
+	 * The list of aliases
+	 */
+	private List<String> aliases;
 
 	/**
 	 * Create a new instance of {@code VirtualHost}
 	 */
 	public VHost() {
-		this.alias = new ArrayList<>();
+		this.aliases = new ArrayList<>();
 	}
 
 	/**
@@ -57,7 +61,19 @@ public class VHost implements Serializable {
 	 *         <tt>false</tt>
 	 */
 	public boolean addAlias(String alias) {
-		return this.alias.add(alias);
+		return this.aliases.add(alias);
+	}
+
+	/**
+	 * Add the collection of aliases to the list
+	 * 
+	 * @param c
+	 *            the collection to add
+	 * @return <tt>true</tt> if the aliases was added successfully else
+	 *         <tt>false</tt>
+	 */
+	public boolean addAliases(Collection<String> c) {
+		return this.aliases.addAll(c);
 	}
 
 	/**
@@ -69,7 +85,7 @@ public class VHost implements Serializable {
 	 *         <tt>false</tt>
 	 */
 	public boolean removeAlias(String alias) {
-		return this.alias.remove(alias);
+		return this.aliases.remove(alias);
 	}
 
 	/**
@@ -77,18 +93,18 @@ public class VHost implements Serializable {
 	 * 
 	 * @return the list of aliases
 	 */
-	public List<String> getAlias() {
-		return this.alias;
+	public String[] getAliases() {
+		return this.aliases.toArray(new String[this.aliases.size()]);
 	}
 
 	/**
 	 * Setter for the aliases list
 	 * 
-	 * @param alias
+	 * @param aliases
 	 *            the alias to set
 	 */
-	public void setAlias(List<String> alias) {
-		this.alias = alias;
+	public void setAliases(List<String> aliases) {
+		this.aliases = aliases;
 	}
 
 }
