@@ -19,7 +19,7 @@
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA, or see the FSF
  * site: http://www.fsf.org.
  */
-package org.jboss.cluster.proxy.net.jsse;
+package org.jboss.modcluster.proxy.net.jsse;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -29,7 +29,7 @@ import java.security.cert.CertificateFactory;
 import javax.net.ssl.SSLSession;
 import javax.security.cert.X509Certificate;
 
-import org.jboss.cluster.proxy.net.SSLSupport;
+import org.jboss.modcluster.proxy.net.SSLSupport;
 
 /**
  * {@code NioJSSESupport}

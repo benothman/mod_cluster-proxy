@@ -19,32 +19,48 @@
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA, or see the FSF
  * site: http://www.fsf.org.
  */
-package org.jboss.cluster.proxy.util;
+package org.jboss.modcluster.proxy.net.jsse;
 
-import java.io.Serializable;
+import javax.net.ssl.SSLSession;
+
+import org.jboss.modcluster.proxy.net.NioChannel;
 
 /**
- * {@code ContextStatus}
- * <p>
- * This class represents the status of the context.
- * </p>
+ * {@code NioJSSEFactory}
  * 
- * Created on Jun 12, 2012 at 7:35:46 PM
+ * Created on Jun 11, 2012 at 9:47:26 AM
  * 
  * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
  */
-public enum ContextStatus implements Serializable {
+public class NioJSSEFactory {
 
 	/**
+	 * Returns the NioSocketChannelFactory to use.
 	 * 
+	 * @return the NioSocketChannelFactory to use.
 	 */
-	ENABLED,
+	public NioJSSESocketChannelFactory getSocketChannelFactory() {
+		return new NioJSSESocketChannelFactory();
+	}
+
 	/**
+	 * Returns the SSLSupport attached to this channel.
 	 * 
+	 * @param channel
+	 * @return the SSLSupport attached to this channel
 	 */
-	DISABLED,
+	public NioJSSESupport getSSLSupport(NioChannel channel) {
+		return new NioJSSESupport((SecureNioChannel) channel);
+	}
+
 	/**
+	 * Return the SSLSupport attached to this session
 	 * 
+	 * @param session
+	 * @return the SSLSupport attached to this session
 	 */
-	STOPPED;
+	public NioJSSESupport getSSLSupport(SSLSession session) {
+		return new NioJSSESupport(session);
+	}
+
 }

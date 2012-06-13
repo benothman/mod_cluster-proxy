@@ -19,13 +19,13 @@
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA, or see the FSF
  * site: http://www.fsf.org.
  */
-package org.jboss.cluster.proxy.net;
+package org.jboss.modcluster.proxy.net;
 
 import java.net.Socket;
 
 import javax.net.ssl.SSLSession;
 
-import org.jboss.cluster.proxy.net.jsse.NioJSSESocketChannelFactory;
+import org.jboss.modcluster.proxy.net.jsse.NioJSSESocketChannelFactory;
 
 /**
  * {@code SSLImplementation}
@@ -86,7 +86,7 @@ abstract public class SSLImplementation {
 			// Class.forName(..) fails without creating class using new.
 			// This is an ugly workaround.
 			if (JSSEImplementationClass.equals(className)) {
-				return new org.jboss.cluster.proxy.net.jsse.NioJSSEImplementation();
+				return new org.jboss.modcluster.proxy.net.jsse.NioJSSEImplementation();
 			}
 			Class<?> clazz = Class.forName(className);
 			return (SSLImplementation) clazz.newInstance();

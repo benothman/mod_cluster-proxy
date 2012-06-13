@@ -19,7 +19,8 @@
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA, or see the FSF
  * site: http://www.fsf.org.
  */
-package org.jboss.cluster.proxy;
+package org.jboss.modcluster.proxy;
+
 
 /**
  * {@code Constants}
@@ -29,6 +30,11 @@ package org.jboss.cluster.proxy;
  * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
  */
 public final class Constants {
+
+	/**
+	 * 
+	 */
+	public static final String PACKAGE = Constants.class.getPackage().getName();
 
 	/**
 	 * 
@@ -218,6 +224,15 @@ public final class Constants {
 	public static final byte[] HTTP_11_200_OK_BYTES = HTTP_11_200_OK.getBytes();
 
 	/**
+	 * 
+	 */
+	public static final String HTTP_11_500_ERROR = "HTTP/1.1 500 ERROR";
+	/**
+	 * 
+	 */
+	public static final byte[] HTTP_11_500_ERROR_BYTES = HTTP_11_500_ERROR.getBytes();
+
+	/**
 	 * The CRLF
 	 */
 	public static final String CRLF = "\r\n";
@@ -225,6 +240,44 @@ public final class Constants {
 	 * 
 	 */
 	public static final byte[] CRLF_BYTES = CRLF.getBytes();
+
+	/**
+	 * Content-length HTTP HEADER
+	 */
+	public static final String CONTENT_LENGTH = "Content-Length";
+	/**
+	 * 
+	 */
+	public static final byte[] CONTENT_LENGTH_BYTES = CONTENT_LENGTH.getBytes();
+	/**
+	 * Content-length HTTP HEADER
+	 */
+	public static final String CONTENT_TYPE = "Content-Type";
+	/**
+	 * 
+	 */
+	public static final byte[] CONTENT_TYPE_BYTES = CONTENT_TYPE.getBytes();
+
+	/**
+	 * 
+	 */
+	public static final String CONNECTION = "Connection";
+	/**
+	 * 
+	 */
+	public static final String CLOSE = "close";
+	/**
+	 * 
+	 */
+	public static final byte[] CLOSE_BYTES = CLOSE.getBytes();
+	/**
+	 * 
+	 */
+	public static final String KEEPALIVE = "keep-alive";
+	/**
+	 * 
+	 */
+	public static final byte[] KEEPALIVE_BYTES = KEEPALIVE.getBytes();
 
 	/**
 	 * CR.

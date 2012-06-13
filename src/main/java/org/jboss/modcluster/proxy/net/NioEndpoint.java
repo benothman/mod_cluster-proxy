@@ -19,7 +19,7 @@
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA, or see the FSF
  * site: http://www.fsf.org.
  */
-package org.jboss.cluster.proxy.net;
+package org.jboss.modcluster.proxy.net;
 
 import java.io.IOException;
 import java.net.BindException;
@@ -36,9 +36,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLHandshakeException;
 
-import org.jboss.cluster.proxy.net.jsse.NioJSSESocketChannelFactory;
-import org.jboss.cluster.proxy.util.Node;
 import org.jboss.logging.Logger;
+import org.jboss.modcluster.proxy.net.jsse.NioJSSESocketChannelFactory;
+import org.jboss.modcluster.proxy.util.Node;
 
 /**
  * {@code NioEndpoint}

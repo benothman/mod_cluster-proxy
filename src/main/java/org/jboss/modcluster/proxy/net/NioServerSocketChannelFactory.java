@@ -19,7 +19,7 @@
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA, or see the FSF
  * site: http://www.fsf.org.
  */
-package org.jboss.cluster.proxy.net;
+package org.jboss.modcluster.proxy.net;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -27,7 +27,7 @@ import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.util.Hashtable;
 
-import org.jboss.cluster.proxy.net.jsse.NioJSSESocketChannelFactory;
+import org.jboss.modcluster.proxy.net.jsse.NioJSSESocketChannelFactory;
 
 /**
  * {@code NioServerSocketChannelFactory}
