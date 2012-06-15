@@ -25,7 +25,7 @@ import java.io.Serializable;
 import java.util.Map;
 
 /**
- * {@code ClusterRequest}
+ * {@code Request}
  * 
  * Created on Jun 14, 2012 at 12:33:05 PM
  * 
