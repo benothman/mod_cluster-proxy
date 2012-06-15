@@ -21,6 +21,7 @@
  */
 package org.jboss.cluster.proxy.util.impl;
 
+import java.util.Collections;
 import java.util.Map;
 
 import org.jboss.cluster.proxy.util.Response;
@@ -41,12 +42,18 @@ public class DefaultResponseImpl implements Response {
 	private static final long serialVersionUID = 7107364668635260031L;
 	private ResponseType type;
 	private Map<String, Object> parameters;
-	
+
 	/**
 	 * Create a new instance of {@code DefaultResponseImpl}
+	 * 
+	 * @param type
+	 *            the type of the response
+	 * @param parameters
+	 *            the response parameters
 	 */
-	public DefaultResponseImpl() {
-		super();
+	public DefaultResponseImpl(ResponseType type, Map<String, Object> parameters) {
+		this.type = type;
+		this.parameters = Collections.unmodifiableMap(parameters);
 	}
 
 	/*
@@ -69,4 +76,12 @@ public class DefaultResponseImpl implements Response {
 		return this.parameters;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.jboss.cluster.proxy.util.Response#getParameter(java.lang.String)
+	 */
+	public Object getParameter(String name) {
+		return this.parameters.get(name);
+	}
 }

@@ -43,4 +43,13 @@ public interface Response extends Serializable {
 	 */
 	public Map<String, Object> getParameters();
 
+	/**
+	 * Returns the parameter, if any, associated with the specified name
+	 * 
+	 * @param name
+	 *            the parameter name
+	 * @return the parameter associated with the specified name
+	 */
+	public Object getParameter(String name);
+
 }

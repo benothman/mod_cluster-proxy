@@ -100,6 +100,15 @@ public class DefaultRequestImpl implements Request {
 		return this.jvmRoute;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.jboss.cluster.proxy.util.Request#getParameter(java.lang.String)
+	 */
+	public Object getParameter(String name) {
+		return this.parameters.get(name);
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder(getClass().getName());

@@ -39,7 +39,7 @@ public interface Request extends Serializable {
 	public RequestType getType();
 
 	/**
-	 * @return <tt>true</tt> if the response is a wildcard
+	 * @return <tt>true</tt> if the request is a wildcard
 	 */
 	public boolean isWildcard();
 
@@ -52,4 +52,11 @@ public interface Request extends Serializable {
 	 * @return the JVM Route
 	 */
 	public String getJvmRoute();
+	
+	/**
+	 * Returns the parameter, if any, associated with the specified name
+	 * @param name the parameter name
+	 * @return the parameter associated with the specified name
+	 */
+	public Object getParameter(String name);
 }
