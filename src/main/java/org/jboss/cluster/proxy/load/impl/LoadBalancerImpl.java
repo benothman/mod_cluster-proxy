@@ -21,6 +21,8 @@
  */
 package org.jboss.cluster.proxy.load.impl;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.jboss.cluster.proxy.container.Balancer;
 import org.jboss.cluster.proxy.container.Context;
 import org.jboss.cluster.proxy.container.Node;
@@ -35,11 +37,13 @@ import org.jboss.cluster.proxy.load.LoadBalancer;
  */
 public class LoadBalancerImpl implements LoadBalancer {
 
+	private ConcurrentHashMap<String, Balancer> balancers;
+
 	/**
 	 * Create a new instance of {@code LoadBalancerImpl}
 	 */
 	public LoadBalancerImpl() {
-		super();
+		this.balancers = new ConcurrentHashMap<>();
 	}
 
 	/*
@@ -64,6 +68,17 @@ public class LoadBalancerImpl implements LoadBalancer {
 	public Balancer getBalancer() {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * org.jboss.cluster.proxy.load.LoadBalancer#getBalancer(java.lang.String)
+	 */
+	@Override
+	public Balancer getBalancer(String name) {
+		return this.balancers.get(name);
 	}
 
 }

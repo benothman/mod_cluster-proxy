@@ -96,6 +96,7 @@ public enum ResponseType {
 	 */
 	@Override
 	public String toString() {
+		this.name().replaceAll("_", "-");
 		return this.command;
 	}
 }

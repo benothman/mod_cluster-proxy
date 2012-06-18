@@ -39,10 +39,17 @@ public interface LoadBalancer {
 	 * @return the node for the specified context
 	 */
 	public Node getNode(Context context);
-	
+
 	/**
 	 * @return The {@link Balancer} used
 	 */
 	public Balancer getBalancer();
-	
+
+	/**
+	 * @param name
+	 *            of the {@link Balancer}
+	 * @return the {@link Balancer} having the specified name
+	 */
+	public Balancer getBalancer(String name);
+
 }

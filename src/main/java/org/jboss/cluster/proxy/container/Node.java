@@ -34,6 +34,26 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Node implements Serializable {
 
 	/**
+	 * {@code NodeStatus}
+	 * 
+	 * 
+	 */
+	public enum NodeStatus {
+		/**
+		 * The node is up
+		 */
+		NODE_UP,
+		/**
+		 * The node is down
+		 */
+		NODE_DOWN,
+		/**
+		 * The node is paused
+		 */
+		NODE_PAUSED;
+	}
+
+	/**
      *
      */
 	private static final long serialVersionUID = 8107364666635267031L;
@@ -42,6 +62,7 @@ public class Node implements Serializable {
      */
 	private static final AtomicInteger counter = new AtomicInteger(0);
 	private long id;
+	private NodeStatus status;
 	private String balancer;
 	private String jvmRoute = "Mandatory";
 	private String domain = "";
@@ -62,7 +83,7 @@ public class Node implements Serializable {
 	private int flushwait = 10;
 	/**
 	 * Time to wait for a pong answer to a ping. 0 means we don't try to ping
-	 * before sending. Value in secondes Default: 10
+	 * before sending. Value in seconds Default: 10 (10_000 in milliseconds)
 	 */
 	private int ping = 10_000;
 	/**
@@ -71,8 +92,8 @@ public class Node implements Serializable {
 	 */
 	private int smax;
 	/**
-	 * max time in seconds to life for connection above smax. Default 60
-	 * seconds.
+	 * max time in seconds to life for connection above smax. Default 60 seconds
+	 * (60_000 in milliseconds).
 	 */
 	private int ttl = 60_000;
 	/**
@@ -118,13 +139,22 @@ public class Node implements Serializable {
 	}
 
 	/**
-	 * Setter for the id
+	 * Getter for status
 	 * 
-	 * @param id
-	 *            the id to set
+	 * @return the status
 	 */
-	public void setId(long id) {
-		this.id = id;
+	public NodeStatus getStatus() {
+		return this.status;
+	}
+
+	/**
+	 * Setter for the status
+	 * 
+	 * @param status
+	 *            the status to set
+	 */
+	public void setStatus(NodeStatus status) {
+		this.status = status;
 	}
 
 	/**

@@ -28,7 +28,9 @@ import java.util.List;
 
 /**
  * {@code VHost}
- * 
+ * <p>
+ * This class is a representation of the virtual host
+ * </p>
  * Created on Jun 12, 2012 at 3:33:21 PM
  * 
  * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
@@ -52,6 +54,19 @@ public class VHost implements Serializable {
 	 */
 	public VHost() {
 		this.aliases = new ArrayList<>();
+	}
+
+	/**
+	 * Create a new instance of {@code VHost}
+	 * 
+	 * @param name
+	 *            The name of the virtual Host
+	 * @param aliases
+	 *            the list of aliases of the virtual host
+	 */
+	public VHost(String name, List<String> aliases) {
+		this.name = name;
+		this.aliases = aliases;
 	}
 
 	/**

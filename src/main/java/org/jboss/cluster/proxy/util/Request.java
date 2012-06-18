@@ -52,11 +52,14 @@ public interface Request extends Serializable {
 	 * @return the JVM Route
 	 */
 	public String getJvmRoute();
-	
+
 	/**
 	 * Returns the parameter, if any, associated with the specified name
-	 * @param name the parameter name
+	 * 
+	 * @param name
+	 *            the parameter name
 	 * @return the parameter associated with the specified name
 	 */
 	public Object getParameter(String name);
+
 }

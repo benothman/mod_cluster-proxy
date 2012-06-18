@@ -40,7 +40,7 @@ public enum RequestType {
 	 */
 	ENABLE_APP("ENABLE-APP"),
 	/**
-	 * apache should not create new session for this webapp, but still continue
+	 * The proxy should not create new session for this webapp, but still continue
 	 * serving existing session on this node. Use of to identify the app means
 	 * disable all apps on the given node.
 	 */
