@@ -22,6 +22,7 @@ package org.jboss.cluster.proxy.util.impl;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.jboss.cluster.proxy.util.Request;
 import org.jboss.cluster.proxy.util.RequestType;
 

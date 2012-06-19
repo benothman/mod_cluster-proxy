@@ -20,6 +20,7 @@
 package org.jboss.cluster.proxy.util.impl;
 
 import java.util.Map;
+
 import org.jboss.cluster.proxy.util.Request;
 import org.jboss.cluster.proxy.util.RequestFactory;
 import org.jboss.cluster.proxy.util.RequestType;

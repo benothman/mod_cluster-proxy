@@ -19,6 +19,7 @@ package org.jboss.cluster.proxy.util.impl;
 
 import java.util.Collections;
 import java.util.Map;
+
 import org.jboss.cluster.proxy.util.Response;
 import org.jboss.cluster.proxy.util.ResponseType;
 
