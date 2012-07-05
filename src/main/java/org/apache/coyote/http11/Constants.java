@@ -114,6 +114,11 @@ public final class Constants {
 	 * Minimum buffer size
 	 */
 	public static final int MIN_BUFFER_SIZE = 8 * 1024;
+	
+	/**
+	 * 
+	 */
+	public static final int WRITE_BUFFER_SIZE = 9000;
 
 	/* Various constant "strings" */
 	public static final byte[] CRLF_BYTES = ByteChunk.convertToBytes(CRLF);
@@ -165,6 +170,9 @@ public final class Constants {
 	 * HTTP/1.1.
 	 */
 	public static final String HTTP_11 = "HTTP/1.1";
+	/**
+	 * 
+	 */
 	public static final byte[] HTTP_11_BYTES = ByteChunk.convertToBytes(HTTP_11);
 
 	/**

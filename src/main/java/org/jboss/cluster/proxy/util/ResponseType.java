@@ -66,8 +66,13 @@ public enum ResponseType {
 	/**
 	 * Response to PING.
 	 */
-	PING_RSP("PING-RSP");
-
+	PING_RSP("PING-RSP"),
+	
+	/**
+	 * Represent a bad response
+	 */
+	BAD_RSP("BAD-RSP");
+	
 	/**
 	 * The request type command
 	 */

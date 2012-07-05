@@ -31,6 +31,8 @@ public interface Adapter {
 	/**
 	 * Call the service method, and notify all listeners
 	 * 
+	 * @param req
+	 * @param res
 	 * @exception Exception
 	 *                if an error happens during handling of the request. Common
 	 *                errors are:
@@ -50,12 +52,13 @@ public interface Adapter {
 
 	/**
 	 * 
+	 * 
 	 * @param req
 	 * @param res
 	 * @param status
-	 * @return
+	 * @return <tt>true</tt> if the event is executed successfully, else
+	 *         <tt>false</tt>
 	 * @throws Exception
 	 */
 	public boolean event(Request req, Response res, SocketStatus status) throws Exception;
-
 }

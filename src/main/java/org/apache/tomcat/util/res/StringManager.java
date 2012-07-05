@@ -137,6 +137,7 @@ public class StringManager {
 	 * 
 	 * @param key
 	 * @param args
+	 * @return 
 	 */
 	public String getString(final String key, final Object... args) {
 		String value = getString(key);

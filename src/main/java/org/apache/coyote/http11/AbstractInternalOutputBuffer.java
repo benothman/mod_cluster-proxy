@@ -23,6 +23,7 @@ package org.apache.coyote.http11;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.coyote.ActionCode;
@@ -54,6 +55,9 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 * The string manager for this package.
 	 */
 	protected static StringManager sm = StringManager.getManager(Constants.Package);
+
+	protected static final ConcurrentLinkedQueue<ByteBuffer> poolBuffer = new ConcurrentLinkedQueue<>();
+	protected ConcurrentLinkedQueue<ByteBuffer> localPool = new ConcurrentLinkedQueue<>();
 
 	/**
 	 * Associated Coyote response.
@@ -135,23 +139,19 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 
 		this.response = response;
 		this.headers = response.getMimeHeaders();
-		buf = new byte[headerBufferSize];
-		if (headerBufferSize < Constants.MIN_BUFFER_SIZE) {
-			bbuf = ByteBuffer.allocateDirect(6 * 1500);
-		} else {
-			bbuf = ByteBuffer.allocateDirect((headerBufferSize / 1500 + 1) * 1500);
-		}
 
-		outputBuffer = new OutputBufferImpl();
-		filterLibrary = new OutputFilter[0];
-		activeFilters = new OutputFilter[0];
-		lastActiveFilter = -1;
-
-		committed = false;
-		finished = false;
-
-		leftover = new ByteChunk();
-		nonBlocking = false;
+		int size = (headerBufferSize < Constants.MIN_BUFFER_SIZE) ? (6 * 1500)
+				: ((headerBufferSize / 1500 + 1) * 1500);
+		this.buf = new byte[size];
+		this.bbuf = ByteBuffer.allocateDirect(size);
+		this.outputBuffer = new OutputBufferImpl();
+		this.filterLibrary = new OutputFilter[0];
+		this.activeFilters = new OutputFilter[0];
+		this.lastActiveFilter = -1;
+		this.committed = false;
+		this.finished = false;
+		this.leftover = new ByteChunk();
+		this.nonBlocking = false;
 
 		// Cause loading of HttpMessages
 		HttpMessages.getMessage(200);
@@ -161,6 +161,72 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 * Initialize the internal output buffer
 	 */
 	protected abstract void init();
+
+	/**
+	 * @return the byte buffer of the internal output buffer
+	 */
+	public ByteBuffer getByteBuffer() {
+		return this.bbuf;
+	}
+
+	/**
+	 * 
+	 * @param data
+	 * @param off
+	 * @param length
+	 */
+	public void writeToClient(byte[] data, int off, int length) {
+
+		int count = 0;
+		int limit = 0;
+		ByteBuffer buffer;
+
+		while (count < length) {
+			buffer = poll();
+			limit = min(buffer.remaining(), length - count);
+			buffer.put(data, off + count, limit).flip();
+			count += limit;
+			this.localPool.offer(buffer);
+		}
+
+		tryWrite();
+	}
+
+	/**
+	 * Try to perform a write operation. The write operation might be
+	 * synchronous or asynchronous
+	 */
+	protected abstract void tryWrite();
+
+	/**
+	 * 
+	 * @param data
+	 */
+	public void writeToClient(byte[] data) {
+		writeToClient(data, 0, data.length);
+	}
+
+	/**
+	 * Returns the smaller of two {@code int} values. That is, the result the
+	 * argument closer to the value of {@link Integer#MIN_VALUE}. If the
+	 * arguments have the same value, the result is that same value.
+	 * 
+	 * @param a
+	 *            an argument.
+	 * @param b
+	 *            another argument.
+	 * @return the smaller of {@code a} and {@code b}.
+	 */
+	public static int min(int a, int b) {
+		return (a <= b) ? a : b;
+	}
+
+	/**
+	 * @return the byte array
+	 */
+	public byte[] getBytes() {
+		return this.buf;
+	}
 
 	/**
 	 * Set the non blocking flag.
@@ -333,7 +399,7 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 			activeFilters[lastActiveFilter].end();
 		}
 
-		flushBuffer();
+		// flushBuffer();
 		finished = true;
 	}
 
@@ -473,10 +539,10 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 		committed = true;
 		response.setCommitted(true);
 
-		if (pos > 0) {
-			// Sending the response header buffer
-			bbuf.put(buf, 0, pos);
-		}
+		/*
+		 * if (pos > 0) { // Sending the response header buffer bbuf.put(buf, 0,
+		 * pos); }
+		 */
 	}
 
 	/**
@@ -556,8 +622,33 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 */
 	public void write(byte[] b) {
 		// Writing the byte chunk to the output buffer
-		System.arraycopy(b, 0, buf, pos, b.length);
-		pos = pos + b.length;
+		write(b, 0, b.length);
+	}
+
+	/**
+	 * This method will write the contents of the specified byte buffer to the
+	 * output stream, without filtering. This method is meant to be used to
+	 * write the response header.
+	 * 
+	 * @param b
+	 *            the byte buffer to be written
+	 * @param off
+	 *            the offset of the byte buffer
+	 * @param length
+	 *            the number of bytes will be written
+	 */
+	public void write(byte[] b, int off, int length) {
+		// Writing the byte chunk to the output buffer
+		System.arraycopy(b, off, buf, pos, length);
+		pos = pos + length;
+	}
+
+	/**
+	 * 
+	 * @param buffer
+	 */
+	public void write(ByteBuffer buffer) {
+		buffer.get(buf, pos, buffer.remaining());
 	}
 
 	/**
@@ -604,8 +695,10 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 
 	/**
 	 * Callback to write data from the buffer.
+	 * 
+	 * @throws IOException
 	 */
-	protected abstract void flushBuffer() throws IOException;
+	public abstract void flushBuffer() throws IOException;
 
 	/**
 	 * Flush leftover bytes.
@@ -614,6 +707,27 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 * @throws IOException
 	 */
 	public abstract boolean flushLeftover() throws IOException;
+
+	/**
+	 * @return a new byte buffer
+	 */
+	protected static ByteBuffer poll() {
+		ByteBuffer buffer = poolBuffer.poll();
+		if (buffer == null) {
+			buffer = ByteBuffer.allocateDirect(Constants.MIN_BUFFER_SIZE);
+		}
+
+		return (ByteBuffer) buffer.clear();
+	}
+
+	/**
+	 * enqueue the byte buffer to the buffer's queue
+	 * 
+	 * @param buffer
+	 */
+	protected static void offer(ByteBuffer buffer) {
+		poolBuffer.offer((ByteBuffer) buffer.clear());
+	}
 
 	// ----------------------------------- OutputBufferImpl Inner Class
 

@@ -24,6 +24,7 @@ import java.nio.channels.CompletionHandler;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.catalina.http.HttpResponseParser;
 import org.apache.coyote.ActionCode;
 import org.apache.coyote.Request;
 import org.apache.coyote.RequestInfo;
@@ -58,7 +59,7 @@ import org.apache.tomcat.util.net.SocketStatus;
  * 
  * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
  */
-public class Http11NioProcessor extends Http11AbstractProcessor {
+public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 
 	/**
 	 * Input.
@@ -71,11 +72,6 @@ public class Http11NioProcessor extends Http11AbstractProcessor {
 	protected InternalNioOutputBuffer outputBuffer = null;
 
 	/**
-	 * Sendfile data.
-	 */
-	protected NioEndpoint.SendfileData sendfileData = null;
-
-	/**
 	 * Channel associated with the current connection.
 	 */
 	protected NioChannel channel;
@@ -85,6 +81,8 @@ public class Http11NioProcessor extends Http11AbstractProcessor {
 	 */
 	protected NioEndpoint endpoint;
 
+	protected Http11NioProtocol http11Protocol;
+
 	/**
 	 * Create a new instance of {@code Http11NioProcessor}
 	 * 
@@ -92,16 +90,13 @@ public class Http11NioProcessor extends Http11AbstractProcessor {
 	 * @param endpoint
 	 */
 	public Http11NioProcessor(int headerBufferSize, NioEndpoint endpoint) {
-
 		this.endpoint = endpoint;
 		request = new Request();
 		inputBuffer = new InternalNioInputBuffer(request, headerBufferSize, endpoint);
 		request.setInputBuffer(inputBuffer);
-		if (endpoint.getUseSendfile()) {
-			request.setSendfile(true);
-		}
 
 		response = new Response();
+		response.setResponseParser(new HttpResponseParser());
 		response.setHook(this);
 		outputBuffer = new InternalNioOutputBuffer(response, headerBufferSize, endpoint);
 		response.setOutputBuffer(outputBuffer);
@@ -110,6 +105,7 @@ public class Http11NioProcessor extends Http11AbstractProcessor {
 		initializeFilters();
 
 		// Cause loading of HexUtils
+		@SuppressWarnings("unused")
 		int foo = HexUtils.DEC[0];
 
 		// Cause loading of FastHttpDateFormat
@@ -196,6 +192,40 @@ public class Http11NioProcessor extends Http11AbstractProcessor {
 	/*
 	 * (non-Javadoc)
 	 * 
+	 * @see org.apache.coyote.http11.Http11AbstractProcessor#awaitForNext()
+	 */
+	public void awaitForNext() {
+		final NioChannel ch = channel;
+		// Perform an asynchronous read operation to wait for
+		// incoming data
+
+		try {
+			ch.awaitRead(endpoint.getKeepAliveTimeout(), TimeUnit.MILLISECONDS, ch,
+					new CompletionHandler<Integer, NioChannel>() {
+
+						@Override
+						public void completed(Integer nBytes, NioChannel attachment) {
+							if (nBytes < 0) {
+								// Reach the end of the stream
+								failed(null, attachment);
+							} else {
+								endpoint.processChannel(ch, null);
+							}
+						}
+
+						@Override
+						public void failed(Throwable exc, NioChannel attachment) {
+							closeSocket(attachment);
+						}
+					});
+		} catch (Throwable t) {
+			t.printStackTrace();
+		}
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see
 	 * org.apache.coyote.http11.Http11AbstractProcessor#event(org.apache.tomcat
 	 * .util.net.SocketStatus)
@@ -264,9 +294,10 @@ public class Http11NioProcessor extends Http11AbstractProcessor {
 	 *             error during an I/O operation
 	 */
 	public SocketState process(NioChannel channel) throws IOException {
+
 		RequestInfo rp = request.getRequestProcessor();
 		rp.setStage(org.apache.coyote.Constants.STAGE_PARSE);
-
+		
 		this.reset();
 		// Setting up the channel
 		this.setChannel(channel);
@@ -274,9 +305,9 @@ public class Http11NioProcessor extends Http11AbstractProcessor {
 		int keepAliveLeft = maxKeepAliveRequests;
 		int soTimeout = endpoint.getSoTimeout();
 		boolean keptAlive = false;
-		boolean openChannel = false;
 
 		while (!error && keepAlive && !event) {
+
 			// Parsing the request header
 			try {
 				if (!disableUploadTimeout && keptAlive && soTimeout > 0) {
@@ -290,28 +321,21 @@ public class Http11NioProcessor extends Http11AbstractProcessor {
 					final NioChannel ch = channel;
 					// Perform an asynchronous read operation to wait for
 					// incoming data
-					ch.awaitRead(soTimeout, TimeUnit.MILLISECONDS, ch,
-							new CompletionHandler<Integer, NioChannel>() {
-
-								@Override
-								public void completed(Integer nBytes, NioChannel attachment) {
-									if (nBytes < 0) {
-										// Reach the end of the stream
-										failed(null, attachment);
-									} else {
-										endpoint.processChannel(ch, null);
-									}
-								}
-
-								@Override
-								public void failed(Throwable exc, NioChannel attachment) {
-									closeChannel(attachment);
-								}
-							});
-					openChannel = true;
+					/*
+					 * ch.awaitRead(endpoint.getKeepAliveTimeout(),
+					 * TimeUnit.MILLISECONDS, ch, new CompletionHandler<Integer,
+					 * NioChannel>() {
+					 * 
+					 * @Override public void completed(Integer nBytes,
+					 * NioChannel attachment) { if (nBytes < 0) { // Reach the
+					 * end of the stream failed(null, attachment); } else {
+					 * endpoint.processChannel(ch, null); } }
+					 * 
+					 * @Override public void failed(Throwable exc, NioChannel
+					 * attachment) { closeSocket(attachment); } });
+					 */
 					break;
 				}
-
 				request.setStartTime(System.currentTimeMillis());
 				keptAlive = true;
 				if (!disableUploadTimeout) {
@@ -345,11 +369,12 @@ public class Http11NioProcessor extends Http11AbstractProcessor {
 			if (maxKeepAliveRequests > 0 && --keepAliveLeft == 0) {
 				keepAlive = false;
 			}
-
 			// Process the request in the adapter
 			if (!error) {
 				try {
 					rp.setStage(org.apache.coyote.Constants.STAGE_SERVICE);
+
+					// TODO
 					adapter.service(request, response);
 					// Handle when the response was committed before a serious
 					// error occurred. Throwing a ServletException should both
@@ -370,62 +395,32 @@ public class Http11NioProcessor extends Http11AbstractProcessor {
 				}
 			}
 
-			// Finish the handling of the request
-			if (error) {
-				// If there is an unspecified error, the connection will be
-				// closed
-				inputBuffer.setSwallowInput(false);
-			}
-			if (!event) {
-				endRequest();
-			}
-
-			// If there was an error, make sure the request is counted as
-			// and error, and update the statistics counter
-			if (error) {
-				response.setStatus(500);
-			}
-			request.updateCounters();
-			boolean pipelined = false;
-			if (!event) {
-				// Next request
-				pipelined = inputBuffer.nextRequest();
-				outputBuffer.nextRequest();
-			}
-
-			// Do sendfile as needed: add socket to sendfile and end
-			if (sendfileData != null && !error) {
-				sendfileData.setChannel(channel);
-				sendfileData.setKeepAlive(keepAlive && !pipelined);
-				if (!endpoint.addSendfileData(sendfileData)) {
-					if (sendfileData.getChannel() == null) {
-						error = true;
-					} else {
-						openChannel = true;
-					}
-					break;
-				}
-			}
-
-			rp.setStage(org.apache.coyote.Constants.STAGE_KEEPALIVE);
-		}
-		rp.setStage(org.apache.coyote.Constants.STAGE_ENDED);
-
-		if (event) {
-			if (error) {
-				inputBuffer.nextRequest();
-				outputBuffer.nextRequest();
-				recycle();
-				return SocketState.CLOSED;
-			} else {
-				eventProcessing = false;
-				return SocketState.LONG;
-			}
-		} else {
-			recycle();
-			return (openChannel) ? SocketState.OPEN : SocketState.CLOSED;
+			/*
+			 * // Finish the handling of the request if (error) { // If there is
+			 * an unspecified error, the connection // will be // closed
+			 * inputBuffer.setSwallowInput(false); } if (!event) { endRequest();
+			 * }
+			 * 
+			 * // If there was an error, make sure the request is counted as //
+			 * and error, and update the statistics counter if (error) {
+			 * response.setStatus(500); } request.updateCounters(); boolean
+			 * pipelined = false; if (!event) { // Next request pipelined =
+			 * inputBuffer.nextRequest(); outputBuffer.nextRequest(); }
+			 * 
+			 * rp.setStage(org.apache.coyote.Constants.STAGE_KEEPALIVE);
+			 */
 		}
 
+		/*
+		 * rp.setStage(org.apache.coyote.Constants.STAGE_ENDED);
+		 * 
+		 * if (event) { if (error) { inputBuffer.nextRequest();
+		 * outputBuffer.nextRequest(); recycle(); return SocketState.CLOSED; }
+		 * else { eventProcessing = false; return SocketState.LONG; } } else {
+		 * recycle(); return (openChannel) ? SocketState.OPEN :
+		 * SocketState.CLOSED; }
+		 */
+		return SocketState.OPEN;
 	}
 
 	/*
@@ -434,7 +429,7 @@ public class Http11NioProcessor extends Http11AbstractProcessor {
 	 * @see org.apache.coyote.http11.Http11AbstractProcessor#endRequest()
 	 */
 	public void endRequest() {
-
+		request.getRequestProcessor().setStage(org.apache.coyote.Constants.STAGE_ENDED);
 		// Finish the handling of the request
 		try {
 			inputBuffer.endRequest();
@@ -446,6 +441,7 @@ public class Http11NioProcessor extends Http11AbstractProcessor {
 			response.setStatus(500);
 			error = true;
 		}
+
 		try {
 			outputBuffer.endRequest();
 		} catch (IOException e) {
@@ -459,6 +455,16 @@ public class Http11NioProcessor extends Http11AbstractProcessor {
 	/*
 	 * (non-Javadoc)
 	 * 
+	 * @see org.apache.coyote.http11.Http11AbstractProcessor#nextRequest()
+	 */
+	public void nextRequest() {
+		inputBuffer.nextRequest();
+		outputBuffer.nextRequest();
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.apache.coyote.http11.Http11AbstractProcessor#recycle()
 	 */
 	public void recycle() {
@@ -466,6 +472,7 @@ public class Http11NioProcessor extends Http11AbstractProcessor {
 		outputBuffer.recycle();
 		this.channel = null;
 		super.recycle();
+		this.http11Protocol.recycleProcessor(this);
 	}
 
 	/**
@@ -534,14 +541,26 @@ public class Http11NioProcessor extends Http11AbstractProcessor {
 		}
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.apache.coyote.http11.Http11AbstractProcessor#closeSocket()
+	 */
+	public void closeSocket() {
+		closeSocket(this.channel);
+	}
+
 	/**
-	 * Close the specified channel without handling of possible exception
 	 * 
 	 * @param ch
-	 *            the channel to be closed
 	 */
-	private void closeChannel(NioChannel ch) {
-		endpoint.close(ch);
+	public void closeSocket(NioChannel ch) {
+		if (ch != null) {
+			endpoint.close(ch);
+		}
+		if (ch == this.channel) {
+			this.recycle();
+		}
 	}
 
 	/**
@@ -782,6 +801,25 @@ public class Http11NioProcessor extends Http11AbstractProcessor {
 		inputBuffer.useAvailable();
 	}
 
+	/**
+	 * Getter for http11Protocol
+	 * 
+	 * @return the http11Protocol
+	 */
+	public Http11NioProtocol getHttp11Protocol() {
+		return this.http11Protocol;
+	}
+
+	/**
+	 * Setter for the http11Protocol
+	 * 
+	 * @param http11Protocol
+	 *            the http11Protocol to set
+	 */
+	public void setHttp11Protocol(Http11NioProtocol http11Protocol) {
+		this.http11Protocol = http11Protocol;
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -866,7 +904,6 @@ public class Http11NioProcessor extends Http11AbstractProcessor {
 		http09 = false;
 		contentDelimitation = false;
 		expectation = false;
-		sendfileData = null;
 
 		if (sslEnabled) {
 			request.scheme().setString("https");
@@ -888,6 +925,7 @@ public class Http11NioProcessor extends Http11AbstractProcessor {
 		} else {
 			// Unsupported protocol
 			http11 = false;
+			System.err.println("1) The error is here");
 			error = true;
 			// Send 505; Unsupported HTTP version
 			response.setStatus(505);
@@ -980,6 +1018,7 @@ public class Http11NioProcessor extends Http11AbstractProcessor {
 						.toLowerCase(Locale.ENGLISH).trim();
 				if (!addInputFilter(inputFilters, encodingName)) {
 					// Unsupported transfer encoding
+					System.err.println("2) The error is here");
 					error = true;
 					// 501 - Unimplemented
 					response.setStatus(501);
@@ -991,6 +1030,7 @@ public class Http11NioProcessor extends Http11AbstractProcessor {
 					.trim();
 			if (!addInputFilter(inputFilters, encodingName)) {
 				// Unsupported transfer encoding
+				System.err.println("3) The error is here");
 				error = true;
 				// 501 - Unimplemented
 				response.setStatus(501);
@@ -1008,6 +1048,7 @@ public class Http11NioProcessor extends Http11AbstractProcessor {
 
 		// Check host header
 		if (http11 && (valueMB == null)) {
+			System.err.println("4) The error is here");
 			error = true;
 			// 400 - Bad request
 			response.setStatus(400);
@@ -1102,127 +1143,13 @@ public class Http11NioProcessor extends Http11AbstractProcessor {
 	 */
 	protected void prepareResponse() {
 
-		boolean entityBody = true;
-		contentDelimitation = false;
-
-		OutputFilter[] outputFilters = outputBuffer.getFilters();
-
-		if (http09 == true) {
-			// HTTP/0.9
-			outputBuffer.addActiveFilter(outputFilters[Constants.IDENTITY_FILTER]);
-			return;
-		}
-
 		int statusCode = response.getStatus();
-		if ((statusCode == 204) || (statusCode == 205) || (statusCode == 304)) {
-			// No entity body
-			outputBuffer.addActiveFilter(outputFilters[Constants.VOID_FILTER]);
-			entityBody = false;
-			contentDelimitation = true;
-		}
-
-		MessageBytes methodMB = request.method();
-		if (methodMB.equals("HEAD")) {
-			// No entity body
-			outputBuffer.addActiveFilter(outputFilters[Constants.VOID_FILTER]);
-			contentDelimitation = true;
-		}
-
-		// Sendfile support
-		if (response.getSendfilePath() != null && endpoint.getUseSendfile()) {
-			// No entity body sent here
-			outputBuffer.addActiveFilter(outputFilters[Constants.VOID_FILTER]);
-			contentDelimitation = true;
-			sendfileData = endpoint.getSendfileData();
-			sendfileData.setFileName(response.getSendfilePath());
-			sendfileData.setStart(response.getSendfileStart());
-			sendfileData.setEnd(response.getSendfileEnd());
-			sendfileData.setKeepAlive(keepAlive);
-
-		}
-
-		// Check for compression
-		boolean useCompression = false;
-		if (entityBody && (compressionLevel > 0) && (sendfileData == null)) {
-			useCompression = isCompressable();
-			// Change content-length to -1 to force chunking
-			if (useCompression) {
-				response.setContentLength(-1);
-			}
-		}
-
 		MimeHeaders headers = response.getMimeHeaders();
-		if (!entityBody) {
-			response.setContentLength(-1);
-		} else {
-			String contentType = response.getContentType();
-			if (contentType != null) {
-				headers.setValue("Content-Type").setString(contentType);
-			}
-			String contentLanguage = response.getContentLanguage();
-			if (contentLanguage != null) {
-				headers.setValue("Content-Language").setString(contentLanguage);
-			}
-		}
-
-		long contentLength = response.getContentLengthLong();
-		if (contentLength != -1) {
-			headers.setValue("Content-Length").setLong(contentLength);
-			outputBuffer.addActiveFilter(outputFilters[Constants.IDENTITY_FILTER]);
-			contentDelimitation = true;
-		} else {
-			if (entityBody && http11 && (keepAlive || CHUNK_ON_CLOSE)) {
-				outputBuffer.addActiveFilter(outputFilters[Constants.CHUNKED_FILTER]);
-				contentDelimitation = true;
-				headers.addValue(Constants.TRANSFERENCODING).setString(Constants.CHUNKED);
-			} else {
-				outputBuffer.addActiveFilter(outputFilters[Constants.IDENTITY_FILTER]);
-			}
-		}
-
-		if (useCompression) {
-			outputBuffer.addActiveFilter(outputFilters[Constants.GZIP_FILTER]);
-			headers.setValue("Content-Encoding").setString("gzip");
-			// Make Proxies happy via Vary (from mod_deflate)
-			headers.addValue("Vary").setString("Accept-Encoding");
-		}
-
-		// Add date header
-		headers.setValue("Date").setString(FastHttpDateFormat.getCurrentDate());
-
-		// FIXME: Add transfer encoding header
-
-		if ((entityBody) && (!contentDelimitation)) {
-			// Mark as close the connection after the request, and add the
-			// connection: close header
-			keepAlive = false;
-		}
-
-		// If we know that the request is bad this early, add the
-		// Connection: close header.
+		// NOPE
 		keepAlive = keepAlive && !statusDropsConnection(statusCode);
 		if (!keepAlive) {
 			headers.addValue(Constants.CONNECTION).setString(Constants.CLOSE);
-		} else if (!http11 && !error) {
-			headers.addValue(Constants.CONNECTION).setString(Constants.KEEPALIVE);
 		}
-
-		// Build the response header
-		outputBuffer.sendStatus();
-
-		// Add server header
-		if (server != null) {
-			headers.setValue("Server").setString(server);
-		} else {
-			outputBuffer.write(Constants.SERVER_BYTES);
-		}
-
-		int size = headers.size();
-		for (int i = 0; i < size; i++) {
-			outputBuffer.sendHeader(headers.getName(i), headers.getValue(i));
-		}
-		outputBuffer.endHeaders();
-
 	}
 
 	/*

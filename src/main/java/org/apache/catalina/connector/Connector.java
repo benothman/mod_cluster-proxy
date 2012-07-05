@@ -24,10 +24,13 @@ package org.apache.catalina.connector;
 import java.lang.reflect.Method;
 import java.util.Set;
 
+import org.apache.coyote.Adapter;
 import org.apache.coyote.ProtocolHandler;
 import org.apache.tomcat.util.IntrospectionUtils;
 import org.apache.tomcat.util.res.StringManager;
-import org.jboss.logging.Logger;
+import org.jboss.cluster.proxy.ConnectionManager;
+import org.jboss.cluster.proxy.NodeService;
+import org.jboss.cluster.proxy.logging.Logger;
 
 /**
  * {@code Connector}
@@ -40,6 +43,8 @@ public final class Connector {
 
 	private static Logger log = Logger.getLogger(Connector.class);
 	private ProtocolHandler protocolHandler;
+	private NodeService nodeService;
+	private ConnectionManager connectionManager;
 	private String protocol;
 	/**
 	 * Has this component been initialized yet?
@@ -112,6 +117,11 @@ public final class Connector {
 	private String domain;
 
 	/**
+	 * Coyote adapter.
+	 */
+	protected Adapter adapter = null;
+
+	/**
 	 * The "enable DNS lookups" flag for this Connector.
 	 */
 	private boolean enableLookups = false;
@@ -160,17 +170,20 @@ public final class Connector {
 	 */
 	public void init() throws Exception {
 		if (initialized) {
-			if (log.isInfoEnabled())
-				log.info(sm.getString("coyoteConnector.alreadyInitialized"));
+			log.info(sm.getString("coyoteConnector.alreadyInitialized"));
 			return;
 		}
 
 		this.initialized = true;
 
 		// Initializing adapter
-		// adapter = new CoyoteAdapter(this);
-		// protocolHandler.setAdapter(adapter);
+		adapter = new CoyoteAdapter(this);
+		protocolHandler.setAdapter(adapter);
 
+		this.nodeService = new NodeService();
+		this.nodeService.init();
+		this.connectionManager = new ConnectionManager();
+		this.connectionManager.init();
 		IntrospectionUtils.setProperty(protocolHandler, "jkHome",
 				System.getProperty("catalina.base"));
 
@@ -193,8 +206,7 @@ public final class Connector {
 
 		// Validate and update our current state
 		if (started) {
-			if (log.isInfoEnabled())
-				log.info(sm.getString("coyoteConnector.alreadyStarted"));
+			log.info(sm.getString("coyoteConnector.alreadyStarted"));
 			return;
 		}
 		started = true;
@@ -590,5 +602,43 @@ public final class Connector {
 	 */
 	public void setAllowedHosts(Set<String> allowedHosts) {
 		this.allowedHosts = allowedHosts;
+	}
+
+	/**
+	 * Getter for nodeService
+	 * 
+	 * @return the nodeService
+	 */
+	public NodeService getNodeService() {
+		return this.nodeService;
+	}
+
+	/**
+	 * Setter for the nodeService
+	 * 
+	 * @param nodeService
+	 *            the nodeService to set
+	 */
+	public void setNodeService(NodeService nodeService) {
+		this.nodeService = nodeService;
+	}
+
+	/**
+	 * Getter for connectionManager
+	 * 
+	 * @return the connectionManager
+	 */
+	public ConnectionManager getConnectionManager() {
+		return this.connectionManager;
+	}
+
+	/**
+	 * Setter for the connectionManager
+	 * 
+	 * @param connectionManager
+	 *            the connectionManager to set
+	 */
+	public void setConnectionManager(ConnectionManager connectionManager) {
+		this.connectionManager = connectionManager;
 	}
 }

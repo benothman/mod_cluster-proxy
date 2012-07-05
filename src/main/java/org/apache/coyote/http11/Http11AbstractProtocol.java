@@ -29,9 +29,11 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.net.ssl.SSLContext;
 
+import org.apache.coyote.Adapter;
 import org.apache.coyote.ProtocolHandler;
 import org.apache.tomcat.util.net.SSLImplementation;
 import org.apache.tomcat.util.res.StringManager;
+import org.jboss.cluster.proxy.logging.Logger;
 
 /**
  * {@code Http11AbstractProtocol}
@@ -43,11 +45,11 @@ import org.apache.tomcat.util.res.StringManager;
  * Created on Dec 19, 2011 at 11:58:19 AM
  * 
  * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
+ * @param <T>
  */
-public abstract class Http11AbstractProtocol implements ProtocolHandler, MBeanRegistration {
+public abstract class Http11AbstractProtocol<T> implements ProtocolHandler, MBeanRegistration {
 
-	protected static org.jboss.logging.Logger log = org.jboss.logging.Logger
-			.getLogger(Http11NioProtocol.class);
+	protected static Logger log = Logger.getLogger(Http11NioProtocol.class);
 
 	/**
 	 * The string manager for this package.
@@ -60,7 +62,12 @@ public abstract class Http11AbstractProtocol implements ProtocolHandler, MBeanRe
 	// *
 	protected ObjectName rgOname = null;
 
-	protected SSLImplementation sslImplementation = null;
+	protected SSLImplementation<T> sslImplementation = null;
+
+	/**
+	 * The adapter, used to call the connector.
+	 */
+	protected Adapter adapter;
 
 	/**
 	 * Processor cache.
@@ -77,7 +84,7 @@ public abstract class Http11AbstractProtocol implements ProtocolHandler, MBeanRe
 	/**
 	 * Maximum size of the HTTP message header.
 	 */
-	protected int maxHttpHeaderSize = 8 * 1024;
+	protected int maxHttpHeaderSize = Constants.MIN_BUFFER_SIZE;
 	/**
 	 * If true, the regular socket timeout will be used for the full duration of
 	 * the connection.
@@ -145,8 +152,8 @@ public abstract class Http11AbstractProtocol implements ProtocolHandler, MBeanRe
 	 */
 	@Override
 	public void setAttribute(String name, Object value) {
-		if (log.isTraceEnabled())
-			log.trace(sm.getString("http11protocol.setattribute", name, value));
+		if (log.isDebugEnabled())
+			log.debug(sm.getString("http11protocol.setattribute", name, value));
 
 		attributes.put(name, value);
 	}
@@ -158,8 +165,8 @@ public abstract class Http11AbstractProtocol implements ProtocolHandler, MBeanRe
 	 */
 	@Override
 	public Object getAttribute(String key) {
-		if (log.isTraceEnabled())
-			log.trace(sm.getString("http11protocol.getattribute", key));
+		if (log.isDebugEnabled())
+			log.debug(sm.getString("http11protocol.getattribute", key));
 		return attributes.get(key);
 	}
 
@@ -770,5 +777,24 @@ public abstract class Http11AbstractProtocol implements ProtocolHandler, MBeanRe
 	 */
 	public void setSSLContext(SSLContext sslContext) {
 		setAttribute("SSLContext", sslContext);
+	}
+
+	/**
+	 * Getter for adapter
+	 * 
+	 * @return the adapter
+	 */
+	public Adapter getAdapter() {
+		return this.adapter;
+	}
+
+	/**
+	 * Setter for the adapter
+	 * 
+	 * @param adapter
+	 *            the adapter to set
+	 */
+	public void setAdapter(Adapter adapter) {
+		this.adapter = adapter;
 	}
 }

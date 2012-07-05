@@ -126,7 +126,6 @@ public final class Request {
 	// System.currentTime
 	private long startTime = 0L;
 	private int available = 0;
-	private boolean sendfile = false;
 
 	private RequestInfo reqProcessorMX = new RequestInfo(this);
 
@@ -144,7 +143,7 @@ public final class Request {
 	/**
 	 * Get the instance id (or JVM route). Curently Ajp is sending it with each
 	 * request. In future this should be fixed, and sent only once ( or
-	 * 'negociated' at config time so both tomcat and apache share the same
+	 * 'negotiated' at config time so both tomcat and apache share the same
 	 * name.
 	 * 
 	 * @return the instance id
@@ -153,7 +152,6 @@ public final class Request {
 		return instanceId;
 	}
 
-	
 	/**
 	 * @return the mime headers
 	 */
@@ -161,19 +159,12 @@ public final class Request {
 		return headers;
 	}
 
+	/**
+	 * @return the URL decoder
+	 */
 	public UDecoder getURLDecoder() {
 		return urlDecoder;
 	}
-
-	public boolean hasSendfile() {
-		return sendfile;
-	}
-
-	public void setSendfile(boolean sendfile) {
-		this.sendfile = sendfile;
-	}
-
-	// -------------------- Request data --------------------
 
 	/**
 	 * @return the scheme
@@ -210,14 +201,23 @@ public final class Request {
 		return decodedUriMB;
 	}
 
+	/**
+	 * @return the query
+	 */
 	public MessageBytes query() {
 		return queryMB;
 	}
 
+	/**
+	 * @return the query as string representation
+	 */
 	public MessageBytes queryString() {
 		return queryMB;
 	}
 
+	/**
+	 * @return the protocol
+	 */
 	public MessageBytes protocol() {
 		return protoMB;
 	}
@@ -226,54 +226,49 @@ public final class Request {
 	 * Return the buffer holding the server name, if any. Use isNull() to check
 	 * if there is no value set. This is the "virtual host", derived from the
 	 * Host: header.
+	 * @return the server name
 	 */
 	public MessageBytes serverName() {
 		return serverNameMB;
 	}
 
 	/**
-	 * 
-	 * @return
+	 * @return the server port
 	 */
 	public int getServerPort() {
 		return serverPort;
 	}
 
 	/**
-	 * 
-	 * @return
+	 * @param serverPort
 	 */
-
 	public void setServerPort(int serverPort) {
 		this.serverPort = serverPort;
 	}
 
 	/**
-	 * 
-	 * @return
+	 * @return the remote address
 	 */
 	public MessageBytes remoteAddr() {
 		return remoteAddrMB;
 	}
 
 	/**
-	 * 
-	 * @return
+	 * @return the remote hostname
 	 */
 	public MessageBytes remoteHost() {
 		return remoteHostMB;
 	}
 
 	/**
-	 * 
-	 * @return
+	 * @return the local name
 	 */
 	public MessageBytes localName() {
 		return localNameMB;
 	}
 
 	/**
-	 * @return
+	 * @return the local address
 	 */
 	public MessageBytes localAddr() {
 		return localAddrMB;
@@ -366,10 +361,17 @@ public final class Request {
 		return contentTypeMB;
 	}
 
+	/**
+	 * @param mb
+	 */
 	public void setContentType(MessageBytes mb) {
 		contentTypeMB = mb;
 	}
 
+	/**
+	 * @param name
+	 * @return the value of the header with the given name
+	 */
 	public String getHeader(String name) {
 		return headers.getHeader(name);
 	}
@@ -391,6 +393,10 @@ public final class Request {
 		response.setRequest(this);
 	}
 
+	/**
+	 * @param actionCode
+	 * @param param
+	 */
 	public void action(ActionCode actionCode, Object param) {
 		if (hook == null && response != null)
 			hook = response.getHook();
@@ -403,14 +409,16 @@ public final class Request {
 		}
 	}
 
-	// -------------------- Cookies --------------------
-
+	/**
+	 * @return the cookies
+	 */
 	public Cookies getCookies() {
 		return cookies;
 	}
 
-	// -------------------- Parameters --------------------
-
+	/**
+	 * @return the request parameters
+	 */
 	public Parameters getParameters() {
 		return parameters;
 	}
@@ -418,14 +426,25 @@ public final class Request {
 	// -------------------- Other attributes --------------------
 	// We can use notes for most - need to discuss what is of general interest
 
+	/**
+	 * @param name
+	 * @param o
+	 */
 	public void setAttribute(String name, Object o) {
 		attributes.put(name, o);
 	}
 
-	public HashMap getAttributes() {
+	/**
+	 * @return the attributes map
+	 */
+	public HashMap<String, Object> getAttributes() {
 		return attributes;
 	}
 
+	/**
+	 * @param name
+	 * @return
+	 */
 	public Object getAttribute(String name) {
 		return attributes.get(name);
 	}
@@ -513,8 +532,9 @@ public final class Request {
 	 * use.
 	 * 
 	 * 17-31 range is not allocated or used.
-	 * @param pos 
-	 * @param value 
+	 * 
+	 * @param pos
+	 * @param value
 	 */
 	public final void setNote(int pos, Object value) {
 		notes[pos] = value;

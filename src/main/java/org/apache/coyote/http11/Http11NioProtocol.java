@@ -54,8 +54,9 @@ import org.apache.tomcat.util.net.jsse.NioJSSESocketChannelFactory;
  * 
  * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
  */
-public class Http11NioProtocol extends Http11AbstractProtocol {
+public class Http11NioProtocol extends Http11AbstractProtocol<NioChannel> {
 
+	
 	protected NioEndpoint endpoint = new NioEndpoint();
 	private Http11ConnectionHandler cHandler = new Http11ConnectionHandler(this);
 	protected NioJSSESocketChannelFactory socketFactory = null;
@@ -84,6 +85,7 @@ public class Http11NioProtocol extends Http11AbstractProtocol {
 	 * 
 	 * @see org.apache.coyote.ProtocolHandler#init()
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	public void init() throws Exception {
 		endpoint.setName(getName());
@@ -92,8 +94,8 @@ public class Http11NioProtocol extends Http11AbstractProtocol {
 		// Verify the validity of the configured socket factory
 		try {
 			if (isSSLEnabled()) {
-				sslImplementation = SSLImplementation.getInstance(NioJSSEImplementation.class
-						.getName());
+				sslImplementation = (SSLImplementation<NioChannel>) SSLImplementation
+						.getInstance(NioJSSEImplementation.class.getName());
 				socketFactory = sslImplementation.getServerSocketChannelFactory();
 				endpoint.setServerSocketChannelFactory(socketFactory);
 			}
@@ -472,22 +474,6 @@ public class Http11NioProtocol extends Http11AbstractProtocol {
 	}
 
 	/**
-	 * @return the user send file boolean value
-	 */
-	public boolean getUseSendfile() {
-		return endpoint.getUseSendfile();
-	}
-
-	/**
-	 * Set the user send file
-	 * 
-	 * @param useSendfile
-	 */
-	public void setUseSendfile(boolean useSendfile) {
-		endpoint.setUseSendfile(useSendfile);
-	}
-
-	/**
 	 * @return the send file size
 	 */
 	public int getSendfileSize() {
@@ -738,6 +724,14 @@ public class Http11NioProtocol extends Http11AbstractProtocol {
 	// -------------------- Connection handler --------------------
 
 	/**
+	 * 
+	 * @param processor
+	 */
+	public void recycleProcessor(Http11NioProcessor processor) {
+		this.cHandler.recycledProcessors.offer(processor);
+	}
+	
+	/**
 	 * {@code Http11ConnectionHandler}
 	 * 
 	 * Created on Jan 13, 2012 at 10:45:44 AM
@@ -895,6 +889,7 @@ public class Http11NioProtocol extends Http11AbstractProtocol {
 		 */
 		@Override
 		public SocketState process(NioChannel channel) {
+
 			Http11NioProcessor processor = recycledProcessors.poll();
 			try {
 				if (processor == null) {
@@ -908,7 +903,7 @@ public class Http11NioProtocol extends Http11AbstractProtocol {
 				}
 
 				SocketState state = processor.process(channel);
-
+				
 				if (state == SocketState.LONG) {
 					// Associate the connection with the processor. The next
 					// request processed by this thread will use either a new or
@@ -924,7 +919,7 @@ public class Http11NioProtocol extends Http11AbstractProtocol {
 								processor.getResumeNotification(), false);
 					}
 				} else {
-					recycledProcessors.offer(processor);
+					// recycledProcessors.offer(processor);
 				}
 				return state;
 
@@ -958,7 +953,8 @@ public class Http11NioProtocol extends Http11AbstractProtocol {
 		protected Http11NioProcessor createProcessor() {
 			Http11NioProcessor processor = new Http11NioProcessor(proto.maxHttpHeaderSize,
 					proto.endpoint);
-			//processor.setAdapter(proto.adapter);
+			processor.setAdapter(proto.adapter);
+			processor.setHttp11Protocol(proto);
 			processor.setMaxKeepAliveRequests(proto.maxKeepAliveRequests);
 			processor.setTimeout(proto.timeout);
 			processor.setDisableUploadTimeout(proto.disableUploadTimeout);

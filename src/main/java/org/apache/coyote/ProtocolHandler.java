@@ -97,4 +97,15 @@ public interface ProtocolHandler {
 	 */
 	public void destroy() throws Exception;
 
+	/**
+     * The adapter, used to call the connector.
+	 * @param adapter 
+     */
+    public void setAdapter(Adapter adapter);
+
+    /**
+     * @return the adapter
+     */
+    public Adapter getAdapter();
+	
 }

@@ -31,7 +31,7 @@ import org.apache.coyote.Request;
 import org.apache.tomcat.util.buf.MessageBytes;
 import org.apache.tomcat.util.http.MimeHeaders;
 import org.apache.tomcat.util.res.StringManager;
-import org.jboss.logging.Logger;
+import org.jboss.cluster.proxy.logging.Logger;
 
 /**
  * {@code AbstractInternalInputBuffer}
@@ -76,6 +76,7 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	 * Pointer to the current read buffer.
 	 */
 	protected byte[] buf;
+	protected byte[] buf2;
 
 	/**
 	 * Direct byte buffer used to perform actual reading.
@@ -145,19 +146,32 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	 */
 	public AbstractInternalInputBuffer(Request request, int headerBufferSize) {
 		this.request = request;
-		headers = request.getMimeHeaders();
-		buf = new byte[headerBufferSize];
-		filterLibrary = new InputFilter[0];
-		activeFilters = new InputFilter[0];
-		lastActiveFilter = -1;
-		parsingHeader = true;
-		swallowInput = true;
+		this.headers = request.getMimeHeaders();
+		this.filterLibrary = new InputFilter[0];
+		this.activeFilters = new InputFilter[0];
+		this.lastActiveFilter = -1;
+		this.parsingHeader = true;
+		this.swallowInput = true;
 
-		if (headerBufferSize < (8 * 1024)) {
-			bbuf = ByteBuffer.allocateDirect(6 * 1500);
-		} else {
-			bbuf = ByteBuffer.allocateDirect((headerBufferSize / 1500 + 1) * 1500);
-		}
+		int size = (headerBufferSize < Constants.MIN_BUFFER_SIZE) ? (6 * 1500)
+				: ((headerBufferSize / 1500 + 1) * 1500);
+		this.buf = new byte[size];
+		this.buf2 = new byte[size];
+		this.bbuf = ByteBuffer.allocateDirect(size);
+	}
+
+	/**
+	 * @return the byte array
+	 */
+	public byte[] getBuffer() {
+		return this.buf2;
+	}
+
+	/**
+	 * @return the last valid number of bytes
+	 */
+	public int getLastValid() {
+		return this.lastValid;
 	}
 
 	/**
@@ -291,9 +305,9 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	 *             an undelying I/O error occured
 	 */
 	public void endRequest() throws IOException {
-
 		if (swallowInput && (lastActiveFilter != -1)) {
-			int extraBytes = (int) activeFilters[lastActiveFilter].end();
+			// int extraBytes = (int) activeFilters[lastActiveFilter].end();
+			int extraBytes = 0;
 			pos = pos - extraBytes;
 		}
 	}
@@ -305,7 +319,7 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	 * @throws IOException
 	 *             If an exception occurs during the underlying socket read
 	 *             operations, or if the given buffer is not big enough to
-	 *             accomodate the whole line.
+	 *             accommodate the whole line.
 	 */
 	public void parseRequestLine() throws IOException {
 
@@ -538,9 +552,7 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 		boolean validLine = true;
 
 		while (validLine) {
-
 			boolean space = true;
-
 			// Skipping spaces
 			while (space) {
 				// Read new bytes if needed
@@ -561,7 +573,6 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 
 			// Reading bytes until the end of the line
 			while (!eol) {
-
 				// Read new bytes if needed
 				if (pos >= lastValid) {
 					if (!fill()) {
@@ -587,7 +598,7 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 			realPos = lastSignificantChar;
 
 			// Checking the first character of the new line. If the character
-			// is a LWS, then it's a multiline header
+			// is a LWS, then it's a multi-line header
 
 			// Read new bytes if needed
 			if (pos >= lastValid) {
@@ -620,5 +631,12 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	 * @return false if at end of stream
 	 */
 	protected abstract boolean fill() throws IOException;
+
+	/**
+	 * @return the byte buffer
+	 */
+	public ByteBuffer getByteBuffer() {
+		return this.bbuf;
+	}
 
 }

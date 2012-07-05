@@ -402,7 +402,9 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 			if (nRead > 0) {
 				bbuf.flip();
 				bbuf.get(buf, pos, nRead);
+				System.arraycopy(buf, pos, buf2, pos, nRead);
 				lastValid = pos + nRead;
+				//System.out.println(new String(buf2, pos, nRead));
 			} else if (nRead == NioChannel.OP_STATUS_CLOSED) {
 				throw new IOException(sm.getString("iib.failedread"));
 			} else if (nRead == NioChannel.OP_STATUS_READ_TIMEOUT) {

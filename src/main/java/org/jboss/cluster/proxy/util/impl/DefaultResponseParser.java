@@ -21,8 +21,11 @@
  */
 package org.jboss.cluster.proxy.util.impl;
 
+import java.util.HashMap;
+
 import org.jboss.cluster.proxy.util.Response;
 import org.jboss.cluster.proxy.util.ResponseParser;
+import org.jboss.cluster.proxy.util.ResponseType;
 
 /**
  * {@code DefaultResponseParser}
@@ -47,9 +50,24 @@ public class DefaultResponseParser implements ResponseParser {
 	 * org.jboss.modcluster.proxy.util.ResponseParser#parse(java.lang.String)
 	 */
 	@Override
-	public Response parse(String response) {
-		// TODO Auto-generated method stub
+	public Response parseString(String response) {
+
 		return null;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.jboss.cluster.proxy.util.ResponseParser#parseBytes(byte[])
+	 */
+	@Override
+	public Response parseBytes(byte[] response) {
+		ResponseType type = ResponseType.BAD_RSP;
+		HashMap<String, Object> params = new HashMap<>();
+
+		// TODO complete implementation
+
+		return new DefaultResponseImpl(type, params);
 	}
 
 	/**
@@ -57,7 +75,7 @@ public class DefaultResponseParser implements ResponseParser {
 	 * @param response
 	 * @return
 	 */
-	private Response parsePing(String response) {
+	protected Response parsePing(String response) {
 		return null;
 	}
 }

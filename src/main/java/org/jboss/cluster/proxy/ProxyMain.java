@@ -21,10 +21,15 @@
  */
 package org.jboss.cluster.proxy;
 
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.jboss.logging.Logger;
+import org.jboss.cluster.proxy.logging.Logger;
 
 /**
  * {@code ProxyMain}
@@ -35,10 +40,13 @@ import org.jboss.logging.Logger;
  */
 public class ProxyMain {
 
-	private static final Logger logger = Logger.getLogger(ProxyMain.class.getPackage().getName());
 	private static final String DEFAULT_PROTOCOL = "org.apache.coyote.http11.Http11NioProtocol";
 	private static final String DEFAULT_SCHEME = "http";
 	private static WebConnectorService service;
+	private static boolean running = true;
+	private static final List<Thread> threads = new ArrayList<>();
+
+	private static final Logger logger = Logger.getLogger(ProxyMain.class);
 
 	/**
 	 * Create a new instance of {@code ProxyMain}
@@ -52,7 +60,7 @@ public class ProxyMain {
 	 * @throws Exception
 	 */
 	public static void main(String[] args) throws Exception {
-
+		long time = System.currentTimeMillis();
 		String java_home = System.getProperty("java.home");
 		java_home = java_home.substring(0, java_home.length() - 3);
 
@@ -65,11 +73,11 @@ public class ProxyMain {
 				.println("=========================================================================\n\n");
 
 		// Loading configuration first
-		try (InputStream in = ProxyMain.class.getResourceAsStream("config.properties")) {
+		try (InputStream is = ProxyMain.class.getResourceAsStream("config.properties")) {
 			logger.info("Loading configuration");
-			System.getProperties().load(in);
+			System.getProperties().load(is);
 		} catch (Throwable t) {
-			logger.error("unable to load configurations");
+			logger.error("Unable to load configurations", t);
 			System.exit(-1);
 		}
 
@@ -80,37 +88,122 @@ public class ProxyMain {
 			service = new WebConnectorService(protocol, scheme);
 			// configure the web connector service
 
-			int maxConnections = Integer.valueOf(System.getProperty(Constants.MAX_THREAD, ""
+			// Setting the max connections
+			int maxConnections = Integer.valueOf(System.getProperty(Constants.MAX_THREAD_NAME, ""
 					+ Constants.DEFAULT_MAX_CONNECTIONS));
 			service.setMaxConnections(maxConnections);
 
+			// Setting the address (host:port)
 			InetSocketAddress address = null;
-			int port = Integer.valueOf(System.getProperty("org.apache.tomcat.util.PORT", "8080"));
-			System.out.println("PORT = " + port);
-			String hostname = System.getProperty("org.apache.tomcat.util.ADDRESS","localhost");
+			int port = Integer.valueOf(System.getProperty("org.apache.tomcat.util.PORT", "8081"));
+			String hostname = System.getProperty("org.apache.tomcat.util.ADDRESS", "127.0.0.1");
 			address = (hostname == null) ? new InetSocketAddress(port) : new InetSocketAddress(
 					hostname, port);
-
-			System.out.println(address);
-			
 			service.setAddress(address);
-			
+
+			// TODO finish configuration setup
+
 			// Starting the web connector service
 			service.start();
-		} catch (Exception e) {
-			logger.error("creating protocol handler error");
+		} catch (Throwable e) {
+			logger.error("creating protocol handler error", e);
 			System.exit(-1);
 		}
 
+		threads.add(new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				while (running) {
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						// NOPE
+					}
+				}
+			}
+		}) {
+			public void interrupt() {
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					// NOPE
+				}
+				super.interrupt();
+			}
+		});
+
+		threads.add(new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				try (BufferedReader br = new BufferedReader(new InputStreamReader(System.in))) {
+					String line = null;
+					while ((line = br.readLine()) != null) {
+						if(line.isEmpty()) {
+							continue;
+						}
+						if (line.equalsIgnoreCase("stop")) {
+							running = false;
+							break;
+						} else {
+							logger.error("Unknow command : " + line);
+						}
+					}
+				} catch (IOException e) {
+					logger.error(e.getMessage(), e);
+				}
+				System.exit(0);
+			}
+		}));
+
+		time = System.currentTimeMillis() - time;
+		logger.info("JBoss Mod Cluster Proxy started in " + time + "ms");
+		// Add shutdown hook
+		addShutdownHook();
+		// start all threads
+		startThreads();
+	}
+
+	private static void addShutdownHook() {
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
 			public void run() {
 				try {
+					long time = System.currentTimeMillis();
+					logger.info("Stopping JBoss Mod Cluster Proxy....");
+					running = false;
 					service.stop();
+					time = System.currentTimeMillis() - time;
+					interruptThreads();
+					logger.info("JBoss Mod Cluster Proxy stopped in " + time + "ms");
 				} catch (Throwable e) {
-					e.printStackTrace();
+					logger.fatal(e.getMessage(), e);
 				}
 			}
 		});
 	}
+
+	/**
+	 * @throws Exception
+	 */
+	private static void startThreads() throws Exception {
+		for (Thread t : threads) {
+			t.start();
+		}
+		for (Thread t : threads) {
+			t.join();
+		}
+	}
+
+	/**
+	 * 
+	 * @throws Exception
+	 */
+	private static void interruptThreads() throws Exception {
+		for (Thread t : threads) {
+			t.interrupt();
+		}
+	}
+
 }

@@ -177,10 +177,6 @@ public abstract class AbstractEndpoint<T extends Closeable> implements Endpoint<
 	 * Name of the thread pool, which will be used for naming child threads.
 	 */
 	protected String name = "TP";
-	/**
-	 * Use sendfile for sending static files.
-	 */
-	protected boolean useSendfile = true;
 
 	/**
 	 * Reverse connection. In this proxied mode, the endpoint will not use a
@@ -748,25 +744,6 @@ public abstract class AbstractEndpoint<T extends Closeable> implements Endpoint<
 	 */
 	public void setName(String name) {
 		this.name = name;
-	}
-
-	/**
-	 * Getter for useSendfile
-	 * 
-	 * @return the useSendfile
-	 */
-	public boolean getUseSendfile() {
-		return this.useSendfile;
-	}
-
-	/**
-	 * Setter for the useSendfile
-	 * 
-	 * @param useSendfile
-	 *            the useSendfile to set
-	 */
-	public void setUseSendfile(boolean useSendfile) {
-		this.useSendfile = useSendfile;
 	}
 
 	/**

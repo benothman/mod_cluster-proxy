@@ -21,7 +21,7 @@
  */
 package org.jboss.cluster.proxy.util;
 
-import org.jboss.logging.Logger;
+import org.jboss.cluster.proxy.logging.Logger;
 
 /**
  * {@code ResponseParser}
@@ -36,15 +36,6 @@ public interface ResponseParser {
 	 * 
 	 */
 	public static final Logger log = Logger.getLogger(ResponseParser.class);
-	
-	/**
-	 * The delimiter between parameters
-	 */
-	public static final String PARAMETER_DELIMITER = "&";
-	/**
-	 * The delimiter between the parameter name and its value
-	 */
-	public static final String NAME_VALUE_DELIMITER = "=";
 
 	/**
 	 * Parse the string response
@@ -53,6 +44,15 @@ public interface ResponseParser {
 	 *            the string to be parsed
 	 * @return The response Object represented by the specified String
 	 */
-	public Response parse(String response);
+	public Response parseString(String response);
+
+	/**
+	 * Parse the string response
+	 * 
+	 * @param response
+	 *            a byte array containing the server response
+	 * @return The response Object represented by the specified String
+	 */
+	public Response parseBytes(byte[] response);
 
 }

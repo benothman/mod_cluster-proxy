@@ -1,5 +1,5 @@
 /**
- * JBoss, Home of Professional Open Source. Copyright 2011, Red Hat, Inc., and
+ * JBoss, Home of Professional Open Source. Copyright 2012, Red Hat, Inc., and
  * individual contributors as indicated by the @author tags. See the
  * copyright.txt file in the distribution for a full listing of individual
  * contributors.
@@ -37,6 +37,7 @@ import org.apache.tomcat.util.net.NioEndpoint.Handler.SocketState;
 import org.apache.tomcat.util.net.SSLSupport;
 import org.apache.tomcat.util.net.SocketStatus;
 import org.apache.tomcat.util.res.StringManager;
+import org.jboss.cluster.proxy.logging.Logger;
 
 /**
  * {@code Http11AbstractProcessor}
@@ -44,14 +45,14 @@ import org.apache.tomcat.util.res.StringManager;
  * Created on Dec 19, 2011 at 2:35:14 PM
  * 
  * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
+ * @param <E> 
  */
-public abstract class Http11AbstractProcessor implements ActionHook {
+public abstract class Http11AbstractProcessor<E> implements ActionHook {
 
 	/**
 	 * Logger.
 	 */
-	protected static org.jboss.logging.Logger log = org.jboss.logging.Logger
-			.getLogger(Http11AbstractProcessor.class);
+	protected static Logger log = Logger.getLogger(Http11AbstractProcessor.class);
 
 	/**
 	 * The string manager for this package.
@@ -71,8 +72,7 @@ public abstract class Http11AbstractProcessor implements ActionHook {
 	 * 
 	 */
 	protected Adapter adapter;
-	
-	
+
 	/**
 	 * Request object.
 	 */
@@ -132,7 +132,7 @@ public abstract class Http11AbstractProcessor implements ActionHook {
 	/**
 	 * SSL information.
 	 */
-	protected SSLSupport sslSupport;
+	protected SSLSupport<E> sslSupport;
 
 	/**
 	 * Remote Address associated with the current connection.
@@ -234,6 +234,17 @@ public abstract class Http11AbstractProcessor implements ActionHook {
 	 */
 	protected int timeout = -1;
 
+	/**
+	 * 
+	 */
+	public abstract void awaitForNext();
+	
+	/**
+	 * 
+	 * @param sock
+	 */
+	public abstract void closeSocket();
+	
 	/**
 	 * @return compression level.
 	 */
@@ -489,7 +500,7 @@ public abstract class Http11AbstractProcessor implements ActionHook {
      * 
      */
 	public abstract void endRequest();
-
+	
 	/**
      * 
      */
@@ -568,6 +579,11 @@ public abstract class Http11AbstractProcessor implements ActionHook {
 	/**
 	 * 
 	 */
+	public abstract void nextRequest();
+	
+	/**
+	 * 
+	 */
 	protected abstract void initializeFilters();
 
 	/**
@@ -605,10 +621,14 @@ public abstract class Http11AbstractProcessor implements ActionHook {
 	 * Use the same list of codes as Apache/httpd.
 	 */
 	protected boolean statusDropsConnection(int status) {
-		return status == 400 /* SC_BAD_REQUEST */|| status == 408 /* SC_REQUEST_TIMEOUT */
-				|| status == 411 /* SC_LENGTH_REQUIRED */|| status == 413 /* SC_REQUEST_ENTITY_TOO_LARGE */
-				|| status == 414 /* SC_REQUEST_URI_TOO_LARGE */|| status == 500 /* SC_INTERNAL_SERVER_ERROR */
-				|| status == 503 /* SC_SERVICE_UNAVAILABLE */|| status == 501 /* SC_NOT_IMPLEMENTED */;
+		return status == 400 /* SC_BAD_REQUEST */
+				|| status == 408 /* SC_REQUEST_TIMEOUT */
+				|| status == 411 /* SC_LENGTH_REQUIRED */
+				|| status == 413 /* SC_REQUEST_ENTITY_TOO_LARGE */
+				|| status == 414 /* SC_REQUEST_URI_TOO_LARGE */
+				|| status == 500 /* SC_INTERNAL_SERVER_ERROR */
+				|| status == 503 /* SC_SERVICE_UNAVAILABLE */
+				|| status == 501 /* SC_NOT_IMPLEMENTED */;
 	}
 
 	/**
@@ -641,7 +661,6 @@ public abstract class Http11AbstractProcessor implements ActionHook {
 
 	}
 
-	
 	/**
 	 * Getter for request
 	 * 
@@ -1247,5 +1266,24 @@ public abstract class Http11AbstractProcessor implements ActionHook {
 	 */
 	public void setSSLEnabled(boolean sslEnabled) {
 		this.sslEnabled = sslEnabled;
+	}
+
+	/**
+	 * Getter for adapter
+	 * 
+	 * @return the adapter
+	 */
+	public Adapter getAdapter() {
+		return this.adapter;
+	}
+
+	/**
+	 * Setter for the adapter
+	 * 
+	 * @param adapter
+	 *            the adapter to set
+	 */
+	public void setAdapter(Adapter adapter) {
+		this.adapter = adapter;
 	}
 }

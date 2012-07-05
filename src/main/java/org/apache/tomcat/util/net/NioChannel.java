@@ -1057,6 +1057,158 @@ public class NioChannel implements AsynchronousByteChannel, NetworkChannel {
 	}
 
 	/**
+	 * Read from this channel and automatically forward the read bytes to the
+	 * specified channel with no timeout specified. Note that the read and write
+	 * methods are blocking. This method works exactly the same way as:
+	 * 
+	 * <pre>
+	 * copyTo(channel, buffer, 0L, TimeUnit.MILLISECONDS);
+	 * 
+	 * <pre>
+	 * 
+	 * 
+	 * @param dst
+	 * @param buffer
+	 * @return the number of bytes forwarded
+	 * @throws Exception
+	 * @see #transferTo(NioChannel, ByteBuffer, long, TimeUnit)
+	 */
+	public int transferTo(NioChannel dst, ByteBuffer buffer) throws Exception {
+		return transferTo(dst, buffer, 0L, TimeUnit.MILLISECONDS);
+	}
+
+	/**
+	 * Read from this channel and automatically forward the read bytes to the
+	 * specified channel with no timeout specified. Note that the read and write
+	 * methods are blocking.
+	 * 
+	 * @param dst
+	 *            the destination channel
+	 * @param buffer
+	 *            the byte buffer used for the read and write operations
+	 * @param timeout
+	 *            the operation timeout
+	 * @param unit
+	 *            the time unit of the timeout
+	 * @return the number of bytes forwarded
+	 * @throws Exception
+	 */
+	public int transferTo(NioChannel dst, ByteBuffer buffer, long timeout, TimeUnit unit)
+			throws Exception {
+
+		if (dst == null) {
+			throw new NullPointerException("Null Destination channel");
+		}
+		if (dst.isClosed()) {
+			throw new ClosedChannelException();
+		}
+
+		// FIXME Adapt the timeout
+		int n = readBytes(buffer, timeout, unit);
+		buffer.flip();
+
+		while (buffer.hasRemaining()) {
+			dst.writeBytes(buffer, timeout, unit);
+		}
+
+		return n;
+	}
+
+	/**
+	 * Read from this channel and automatically forward the read bytes to the
+	 * specified channel with no timeout specified. This method works exactly
+	 * the same way as:
+	 * 
+	 * <pre>
+	 * copyTo(channel, buffer, 0L, TimeUnit.MILLISECONDS, attachment, handler);
+	 * 
+	 * <pre>
+	 * @param dst
+	 *            the destination channel
+	 * @param buffer
+	 *            the buffer in which this channel will read bytes
+	 * @param attachment
+	 *            The object to attach to the I/O operation; can be {@code null}
+	 * @param handler
+	 * The handler for consuming the result
+	 * @see  #transferTo(NioChannel, ByteBuffer, long, TimeUnit, Object, CompletionHandler)
+	 */
+	public <A> void transferTo(NioChannel dst, ByteBuffer buffer, A attachment,
+			final CompletionHandler<Integer, ? super A> handler) {
+		transferTo(dst, buffer, 0L, TimeUnit.MILLISECONDS, attachment, handler);
+	}
+
+	/**
+	 * Read from this channel and automatically forward asynchronously the read
+	 * bytes to the specified channel.
+	 * 
+	 * @param dst
+	 *            the destination channel
+	 * @param buffer
+	 *            the buffer in which this channel will read bytes
+	 * @param timeout
+	 *            The maximum time for the I/O operation to complete
+	 * @param unit
+	 *            The time unit of the {@code timeout} argument
+	 * @param attachment
+	 *            The object to attach to the I/O operation; can be {@code null}
+	 * @param handler
+	 *            The handler for consuming the result
+	 */
+	public <A> void transferTo(final NioChannel dst, final ByteBuffer buffer, final long timeout,
+			final TimeUnit unit, A attachment, final CompletionHandler<Integer, ? super A> handler) {
+
+		if (dst == null) {
+			throw new NullPointerException("Null Destination channel");
+		}
+		if (dst.isClosed()) {
+			handler.failed(new ClosedChannelException(), attachment);
+			return;
+		}
+
+		// Perform a read operation with this channel
+		this.read(buffer, timeout, unit, attachment, new CompletionHandler<Integer, A>() {
+
+			@Override
+			public void completed(final Integer result, A attachment) {
+				if (result < 0) {
+					failed(new ClosedChannelException(), attachment);
+				} else {
+					// FIXME Adapt the timeout
+					buffer.flip();
+					// Write the received bytes to the destination channel
+					dst.write(buffer, timeout, unit, attachment,
+							new CompletionHandler<Integer, A>() {
+
+								@Override
+								public void completed(Integer nb, A attachment) {
+									if (nb < 0) {
+										failed(new ClosedChannelException(), attachment);
+									} else if (buffer.hasRemaining()) {
+										dst.write(buffer, timeout, unit, attachment, this);
+									} else {
+										// The buffer position indicates the
+										// number of bytes received
+										handler.completed(buffer.position(), attachment);
+									}
+								}
+
+								@Override
+								public void failed(Throwable exc, A attachment) {
+									handler.failed(exc, attachment);
+								}
+							});
+				}
+			}
+
+			@Override
+			public void failed(Throwable exc, A attachment) {
+				handler.failed(exc, attachment);
+			}
+		});
+	}
+
+	/**
 	 * @return the local address
 	 * @throws IOException
 	 */

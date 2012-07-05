@@ -33,7 +33,7 @@ public interface Constants {
 	/**
 	 * 
 	 */
-	public static final String MAX_THREAD = "org.jboss.cluster.proxy.MAX_THREADS";
+	public static final String MAX_THREAD_NAME = "org.jboss.cluster.proxy.MAX_THREADS";
 	/**
 	 * 
 	 */
@@ -53,6 +53,9 @@ public interface Constants {
 	 */
 	public static final int DEFAULT_MAX_CONNECTIONS = 2 * DEFAULT_MAX_THREADS;
 
+	
+	
+	
 	/**
 	 * 
 	 */

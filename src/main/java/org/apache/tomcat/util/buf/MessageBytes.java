@@ -190,6 +190,7 @@ public final class MessageBytes implements Cloneable, Serializable {
 
 	/**
 	 * Set the content to be a string
+	 * @param s 
 	 */
 	public void setString(String s) {
 		strValue = s;

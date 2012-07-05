@@ -67,7 +67,10 @@ public class Node implements Serializable {
 	private String jvmRoute = "Mandatory";
 	private String domain = "";
 	private String hostname = "localhost";
-	private int port = 8009;
+	
+	//private int port = 8009;
+	private int port = 8080;
+	
 	/**
 	 * Protocol using by the connector (AJP/http/https).
 	 */

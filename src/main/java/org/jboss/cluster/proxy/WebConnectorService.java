@@ -27,6 +27,7 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 
 import org.apache.catalina.connector.Connector;
+import org.jboss.cluster.proxy.logging.Logger;
 
 /**
  * {@code WebConnectorService}
@@ -37,6 +38,7 @@ import org.apache.catalina.connector.Connector;
  */
 public class WebConnectorService {
 
+	private static final Logger logger = Logger.getLogger(WebConnectorService.class);
 	private volatile String protocol = "HTTP/1.1";
 	private volatile String scheme = "http";
 	private Boolean enableLookups = null;
@@ -67,11 +69,13 @@ public class WebConnectorService {
 	}
 
 	/**
+	 * Starts the connector
 	 * 
-	 * @throws Exception
+	 * @throws StartException
+	 *             in case of any problem
 	 */
-	public synchronized void start() throws Exception {
-
+	public synchronized void start() throws StartException {
+		logger.info("Starting Web Connector Service");
 		try {
 			// Create connector
 			final Connector connector = new Connector(protocol);
@@ -115,119 +119,15 @@ public class WebConnectorService {
 						.getMethod("setMaxThreads", Integer.TYPE);
 				m.invoke(connector.getProtocolHandler(), maxConnections);
 			}
-			/*
-			 * if (virtualServers != null) { HashSet<String> virtualServersList
-			 * = new HashSet<String>(); for (final ModelNode virtualServer :
-			 * virtualServers.asList()) {
-			 * virtualServersList.add(virtualServer.asString()); }
-			 * connector.setAllowedHosts(virtualServersList); }
-			 */
-			/*
-			if (ssl != null) {
-
-				// Enable SSL
-				try {
-					Method m = connector.getProtocolHandler().getClass()
-							.getMethod("setSSLEnabled", Boolean.TYPE);
-					m.invoke(connector.getProtocolHandler(), true);
-				} catch (NoSuchMethodException e) {
-					// No SSL support
-					throw new StartException(MESSAGES.failedSSLConfiguration(), e);
-				}
-				// JSSE configuration
-				try {
-					if (ssl.hasDefined(Constants.KEY_ALIAS)) {
-						Method m = connector.getProtocolHandler().getClass()
-								.getMethod("setKeyAlias", String.class);
-						m.invoke(connector.getProtocolHandler(), ssl.get(Constants.KEY_ALIAS)
-								.asString());
-					}
-					if (ssl.hasDefined(Constants.PASSWORD)) {
-						Method m = connector.getProtocolHandler().getClass()
-								.getMethod("setKeypass", String.class);
-						m.invoke(connector.getProtocolHandler(), ssl.get(Constants.PASSWORD)
-								.asString());
-					}
-					if (ssl.hasDefined(Constants.CERTIFICATE_KEY_FILE)) {
-						Method m = connector.getProtocolHandler().getClass()
-								.getMethod("setKeystore", String.class);
-						m.invoke(connector.getProtocolHandler(),
-								ssl.get(Constants.CERTIFICATE_KEY_FILE).asString());
-					}
-					if (ssl.hasDefined(Constants.CIPHER_SUITE)) {
-						Method m = connector.getProtocolHandler().getClass()
-								.getMethod("setCiphers", String.class);
-						m.invoke(connector.getProtocolHandler(), ssl.get(Constants.CIPHER_SUITE)
-								.asString());
-					}
-					if (ssl.hasDefined(Constants.PROTOCOL)) {
-						Method m = connector.getProtocolHandler().getClass()
-								.getMethod("setProtocols", String.class);
-						m.invoke(connector.getProtocolHandler(), ssl.get(Constants.PROTOCOL)
-								.asString());
-					}
-					if (ssl.hasDefined(Constants.VERIFY_CLIENT)) {
-						Method m = connector.getProtocolHandler().getClass()
-								.getMethod("setClientauth", String.class);
-						m.invoke(connector.getProtocolHandler(), ssl.get(Constants.VERIFY_CLIENT)
-								.asString());
-					}
-					if (ssl.hasDefined(Constants.SESSION_CACHE_SIZE)) {
-						Method m = connector.getProtocolHandler().getClass()
-								.getMethod("setAttribute", String.class, Object.class);
-						m.invoke(connector.getProtocolHandler(), "sessionCacheSize",
-								ssl.get(Constants.SESSION_CACHE_SIZE).asString());
-					}
-					if (ssl.hasDefined(Constants.SESSION_TIMEOUT)) {
-						Method m = connector.getProtocolHandler().getClass()
-								.getMethod("setAttribute", String.class, Object.class);
-						m.invoke(connector.getProtocolHandler(), "sessionCacheTimeout",
-								ssl.get(Constants.SESSION_TIMEOUT).asString());
-					}
-					
-					if (ssl.hasDefined(Constants.CA_CERTIFICATE_FILE)) {
-						Method m = connector.getProtocolHandler().getClass()
-								.getMethod("setAttribute", String.class, Object.class);
-						m.invoke(connector.getProtocolHandler(), "truststoreFile",
-								ssl.get(Constants.CA_CERTIFICATE_FILE).asString());
-
-					}
-					if (ssl.hasDefined(Constants.CA_CERTIFICATE_PASSWORD)) {
-						Method m = connector.getProtocolHandler().getClass()
-								.getMethod("setAttribute", String.class, Object.class);
-						m.invoke(connector.getProtocolHandler(), "truststorePass",
-								ssl.get(Constants.CA_CERTIFICATE_PASSWORD).asString());
-					}
-					if (ssl.hasDefined(Constants.TRUSTSTORE_TYPE)) {
-						Method m = connector.getProtocolHandler().getClass()
-								.getMethod("setAttribute", String.class, Object.class);
-						m.invoke(connector.getProtocolHandler(), "truststoreType",
-								ssl.get(Constants.TRUSTSTORE_TYPE).asString());
-					}
-					if (ssl.hasDefined(Constants.KEYSTORE_TYPE)) {
-						Method m = connector.getProtocolHandler().getClass()
-								.getMethod("setKeytype", String.class);
-						m.invoke(connector.getProtocolHandler(), ssl.get(Constants.KEYSTORE_TYPE)
-								.asString());
-					}
-					if (ssl.hasDefined(Constants.CA_REVOCATION_URL)) {
-						Method m = connector.getProtocolHandler().getClass()
-								.getMethod("setAttribute", String.class, Object.class);
-						m.invoke(connector.getProtocolHandler(), "crlFile",
-								ssl.get(Constants.CA_REVOCATION_URL).asString());
-					}
-
-				} catch (NoSuchMethodException e) {
-					throw new Exception("SSL configuration failed", e);
-				}
-			}
-			*/
-
+			
+			// Initialize the connector
 			connector.init();
+			// Start the connector
 			connector.start();
 			this.connector = connector;
-		} catch (Exception e) {
-			throw new Exception("Error starting web connector service", e);
+			logger.info("Web Connector Service started successfully");
+		} catch (Throwable e) {
+			throw new StartException("Error starting web connector service", e);
 		}
 	}
 
@@ -235,6 +135,7 @@ public class WebConnectorService {
 	 * Stop the web connector service
 	 */
 	public synchronized void stop() {
+		logger.info("Stopping Web Connector Service");
 		final Connector connector = this.connector;
 		try {
 			connector.pause();
@@ -247,6 +148,7 @@ public class WebConnectorService {
 			// NOPE
 		}
 		this.connector = null;
+		logger.info("Web Connector Service stopped successfully");
 	}
 
 	/**
@@ -460,7 +362,7 @@ public class WebConnectorService {
 
 	/**
 	 * Getter for executor
-	 *
+	 * 
 	 * @return the executor
 	 */
 	public Executor getExecutor() {
@@ -469,8 +371,9 @@ public class WebConnectorService {
 
 	/**
 	 * Setter for the executor
-	 *
-	 * @param executor the executor to set
+	 * 
+	 * @param executor
+	 *            the executor to set
 	 */
 	public void setExecutor(Executor executor) {
 		this.executor = executor;
@@ -478,7 +381,7 @@ public class WebConnectorService {
 
 	/**
 	 * Getter for address
-	 *
+	 * 
 	 * @return the address
 	 */
 	public InetSocketAddress getAddress() {
@@ -487,8 +390,9 @@ public class WebConnectorService {
 
 	/**
 	 * Setter for the address
-	 *
-	 * @param address the address to set
+	 * 
+	 * @param address
+	 *            the address to set
 	 */
 	public void setAddress(InetSocketAddress address) {
 		this.address = address;
