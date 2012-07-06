@@ -43,8 +43,7 @@ public class ConnectionManager {
 	private ConcurrentHashMap<String, ConcurrentLinkedQueue<NioChannel>> connections;
 	private boolean initialized = false;
 	AtomicInteger counter = new AtomicInteger(0);
-	
-	
+
 	/**
 	 * Create a new instance of {@code ConnectionManager}
 	 */
@@ -80,6 +79,11 @@ public class ConnectionManager {
 	public NioChannel getChannel(Node node) {
 		checkJvmRoute(node.getJvmRoute());
 		NioChannel channel = this.connections.get(node.getJvmRoute()).poll();
+
+		while (channel != null && channel.isClosed()) {
+			channel = this.connections.get(node.getJvmRoute()).poll();
+		}
+
 		if (channel == null) {
 			channel = open(node);
 		}
@@ -95,7 +99,7 @@ public class ConnectionManager {
 	private NioChannel open(Node node) {
 		try {
 			logger.info("Create new connection to node [" + node.getHostname() + ":"
-					+ node.getPort()+ "  --> counter = " + counter.incrementAndGet());
+					+ node.getPort() + "  --> counter = " + counter.incrementAndGet());
 			InetSocketAddress address = new InetSocketAddress(node.getHostname(), node.getPort());
 			NioChannel channel = NioChannel.open();
 			channel.connect(address).get();
