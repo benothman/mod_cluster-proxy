@@ -21,6 +21,8 @@
  */
 package org.jboss.cluster.proxy.xml;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
 
 import javax.xml.bind.JAXBContext;
@@ -48,6 +50,11 @@ public class XmlConfig {
 	private static final String CONTEXT_PATH = XmlConfig.class.getPackage().getName();
 
 	/**
+	 * 
+	 */
+	private static final String CONFIG_PATH = "conf" + File.separatorChar + "nodes.xml";
+
+	/**
 	 * Create a new instance of {@code XmlConfig}
 	 */
 	private XmlConfig() {
@@ -58,13 +65,15 @@ public class XmlConfig {
 	 * @return the list of nodes
 	 * @throws Exception
 	 */
-	public static Nodes loadNodes() throws Exception {
-		try (InputStream is = XmlConfig.class.getResourceAsStream("nodes.xml")) {
+	public static XmlNodes loadNodes() throws Exception {
+
+		try (FileInputStream fis = new FileInputStream(CONFIG_PATH)) {
 			logger.info("Loading nodes configurations");
-			Nodes nodes = (Nodes) xmlToObject(is);
+			XmlNodes nodes = (XmlNodes) xmlToObject(fis);
 			return nodes;
 		} catch (Throwable t) {
 			logger.error("Unable to load nodes", t);
+			t.printStackTrace();
 			return null;
 		}
 	}
@@ -78,4 +87,11 @@ public class XmlConfig {
 		Unmarshaller u = jc.createUnmarshaller();
 		return u.unmarshal(is);
 	}
+
+	public static void main(String args[]) throws Exception {
+		System.out.println(new File(".").getAbsolutePath());
+		XmlNodes nodes = loadNodes();
+		System.out.println(nodes);
+	}
+
 }

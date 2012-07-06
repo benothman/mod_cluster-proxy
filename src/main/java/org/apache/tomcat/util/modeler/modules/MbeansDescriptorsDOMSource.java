@@ -32,6 +32,9 @@ import org.jboss.logging.Logger;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
+/**
+ * {@code MbeansDescriptorsDOMSource}
+ */
 public class MbeansDescriptorsDOMSource extends ModelerSource {
 	private static Logger log = Logger.getLogger(MbeansDescriptorsDOMSource.class);
 
@@ -41,10 +44,16 @@ public class MbeansDescriptorsDOMSource extends ModelerSource {
 	Object source;
 	List<Object> mbeans = new ArrayList<Object>();
 
+	/**
+	 * @param reg
+	 */
 	public void setRegistry(Registry reg) {
 		this.registry = reg;
 	}
 
+	/**
+	 * @param loc
+	 */
 	public void setLocation(String loc) {
 		this.location = loc;
 	}

@@ -135,7 +135,7 @@ public class CoyoteAdapter implements Adapter {
 	public void service(final org.apache.coyote.Request request,
 			final org.apache.coyote.Response response) throws Exception {
 
-		Node node = this.connector.getNodeService().getNode();
+		Node node = this.connector.getNodeService().getNode(request.requestURI().getString());
 		NioChannel channel = this.connector.getConnectionManager().getChannel(node);
 		// Client request
 		AbstractInternalInputBuffer inputBuffer = (AbstractInternalInputBuffer) request

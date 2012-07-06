@@ -22,6 +22,8 @@
 package org.jboss.cluster.proxy;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -45,8 +47,8 @@ public class ProxyMain {
 	private static WebConnectorService service;
 	private static boolean running = true;
 	private static final List<Thread> threads = new ArrayList<>();
-
 	private static final Logger logger = Logger.getLogger(ProxyMain.class);
+	private static final String CONFIG_PATH = "conf" + File.separatorChar + "config.properties";
 
 	/**
 	 * Create a new instance of {@code ProxyMain}
@@ -73,9 +75,10 @@ public class ProxyMain {
 				.println("=========================================================================\n\n");
 
 		// Loading configuration first
-		try (InputStream is = ProxyMain.class.getResourceAsStream("config.properties")) {
+
+		try (FileInputStream fis = new FileInputStream(CONFIG_PATH)) {
 			logger.info("Loading configuration");
-			System.getProperties().load(is);
+			System.getProperties().load(fis);
 		} catch (Throwable t) {
 			logger.error("Unable to load configurations", t);
 			System.exit(-1);
@@ -140,7 +143,7 @@ public class ProxyMain {
 				try (BufferedReader br = new BufferedReader(new InputStreamReader(System.in))) {
 					String line = null;
 					while ((line = br.readLine()) != null) {
-						if(line.isEmpty()) {
+						if (line.isEmpty()) {
 							continue;
 						}
 						if (line.equalsIgnoreCase("stop")) {

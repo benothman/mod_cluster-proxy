@@ -249,6 +249,15 @@ public class Logger {
 		 */
 		DEBUG;
 
+		private String name;
+
+		/**
+		 * Create a new instance of {@code Level}
+		 */
+		private Level() {
+			this.name = ' ' + super.toString() + "  ";
+		}
+
 		/*
 		 * (non-Javadoc)
 		 * 
@@ -256,7 +265,7 @@ public class Logger {
 		 */
 		@Override
 		public String toString() {
-			return " " + super.toString() + "  ";
+			return this.name;
 		}
 	}
 

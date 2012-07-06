@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nodes>
+	<node>
+		<hostname>localhost</hostname>
+		<port>8080</port>
+	</node>
+	<node>
+		<hostname>172.17.32.254</hostname>
+		<port>8080</port>
+	</node>
+	<node>
+		<hostname>172.17.33.254</hostname>
+		<port>8080</port>
+	</node>
+	<node>
+		<hostname>172.17.35.254</hostname>
+		<port>8080</port>
+	</node>
+	<node>
+		<hostname>172.17.36.254</hostname>
+		<port>8080</port>
+	</node>
+</nodes>

@@ -21,9 +21,15 @@
  */
 package org.jboss.cluster.proxy;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 
 import org.jboss.cluster.proxy.container.Node;
+import org.jboss.cluster.proxy.xml.XmlConfig;
+import org.jboss.cluster.proxy.xml.XmlNode;
+import org.jboss.cluster.proxy.xml.XmlNodes;
 
 /**
  * {@code NodeService}
@@ -33,6 +39,9 @@ import org.jboss.cluster.proxy.container.Node;
  * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
  */
 public class NodeService {
+
+	private List<Node> nodes;
+	private Random random;
 
 	/**
 	 * Create a new instance of {@code NodeService}
@@ -45,16 +54,32 @@ public class NodeService {
 	 * @return a node
 	 */
 	public Node getNode() {
-		Node node = new Node();
-		node.setJvmRoute(UUID.randomUUID().toString());
-		return node;
+		int index = random.nextInt(this.nodes.size());
+		return this.nodes.get(index);
 	}
 
 	/**
-	 * 
+	 * @param contextPath
+	 * @return a node hosting the specified context path
 	 */
-	public void init() {
-		
+	public Node getNode(String contextPath) {
+		// TODO
+		return getNode();
 	}
 
+	/**
+	 * @throws Exception
+	 */
+	public void init() throws Exception {
+		this.random = new Random();
+		this.nodes = new ArrayList<Node>();
+		XmlNodes xmlNodes = XmlConfig.loadNodes();
+		for (XmlNode n : xmlNodes.getNodes()) {
+			Node node = new Node();
+			node.setJvmRoute(UUID.randomUUID().toString());
+			node.setHostname(n.getHostname());
+			node.setPort(n.getPort());
+			this.nodes.add(node);
+		}
+	}
 }

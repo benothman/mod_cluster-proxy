@@ -43,15 +43,15 @@ public class ObjectFactory {
 	/**
 	 * @return a new instance of {@code Node}
 	 */
-	public Node createNode() {
-		return new Node();
+	public XmlNode createXmlNode() {
+		return new XmlNode();
 	}
 
 	/**
-	 * @return a new instance of {@code Node}
+	 * @return a new instance of {@code XmlNodes}
 	 */
-	public Nodes createNodes() {
-		return new Nodes();
+	public XmlNodes createXmlNodes() {
+		return new XmlNodes();
 	}
 	
 }

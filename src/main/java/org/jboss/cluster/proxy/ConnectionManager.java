@@ -21,13 +21,13 @@
  */
 package org.jboss.cluster.proxy;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.apache.tomcat.util.net.NioChannel;
 import org.jboss.cluster.proxy.container.Node;
+import org.jboss.cluster.proxy.logging.Logger;
 
 /**
  * {@code ConnectionManager}
@@ -38,7 +38,8 @@ import org.jboss.cluster.proxy.container.Node;
  */
 public class ConnectionManager {
 
-	private ConcurrentHashMap<String, ConcurrentLinkedQueue<NioChannel>> nodes;
+	private static final Logger logger = Logger.getLogger(ConnectionManager.class);
+	private ConcurrentHashMap<String, ConcurrentLinkedQueue<NioChannel>> connections;
 	private boolean initialized = false;
 
 	/**
@@ -56,7 +57,7 @@ public class ConnectionManager {
 			return;
 		}
 
-		this.nodes = new ConcurrentHashMap<>();
+		this.connections = new ConcurrentHashMap<>();
 		initialized = true;
 	}
 
@@ -64,8 +65,8 @@ public class ConnectionManager {
 	 * Destroy the connection manager
 	 */
 	public void destroy() {
-		this.nodes.clear();
-		this.nodes = null;
+		this.connections.clear();
+		this.connections = null;
 		this.initialized = false;
 	}
 
@@ -75,7 +76,7 @@ public class ConnectionManager {
 	 */
 	public NioChannel getChannel(Node node) {
 		checkJvmRoute(node.getJvmRoute());
-		NioChannel channel = this.nodes.get(node.getJvmRoute()).poll();
+		NioChannel channel = this.connections.get(node.getJvmRoute()).poll();
 		if (channel == null) {
 			channel = open(node);
 		}
@@ -89,14 +90,13 @@ public class ConnectionManager {
 	 * @return
 	 */
 	private NioChannel open(Node node) {
-
 		try {
 			InetSocketAddress address = new InetSocketAddress(node.getHostname(), node.getPort());
 			NioChannel channel = NioChannel.open();
 			channel.connect(address).get();
 			return channel;
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
 		}
 		return null;
 	}
@@ -109,7 +109,7 @@ public class ConnectionManager {
 	public void recycle(String jvmRoute, NioChannel channel) {
 		if (channel != null && channel.isOpen()) {
 			checkJvmRoute(jvmRoute);
-			this.nodes.get(jvmRoute).offer(channel);
+			this.connections.get(jvmRoute).offer(channel);
 		}
 	}
 
@@ -118,8 +118,8 @@ public class ConnectionManager {
 	 * @param jvmRoute
 	 */
 	private void checkJvmRoute(String jvmRoute) {
-		if (this.nodes.get(jvmRoute) == null) {
-			this.nodes.put(jvmRoute, new ConcurrentLinkedQueue<NioChannel>());
+		if (this.connections.get(jvmRoute) == null) {
+			this.connections.put(jvmRoute, new ConcurrentLinkedQueue<NioChannel>());
 		}
 	}
 }
