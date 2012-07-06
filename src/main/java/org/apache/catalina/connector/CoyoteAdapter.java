@@ -262,8 +262,8 @@ public class CoyoteAdapter implements Adapter {
 						boolean chunked = response.isChunked();
 						processor.endRequest();
 						processor.nextRequest();
-						
-						if(chunked) {
+
+						if (chunked) {
 							((InternalNioOutputBuffer) outputBuffer).configChunked(nodeChannel);
 						} else {
 							if (!processor.isKeepAlive()) {
@@ -272,10 +272,11 @@ public class CoyoteAdapter implements Adapter {
 							} else {
 								processor.awaitForNext();
 							}
-							Node node = (Node)attachment.get(Constants.NODE_NAME);
-							connector.getConnectionManager().recycle(node.getJvmRoute(), nodeChannel);
-						} 
-						
+							Node node = (Node) attachment.get(Constants.NODE_NAME);
+							connector.getConnectionManager().recycle(node.getJvmRoute(),
+									nodeChannel);
+						}
+
 						// Recycle the processor
 						processor.recycle();
 					}
@@ -284,7 +285,8 @@ public class CoyoteAdapter implements Adapter {
 
 			@Override
 			public void failed(Throwable exc, Map<String, Object> attachment) {
-				logger.error(exc.getMessage(), exc);
+				exc.printStackTrace();
+				// logger.error(exc.getMessage(), exc);
 			}
 		});
 	}
