@@ -5,7 +5,7 @@
 		<port>8080</port>
 	</node -->
 	<node>
-		<hostname>172.17.32.254</hostname>
+		<hostname>172.17.37.254</hostname>
 		<port>8080</port>
 	</node>
 	<node>
