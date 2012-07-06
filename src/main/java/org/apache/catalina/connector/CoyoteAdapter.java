@@ -136,7 +136,6 @@ public class CoyoteAdapter implements Adapter {
 			final org.apache.coyote.Response response) throws Exception {
 
 		Node node = this.connector.getNodeService().getNode(request.requestURI().getString());
-		logger.info("Selected node : " + node.getHostname());
 		NioChannel channel = this.connector.getConnectionManager().getChannel(node);
 
 		// Client request
