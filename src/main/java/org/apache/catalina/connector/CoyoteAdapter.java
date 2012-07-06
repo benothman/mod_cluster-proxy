@@ -262,16 +262,22 @@ public class CoyoteAdapter implements Adapter {
 						boolean chunked = response.isChunked();
 						processor.endRequest();
 						processor.nextRequest();
-						if (!processor.isKeepAlive()) {
-							processor.closeSocket();
-							processor.recycle();
-						} else if (chunked) {
+						
+						if(chunked) {
 							((InternalNioOutputBuffer) outputBuffer).configChunked(nodeChannel);
-							processor.recycle();
 						} else {
-							processor.awaitForNext();
-							processor.recycle();
-						}
+							if (!processor.isKeepAlive()) {
+								processor.closeSocket();
+								// TODO
+							} else {
+								processor.awaitForNext();
+							}
+							Node node = (Node)attachment.get(Constants.NODE_NAME);
+							connector.getConnectionManager().recycle(node.getJvmRoute(), nodeChannel);
+						} 
+						
+						// Recycle the processor
+						processor.recycle();
 					}
 				}
 			}
