@@ -24,6 +24,7 @@ package org.jboss.cluster.proxy;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.tomcat.util.net.NioChannel;
 import org.jboss.cluster.proxy.container.Node;
@@ -41,7 +42,9 @@ public class ConnectionManager {
 	private static final Logger logger = Logger.getLogger(ConnectionManager.class);
 	private ConcurrentHashMap<String, ConcurrentLinkedQueue<NioChannel>> connections;
 	private boolean initialized = false;
-
+	AtomicInteger counter = new AtomicInteger(0);
+	
+	
 	/**
 	 * Create a new instance of {@code ConnectionManager}
 	 */
@@ -91,6 +94,8 @@ public class ConnectionManager {
 	 */
 	private NioChannel open(Node node) {
 		try {
+			logger.info("Create new connection to node [" + node.getHostname() + ":"
+					+ node.getPort()+ "  --> counter = " + counter.incrementAndGet());
 			InetSocketAddress address = new InetSocketAddress(node.getHostname(), node.getPort());
 			NioChannel channel = NioChannel.open();
 			channel.connect(address).get();
