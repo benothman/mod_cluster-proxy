@@ -99,7 +99,7 @@ public class ProxyMain {
 			// Setting the address (host:port)
 			InetSocketAddress address = null;
 			int port = Integer.valueOf(System.getProperty("org.apache.tomcat.util.PORT", "8081"));
-			String hostname = System.getProperty("org.apache.tomcat.util.ADDRESS", "127.0.0.1");
+			String hostname = System.getProperty("org.apache.tomcat.util.ADDRESS", "0.0.0.0");
 			address = (hostname == null) ? new InetSocketAddress(port) : new InetSocketAddress(
 					hostname, port);
 			service.setAddress(address);
