@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <nodes>
-	<node>
+	<!-- node>
 		<hostname>localhost</hostname>
 		<port>8080</port>
-	</node>
+	</node -->
 	<node>
 		<hostname>172.17.32.254</hostname>
 		<port>8080</port>
