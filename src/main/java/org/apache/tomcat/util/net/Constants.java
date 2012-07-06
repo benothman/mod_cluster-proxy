@@ -51,5 +51,14 @@ public final class Constants {
      */
     public static final String SESSION_ID_KEY = "javax.servlet.request.ssl_session";
 
+    /**
+     * 
+     */
+    public static final String MAX_THREAD_NAME = "org.apache.tomcat.util.net.MAX_THREADS";
+	/**
+	 * 
+	 */
+	public static final String MAX_CONNECTIONS_NAME = "org.apache.tomcat.util.net.MAX_CONNECTIONS";
+
 
 }

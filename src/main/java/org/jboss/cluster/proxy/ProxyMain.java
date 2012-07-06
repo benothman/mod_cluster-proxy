@@ -91,21 +91,18 @@ public class ProxyMain {
 			service = new WebConnectorService(protocol, scheme);
 			// configure the web connector service
 
-			// Setting the max connections
-			int maxConnections = Integer.valueOf(System.getProperty(Constants.MAX_THREAD_NAME, ""
-					+ Constants.DEFAULT_MAX_CONNECTIONS));
-			service.setMaxConnections(maxConnections);
 
 			// Setting the address (host:port)
 			InetSocketAddress address = null;
-			int port = Integer.valueOf(System.getProperty("org.apache.tomcat.util.PORT", "8081"));
-			String hostname = System.getProperty("org.apache.tomcat.util.ADDRESS", "0.0.0.0");
+			int port = Integer.valueOf(System.getProperty("org.apache.tomcat.util.net.PORT", "8081"));
+			String hostname = System.getProperty("org.apache.tomcat.util.net.ADDRESS", "0.0.0.0");
 			address = (hostname == null) ? new InetSocketAddress(port) : new InetSocketAddress(
 					hostname, port);
 			service.setAddress(address);
 
 			// TODO finish configuration setup
-
+			
+			
 			// Starting the web connector service
 			service.start();
 		} catch (Throwable e) {

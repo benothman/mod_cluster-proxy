@@ -110,7 +110,7 @@ public abstract class AbstractEndpoint<T extends Closeable> implements Endpoint<
 	/**
 	 * The maximum number of connections
 	 */
-	protected int maxConnections = 1024;
+	protected int maxConnections = 2 * maxThreads;
 
 	/**
 	 * Priority of the acceptor and poller threads.

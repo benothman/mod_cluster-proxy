@@ -165,6 +165,27 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 		if (initialized) {
 			return;
 		}
+		// Setting the max thread number
+		String property = System.getProperty(Constants.MAX_THREAD_NAME);
+		if (property != null) {
+			try {
+				this.maxThreads = Integer.valueOf(property);
+				logger.info("Configure max thread number : " + this.maxThreads);
+			} catch (Exception e) {
+				logger.warn("Invalid MAX-THREAD number, using the default value " + this.maxThreads);
+			}
+		}
+		// Setting the max connection number
+		property = System.getProperty(Constants.MAX_CONNECTIONS_NAME);
+		if (property != null) {
+			try {
+				this.maxConnections = Integer.valueOf(property);
+				logger.info("Configure max connection number : " + this.maxConnections);
+			} catch (Exception e) {
+				logger.warn("Invalid MAX-CONNECTION number, using the default value "
+						+ this.maxConnections);
+			}
+		}
 
 		if (this.soTimeout < 0) {
 			this.soTimeout = DEFAULT_SO_TIMEOUT;

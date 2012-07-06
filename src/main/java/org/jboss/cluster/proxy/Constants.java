@@ -33,29 +33,8 @@ public interface Constants {
 	/**
 	 * 
 	 */
-	public static final String MAX_THREAD_NAME = "org.jboss.cluster.proxy.MAX_THREADS";
-	/**
-	 * 
-	 */
-	public static final String MAX_CONNECTIONS_NAME = "org.jboss.cluster.proxy.MAX_CONNECTIONS";
-
-	/**
-	 * 
-	 */
 	public static final String PACKAGE = Constants.class.getPackage().getName();
 
-	/**
-	 * The default max threads
-	 */
-	public static final int DEFAULT_MAX_THREADS = 64 * Runtime.getRuntime().availableProcessors();
-	/**
-	 * 
-	 */
-	public static final int DEFAULT_MAX_CONNECTIONS = 2 * DEFAULT_MAX_THREADS;
-
-	
-	
-	
 	/**
 	 * 
 	 */
@@ -260,43 +239,6 @@ public interface Constants {
 	 * 
 	 */
 	public static final byte[] CRLF_BYTES = CRLF.getBytes();
-
-	/**
-	 * Content-length HTTP HEADER
-	 */
-	public static final String CONTENT_LENGTH = "Content-Length";
-	/**
-	 * 
-	 */
-	public static final byte[] CONTENT_LENGTH_BYTES = CONTENT_LENGTH.getBytes();
-	/**
-	 * Content-length HTTP HEADER
-	 */
-	public static final String CONTENT_TYPE = "Content-Type";
-	/**
-	 * 
-	 */
-	public static final byte[] CONTENT_TYPE_BYTES = CONTENT_TYPE.getBytes();
-	/**
-	 * 
-	 */
-	public static final String CONNECTION = "Connection";
-	/**
-	 * 
-	 */
-	public static final String CLOSE = "close";
-	/**
-	 * 
-	 */
-	public static final byte[] CLOSE_BYTES = CLOSE.getBytes();
-	/**
-	 * 
-	 */
-	public static final String KEEPALIVE = "keep-alive";
-	/**
-	 * 
-	 */
-	public static final byte[] KEEPALIVE_BYTES = KEEPALIVE.getBytes();
 
 	/**
 	 * CR.
