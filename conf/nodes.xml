@@ -19,10 +19,6 @@
 	<!-- Remote nodes -->
 	
 	<node>
-		<hostname>172.17.37.254</hostname>
-		<port>8080</port>
-	</node>
-	<node>
 		<hostname>172.17.33.254</hostname>
 		<port>8080</port>
 	</node>
@@ -32,6 +28,10 @@
 	</node>
 	<node>
 		<hostname>172.17.36.254</hostname>
+		<port>8080</port>
+	</node>
+	<node>
+		<hostname>172.17.37.254</hostname>
 		<port>8080</port>
 	</node>
 </nodes>

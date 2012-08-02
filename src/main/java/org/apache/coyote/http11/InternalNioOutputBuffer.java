@@ -281,7 +281,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 							Tuple<NioChannel, NioChannel, ByteBuffer> attachment) {
 						log.error("Client To Node");
 						offer(attachment.last);
-						// Closing client connection
+						// Closing client and node connection
 						close(attachment.first);
 						close(attachment.middle);
 					}
@@ -309,14 +309,8 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 
 					@Override
 					public void failed(Throwable exc,
-							Tuple<NioChannel, NioChannel, ByteBuffer> attachment) {
-						try {
-							log.error("Node To Client"
-									+ attachment.first.getRemoteAddress().toString());
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
-
+						Tuple<NioChannel, NioChannel, ByteBuffer> attachment) {
+						log.error("Node To Client");
 						offer(attachment.last);
 					}
 				});
