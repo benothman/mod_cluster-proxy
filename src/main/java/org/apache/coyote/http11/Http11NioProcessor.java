@@ -20,6 +20,7 @@ package org.apache.coyote.http11;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.InetSocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.CompletionHandler;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
@@ -207,9 +208,9 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 						public void completed(Integer nBytes, NioChannel attachment) {
 							if (nBytes < 0) {
 								// Reach the end of the stream
-								failed(null, attachment);
+								failed(new ClosedChannelException(), attachment);
 							} else {
-								endpoint.processChannel(ch, null);
+								endpoint.processChannel(attachment, null);
 							}
 						}
 
@@ -297,7 +298,7 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 
 		RequestInfo rp = request.getRequestProcessor();
 		rp.setStage(org.apache.coyote.Constants.STAGE_PARSE);
-		
+
 		this.reset();
 		// Setting up the channel
 		this.setChannel(channel);
@@ -388,7 +389,8 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 				} catch (InterruptedIOException e) {
 					error = true;
 				} catch (Throwable t) {
-					log.error(sm.getString("http11processor.request.process"), t);
+					t.printStackTrace();
+					log.error("**** 1 ****" + sm.getString("http11processor.request.process"), t);
 					// 500 - Internal Server Error
 					response.setStatus(500);
 					error = true;
@@ -436,7 +438,8 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 		} catch (IOException e) {
 			error = true;
 		} catch (Throwable t) {
-			log.error(sm.getString("http11processor.request.finish"), t);
+			log.error("*** IN END REQUEST **** " + sm.getString("http11processor.request.finish"),
+					t);
 			// 500 - Internal Server Error
 			response.setStatus(500);
 			error = true;
@@ -447,7 +450,8 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 		} catch (IOException e) {
 			error = true;
 		} catch (Throwable t) {
-			log.error(sm.getString("http11processor.response.finish"), t);
+			log.error("*** OUT END REQUEST *** " + sm.getString("http11processor.response.finish"),
+					t);
 			error = true;
 		}
 	}
@@ -559,6 +563,7 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 			endpoint.close(ch);
 		}
 		if (ch == this.channel) {
+			System.out.println("Calling recycling processor !!!!!");
 			this.recycle();
 		}
 	}

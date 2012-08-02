@@ -26,10 +26,12 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
+import org.apache.LifeCycleServiceAdapter;
 import org.jboss.cluster.proxy.container.Node;
 import org.jboss.cluster.proxy.xml.XmlConfig;
 import org.jboss.cluster.proxy.xml.XmlNode;
 import org.jboss.cluster.proxy.xml.XmlNodes;
+import org.jboss.logging.Logger;
 
 /**
  * {@code NodeService}
@@ -38,8 +40,9 @@ import org.jboss.cluster.proxy.xml.XmlNodes;
  * 
  * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
  */
-public class NodeService {
+public class NodeService extends LifeCycleServiceAdapter {
 
+	private static final Logger logger = Logger.getLogger(NodeService.class);
 	private List<Node> nodes;
 	private Random random;
 
@@ -48,6 +51,32 @@ public class NodeService {
 	 */
 	public NodeService() {
 		super();
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.apache.LifeCycleServiceAdapter#init()
+	 */
+	public void init() throws Exception {
+		if (isInitialized()) {
+			return;
+		}
+
+		logger.info("Initializing Node Service");
+		this.random = new Random();
+		this.nodes = new ArrayList<Node>();
+		XmlNodes xmlNodes = XmlConfig.loadNodes();
+		logger.info("Adding new nodes : " + xmlNodes);
+		for (XmlNode n : xmlNodes.getNodes()) {
+			Node node = new Node();
+			node.setJvmRoute(UUID.randomUUID().toString());
+			node.setHostname(n.getHostname());
+			node.setPort(n.getPort());
+			this.nodes.add(node);
+		}
+		setInitialized(true);
+		logger.info("Node Service initialized");
 	}
 
 	/**
@@ -65,21 +94,5 @@ public class NodeService {
 	public Node getNode(String contextPath) {
 		// TODO
 		return getNode();
-	}
-
-	/**
-	 * @throws Exception
-	 */
-	public void init() throws Exception {
-		this.random = new Random();
-		this.nodes = new ArrayList<Node>();
-		XmlNodes xmlNodes = XmlConfig.loadNodes();
-		for (XmlNode n : xmlNodes.getNodes()) {
-			Node node = new Node();
-			node.setJvmRoute(UUID.randomUUID().toString());
-			node.setHostname(n.getHostname());
-			node.setPort(n.getPort());
-			this.nodes.add(node);
-		}
 	}
 }

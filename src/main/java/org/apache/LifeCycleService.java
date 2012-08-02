@@ -19,67 +19,72 @@
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA, or see the FSF
  * site: http://www.fsf.org.
  */
-package org.jboss.cluster.proxy.logging;
+package org.apache;
 
 /**
- * {@code LoggerException}
+ * {@code LifeCycleService}
  * 
- * Created on Jun 29, 2012 at 4:46:39 PM
+ * Created on Jul 6, 2012 at 7:04:17 PM
  * 
  * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
  */
-public class LoggerException extends RuntimeException {
+public interface LifeCycleService {
 
 	/**
+	 * Initialize the service
 	 * 
+	 * @throws Exception
 	 */
-	private static final long serialVersionUID = 109850274982374L;
+	public void init() throws Exception;
 
 	/**
-	 * Create a new instance of {@code LoggerException}
-	 */
-	public LoggerException() {
-		super();
-	}
-
-	/**
-	 * Create a new instance of {@code LoggerException}
+	 * Start the service and make it available
 	 * 
-	 * @param message
+	 * @throws Exception
 	 */
-	public LoggerException(String message) {
-		super(message);
-	}
+	public void start() throws Exception;
 
 	/**
-	 * Create a new instance of {@code LoggerException}
+	 * Pause the service to make it unavailable. This method does not stop the
+	 * service.
 	 * 
-	 * @param cause
+	 * @throws Exception
 	 */
-	public LoggerException(Throwable cause) {
-		super(cause);
-	}
+	public void pause() throws Exception;
 
 	/**
-	 * Create a new instance of {@code LoggerException}
+	 * Stop the service to make it unavailable.
 	 * 
-	 * @param message
-	 * @param cause
+	 * @throws Exception
 	 */
-	public LoggerException(String message, Throwable cause) {
-		super(message, cause);
-	}
+	public void stop() throws Exception;
 
 	/**
-	 * Create a new instance of {@code LoggerException}
+	 * Destroy the service.
 	 * 
-	 * @param message
-	 * @param cause
-	 * @param enableSuppression
-	 * @param writableStackTrace
+	 * @throws Exception
 	 */
-	public LoggerException(String message, Throwable cause, boolean enableSuppression,
-			boolean writableStackTrace) {
-		super(message, cause, enableSuppression, writableStackTrace);
-	}
+	public void destroy() throws Exception;
+
+	/**
+	 * @return <tt>true</tt> if the service was already initialized, else
+	 *         <tt>false</tt>
+	 */
+	public boolean isInitialized();
+
+	/**
+	 * @return <tt>true</tt> if the service was already started, else
+	 *         <tt>false</tt>
+	 */
+	public boolean isStarted();
+
+	/**
+	 * @return <tt>true</tt> if the service was paused, else <tt>false</tt>
+	 */
+	public boolean isPaused();
+
+	/**
+	 * @return <tt>true</tt> if the service was stopped, else <tt>false</tt>
+	 */
+	public boolean isStopped();
 }

@@ -165,7 +165,7 @@ public abstract class AbstractEndpoint<T extends Closeable> implements Endpoint<
 	/**
 	 * Keep-Alive timeout.
 	 */
-	protected int keepAliveTimeout = -1;
+	protected int keepAliveTimeout = 300_000;
 
 	/**
 	 * The default is true - the created threads will be in daemon mode. If set

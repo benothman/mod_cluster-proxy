@@ -25,13 +25,12 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.jboss.cluster.proxy.logging.Logger;
+import org.jboss.logging.Logger;
 
 /**
  * {@code ProxyMain}
@@ -65,7 +64,6 @@ public class ProxyMain {
 		long time = System.currentTimeMillis();
 		String java_home = System.getProperty("java.home");
 		java_home = java_home.substring(0, java_home.length() - 3);
-
 		System.out
 				.println("\n=========================================================================\n");
 		System.out.println("  JBoss Mod Cluster Proxy Bootstrap Environment\n");
@@ -91,18 +89,16 @@ public class ProxyMain {
 			service = new WebConnectorService(protocol, scheme);
 			// configure the web connector service
 
-
 			// Setting the address (host:port)
-			InetSocketAddress address = null;
-			int port = Integer.valueOf(System.getProperty("org.apache.tomcat.util.net.PORT", "8081"));
+			int port = Integer.valueOf(System
+					.getProperty("org.apache.tomcat.util.net.PORT", "8081"));
 			String hostname = System.getProperty("org.apache.tomcat.util.net.ADDRESS", "0.0.0.0");
-			address = (hostname == null) ? new InetSocketAddress(port) : new InetSocketAddress(
-					hostname, port);
+			InetSocketAddress address = (hostname == null) ? new InetSocketAddress(port)
+					: new InetSocketAddress(hostname, port);
 			service.setAddress(address);
 
 			// TODO finish configuration setup
-			
-			
+
 			// Starting the web connector service
 			service.start();
 		} catch (Throwable e) {
@@ -140,10 +136,12 @@ public class ProxyMain {
 				try (BufferedReader br = new BufferedReader(new InputStreamReader(System.in))) {
 					String line = null;
 					while ((line = br.readLine()) != null) {
+						line = line.trim();
 						if (line.isEmpty()) {
 							continue;
 						}
-						if (line.equalsIgnoreCase("stop")) {
+						if (line.equalsIgnoreCase("stop") || line.equalsIgnoreCase("quit")) {
+							logger.info("Processing command '" + line + "'");
 							running = false;
 							break;
 						} else {
@@ -161,10 +159,13 @@ public class ProxyMain {
 		logger.info("JBoss Mod Cluster Proxy started in " + time + "ms");
 		// Add shutdown hook
 		addShutdownHook();
-		// start all threads
+		// Start all threads
 		startThreads();
 	}
 
+	/**
+	 * Add shutdown hook
+	 */
 	private static void addShutdownHook() {
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
@@ -174,9 +175,9 @@ public class ProxyMain {
 					logger.info("Stopping JBoss Mod Cluster Proxy....");
 					running = false;
 					service.stop();
-					time = System.currentTimeMillis() - time;
 					interruptThreads();
-					logger.info("JBoss Mod Cluster Proxy stopped in " + time + "ms");
+					logger.info("JBoss Mod Cluster Proxy stopped in "
+							+ (System.currentTimeMillis() - time) + "ms");
 				} catch (Throwable e) {
 					logger.fatal(e.getMessage(), e);
 				}

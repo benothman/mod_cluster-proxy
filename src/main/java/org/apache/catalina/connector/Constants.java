@@ -24,6 +24,42 @@ package org.apache.catalina.connector;
 public final class Constants {
 
 	/**
+	 * The package name 
+	 */
+	public static final String Package = Constants.class.getPackage().getName();
+
+	/**
+	 * 
+	 */
+	public static final int MAX_NOTES = 32;
+
+	/**
+	 * 
+	 */
+	public static final int CHANNEL_NOTE = MAX_NOTES - 1;
+	/**
+	 * 
+	 */
+	public static final int NODE_NOTE = MAX_NOTES - 2;
+	/**
+	 * 
+	 */
+	public static final int HTTP_RESPONSE_PARSER_NOTE = MAX_NOTES - 3;
+
+	/**
+	 * 
+	 */
+	public static final int IN_BUFFER_NOTE = MAX_NOTES - 4;
+	/**
+	 * 
+	 */
+	public static final int OUT_BUFFER_NOTE = MAX_NOTES - 5;
+	/**
+	 * 
+	 */
+	public static final int NODE_DATA_BUFFER_NOTE = MAX_NOTES - 6;
+
+	/**
 	 * 
 	 */
 	public static final String REQUEST_NAME = "REQUEST";
@@ -47,10 +83,6 @@ public final class Constants {
 	 * 
 	 */
 	public static final String NODE_NAME = "NODE";
-	/**
-	 * 
-	 */
-	public static final String Package = "org.apache.catalina.connector";
 	/**
 	 * 
 	 */

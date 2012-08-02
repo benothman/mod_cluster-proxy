@@ -33,7 +33,7 @@ import org.apache.coyote.Adapter;
 import org.apache.coyote.ProtocolHandler;
 import org.apache.tomcat.util.net.SSLImplementation;
 import org.apache.tomcat.util.res.StringManager;
-import org.jboss.cluster.proxy.logging.Logger;
+import org.jboss.logging.Logger;
 
 /**
  * {@code Http11AbstractProtocol}

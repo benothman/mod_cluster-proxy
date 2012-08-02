@@ -30,7 +30,7 @@ import org.apache.tomcat.util.IntrospectionUtils;
 import org.apache.tomcat.util.res.StringManager;
 import org.jboss.cluster.proxy.ConnectionManager;
 import org.jboss.cluster.proxy.NodeService;
-import org.jboss.cluster.proxy.logging.Logger;
+import org.jboss.logging.Logger;
 
 /**
  * {@code Connector}

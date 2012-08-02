@@ -28,8 +28,7 @@ import java.io.InputStream;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Unmarshaller;
 
-import org.jboss.cluster.proxy.ProxyMain;
-import org.jboss.cluster.proxy.logging.Logger;
+import org.jboss.logging.Logger;
 
 /**
  * {@code XmlConfig}
@@ -43,7 +42,7 @@ public class XmlConfig {
 	/**
 	 * 
 	 */
-	private static final Logger logger = Logger.getLogger(ProxyMain.class);
+	private static final Logger logger = Logger.getLogger(XmlConfig.class);
 	/**
 	 * 
 	 */
@@ -87,11 +86,4 @@ public class XmlConfig {
 		Unmarshaller u = jc.createUnmarshaller();
 		return u.unmarshal(is);
 	}
-
-	public static void main(String args[]) throws Exception {
-		System.out.println(new File(".").getAbsolutePath());
-		XmlNodes nodes = loadNodes();
-		System.out.println(nodes);
-	}
-
 }

@@ -26,8 +26,6 @@ import java.util.Locale;
  */
 public final class Constants {
 
-	// -------------------------------------------------------------- Constants
-
 	/**
 	 * 
 	 */
@@ -49,13 +47,37 @@ public final class Constants {
 	public static final int MAX_NOTES = 32;
 
 	// Request states
+	/**
+	 * 
+	 */
 	public static final int STAGE_NEW = 0;
+	/**
+	 * 
+	 */
 	public static final int STAGE_PARSE = 1;
+	/**
+	 * 
+	 */
 	public static final int STAGE_PREPARE = 2;
+	/**
+	 * 
+	 */
 	public static final int STAGE_SERVICE = 3;
+	/**
+	 * 
+	 */
 	public static final int STAGE_ENDINPUT = 4;
+	/**
+	 * 
+	 */
 	public static final int STAGE_ENDOUTPUT = 5;
+	/**
+	 * 
+	 */
 	public static final int STAGE_KEEPALIVE = 6;
+	/**
+	 * 
+	 */
 	public static final int STAGE_ENDED = 7;
 
 	/**
@@ -70,6 +92,9 @@ public final class Constants {
 			System.getProperty("org.apache.coyote.USE_CUSTOM_STATUS_MSG_IN_HEADER", "false"))
 			.booleanValue();
 
+	/**
+	 * 
+	 */
 	public static final int MAX_PAUSE_WAIT = Integer.valueOf(
 			System.getProperty("org.apache.coyote.MAX_PAUSE_WAIT", "300")).intValue();
 

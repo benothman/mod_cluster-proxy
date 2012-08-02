@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.tomcat.util.net.NioChannel;
 import org.apache.tomcat.util.net.NioEndpoint;
-import org.jboss.cluster.proxy.logging.Logger;
+import org.jboss.logging.Logger;
 
 /**
  * {@code InternalNioInputBuffer}

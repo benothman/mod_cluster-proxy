@@ -27,7 +27,7 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 
 import org.apache.catalina.connector.Connector;
-import org.jboss.cluster.proxy.logging.Logger;
+import org.jboss.logging.Logger;
 
 /**
  * {@code WebConnectorService}

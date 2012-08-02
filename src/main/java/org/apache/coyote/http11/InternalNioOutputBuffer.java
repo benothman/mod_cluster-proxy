@@ -140,7 +140,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 	 */
 	public void recycle() {
 		super.recycle();
-		channel = null;
+		setChannel(null);
 		poolBuffer.addAll(localPool);
 		localPool.clear();
 	}
@@ -250,19 +250,19 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 
 	/**
 	 * 
-	 * @param ch
+	 * @param nodeChannel
 	 */
-	public void configChunked(NioChannel ch) {
-		if (ch == this.channel) {
+	public void configChunked(NioChannel nodeChannel) {
+		if (nodeChannel == this.channel) {
 			return;
 		}
-		
-		// From client to node
-		NioChannel clientChannel = this.channel;
-		ByteBuffer cBuff = poll();
-		Tuple<NioChannel, NioChannel, ByteBuffer> cTuple = new Tuple<>(clientChannel, ch, cBuff);
 
-		clientChannel.transferTo(ch, cBuff, cTuple,
+		// From client to node
+		final NioChannel clientChannel = this.channel;
+		final ByteBuffer cBuff = poll();
+		final Tuple<NioChannel, NioChannel, ByteBuffer> cTuple = new Tuple<>(clientChannel, nodeChannel, cBuff);
+
+		clientChannel.transferTo(nodeChannel, cBuff, cTuple,
 				new CompletionHandler<Integer, Tuple<NioChannel, NioChannel, ByteBuffer>>() {
 
 					@Override
@@ -273,8 +273,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 							return;
 						}
 						attach.last.clear();
-						attach.first.transferTo(attach.middle, attach.last, attach,
-								this);
+						attach.first.transferTo(attach.middle, attach.last, attach, this);
 					}
 
 					@Override
@@ -289,10 +288,10 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 				});
 
 		// From node to client
-		ByteBuffer nBuff = poll();
-		Tuple<NioChannel, NioChannel, ByteBuffer> nTuple = new Tuple<>(ch, clientChannel, nBuff);
+		final ByteBuffer nBuff = poll();
+		final Tuple<NioChannel, NioChannel, ByteBuffer> nTuple = new Tuple<>(nodeChannel, clientChannel, nBuff);
 
-		ch.transferTo(this.channel, nBuff, nTuple,
+		nodeChannel.transferTo(this.channel, nBuff, nTuple,
 				new CompletionHandler<Integer, Tuple<NioChannel, NioChannel, ByteBuffer>>() {
 
 					@Override
@@ -311,7 +310,13 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 					@Override
 					public void failed(Throwable exc,
 							Tuple<NioChannel, NioChannel, ByteBuffer> attachment) {
-						log.error("Node To Client");
+						try {
+							log.error("Node To Client"
+									+ attachment.first.getRemoteAddress().toString());
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+
 						offer(attachment.last);
 					}
 				});
@@ -464,10 +469,12 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 	}
 
 	/**
-	 * {@code Pair}
+	 * {@code Tuple}
 	 * 
-	 * @param <K>
-	 * @param <V>
+	 * 
+	 * @param <A>
+	 * @param <B>
+	 * @param <C>
 	 *            Created on Jul 4, 2012 at 11:36:43 AM
 	 * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
 	 */
@@ -480,14 +487,14 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 		/**
 		 * Create a new instance of {@code Tuple}
 		 * 
-		 * @param a
-		 * @param b
-		 * @param c
+		 * @param first
+		 * @param middle
+		 * @param last
 		 */
-		public Tuple(A a, B b, C c) {
-			this.first = a;
-			this.middle = b;
-			this.last = c;
+		public Tuple(A first, B middle, C last) {
+			this.first = first;
+			this.middle = middle;
+			this.last = last;
 		}
 	}
 

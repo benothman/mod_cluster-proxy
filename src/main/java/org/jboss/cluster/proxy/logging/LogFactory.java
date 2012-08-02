@@ -19,40 +19,57 @@
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA, or see the FSF
  * site: http://www.fsf.org.
  */
-package org.jboss.cluster.proxy.util;
+package org.jboss.cluster.proxy.logging;
 
-import org.jboss.logging.Logger;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Logger;
+
+import org.jboss.logmanager.formatters.PatternFormatter;
 
 /**
- * {@code ResponseParser}
+ * {@code Logger}
  * 
- * Created on Jun 14, 2012 at 1:19:25 PM
+ * Created on Jul 10, 2012 at 11:41:54 AM
  * 
  * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
  */
-public interface ResponseParser {
+public class LogFactory {
+
+	private static final String DEFAULT_PATTERN = "%d{HH:mm:ss,SSS} %-5p [%c] %m%n";
 
 	/**
-	 * 
+	 * Create a new instance of {@code Logger}
 	 */
-	public static final Logger log = Logger.getLogger(ResponseParser.class);
+	public LogFactory() {
+		super();
+	}
 
 	/**
-	 * Parse the string response
-	 * 
-	 * @param response
-	 *            the string to be parsed
-	 * @return The response Object represented by the specified String
+	 * @param name
+	 *            the logger name
+	 * @return a new instance of {@link Logger}
 	 */
-	public Response parseString(String response);
+	public static Logger getLogger(String name) {
+		Logger logger = Logger.getLogger(name);
+
+		String pattern = System.getProperty("formatter.PATTERN.pattern", DEFAULT_PATTERN);
+
+		PatternFormatter formatter = new PatternFormatter(pattern);
+		ConsoleHandler handler = new ConsoleHandler();
+		handler.setFormatter(formatter);
+		logger.addHandler(handler);
+		logger.setUseParentHandlers(false);
+
+		return logger;
+	}
 
 	/**
-	 * Parse the string response
-	 * 
-	 * @param response
-	 *            a byte array containing the server response
-	 * @return The response Object represented by the specified String
+	 * @param clazz
+	 *            the class of the owner of the logger
+	 * @return a new instance of {@link Logger}
 	 */
-	public Response parseBytes(byte[] response);
+	public static Logger getLogger(Class<?> clazz) {
+		return getLogger(clazz.getName());
+	}
 
 }

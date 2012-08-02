@@ -41,7 +41,7 @@ import javax.net.ssl.SSLHandshakeException;
 
 import org.apache.tomcat.util.net.NioEndpoint.Handler.SocketState;
 import org.apache.tomcat.util.net.jsse.NioJSSESocketChannelFactory;
-import org.jboss.cluster.proxy.logging.Logger;
+import org.jboss.logging.Logger;
 
 /**
  * {@code NioEndpoint} NIO2 endpoint, providing the following services:
@@ -323,13 +323,12 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 			this.eventPoller.destroy();
 		}
 
+		// Shut down the executor
+		((ExecutorService) this.executor).shutdown();
+
 		// Closing all alive connections
 		for (NioChannel ch : this.connections.values()) {
-			try {
-				ch.close();
-			} catch (Throwable t) {
-				// Nothing to do
-			}
+			close(ch);
 		}
 		// Remove all connections
 		this.connections.clear();
@@ -342,9 +341,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 		// Destroy all recycled handshake processors
 		this.recycledHandshakeProcessors.clear();
 		this.recycledHandshakeProcessors = null;
-
-		// Shut down the executor
-		((ExecutorService) this.executor).shutdown();
 
 		initialized = false;
 	}

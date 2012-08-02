@@ -226,6 +226,7 @@ public final class Request {
 	 * Return the buffer holding the server name, if any. Use isNull() to check
 	 * if there is no value set. This is the "virtual host", derived from the
 	 * Host: header.
+	 * 
 	 * @return the server name
 	 */
 	public MessageBytes serverName() {
@@ -443,7 +444,7 @@ public final class Request {
 
 	/**
 	 * @param name
-	 * @return
+	 * @return the attribute, if any, tied with the specified name
 	 */
 	public Object getAttribute(String name) {
 		return attributes.get(name);
@@ -505,10 +506,18 @@ public final class Request {
 		return "R( " + requestURI().toString() + ")";
 	}
 
+	/**
+	 * @return the start time
+	 */
 	public long getStartTime() {
 		return startTime;
 	}
 
+	/**
+	 * Set the start time
+	 * 
+	 * @param startTime
+	 */
 	public void setStartTime(long startTime) {
 		this.startTime = startTime;
 	}
@@ -580,6 +589,15 @@ public final class Request {
 		remoteUser.recycle();
 		authType.recycle();
 		attributes.clear();
+	}
+
+	/**
+	 * Clear the list of notes
+	 */
+	public void clearNotes() {
+		for (int i = 0; i < this.notes.length; i++) {
+			this.notes[i] = null;
+		}
 	}
 
 	/**

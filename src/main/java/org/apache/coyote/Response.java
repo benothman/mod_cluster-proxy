@@ -770,6 +770,7 @@ public final class Response {
 		// update counters
 		lastWrite = 1;
 		bytesWritten = 0;
+		this.responseParser.recycle();
 	}
 
 	/**

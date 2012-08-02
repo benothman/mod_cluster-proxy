@@ -24,7 +24,7 @@ package org.apache.catalina.http;
 import org.apache.catalina.NodeResponse;
 import org.apache.coyote.Response;
 import org.apache.coyote.http11.Constants;
-import org.jboss.cluster.proxy.logging.Logger;
+import org.jboss.logging.Logger;
 
 /**
  * {@code HttpResponseParser}

@@ -21,14 +21,17 @@
  */
 package org.jboss.cluster.proxy;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.LifeCycleServiceAdapter;
 import org.apache.tomcat.util.net.NioChannel;
 import org.jboss.cluster.proxy.container.Node;
-import org.jboss.cluster.proxy.logging.Logger;
+import org.jboss.logging.Logger;
 
 /**
  * {@code ConnectionManager}
@@ -37,12 +40,12 @@ import org.jboss.cluster.proxy.logging.Logger;
  * 
  * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
  */
-public class ConnectionManager {
+public class ConnectionManager extends LifeCycleServiceAdapter {
 
 	private static final Logger logger = Logger.getLogger(ConnectionManager.class);
 	private ConcurrentHashMap<String, ConcurrentLinkedQueue<NioChannel>> connections;
-	private boolean initialized = false;
 	AtomicInteger counter = new AtomicInteger(0);
+	private ConcurrentHashMap<String, AtomicInteger> counters;
 
 	/**
 	 * Create a new instance of {@code ConnectionManager}
@@ -51,25 +54,41 @@ public class ConnectionManager {
 		super();
 	}
 
-	/**
-	 * Initialize the connection manager
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.apache.LifeCycleServiceAdapter#init()
 	 */
 	public void init() {
-		if (initialized) {
+		if (isInitialized()) {
 			return;
 		}
 
 		this.connections = new ConcurrentHashMap<>();
-		initialized = true;
+		this.counters = new ConcurrentHashMap<>();
+		setInitialized(true);
 	}
 
-	/**
-	 * Destroy the connection manager
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.apache.LifeCycleServiceAdapter#destroy()
 	 */
 	public void destroy() {
+		for (Collection<NioChannel> cl : this.connections.values()) {
+			for (NioChannel ch : cl) {
+				try {
+					ch.close();
+				} catch (IOException e) {
+					// NOPE
+				}
+			}
+			cl.clear();
+		}
+
 		this.connections.clear();
 		this.connections = null;
-		this.initialized = false;
+		setInitialized(false);
 	}
 
 	/**
@@ -78,11 +97,10 @@ public class ConnectionManager {
 	 */
 	public NioChannel getChannel(Node node) {
 		checkJvmRoute(node.getJvmRoute());
-		NioChannel channel = this.connections.get(node.getJvmRoute()).poll();
-
-		while (channel != null && channel.isClosed()) {
+		NioChannel channel = null;
+		do {
 			channel = this.connections.get(node.getJvmRoute()).poll();
-		}
+		} while (channel != null && channel.isClosed());
 
 		if (channel == null) {
 			channel = open(node);
@@ -98,33 +116,60 @@ public class ConnectionManager {
 	 */
 	private NioChannel open(Node node) {
 		try {
-			logger.info("Create new connection to node [" + node.getHostname() + ":"
-					+ node.getPort() + "  --> counter = " + counter.incrementAndGet());
 			InetSocketAddress address = new InetSocketAddress(node.getHostname(), node.getPort());
 			NioChannel channel = NioChannel.open();
 			channel.connect(address).get();
 			return channel;
 		} catch (Exception e) {
+			e.printStackTrace();
 			logger.error(e.getMessage(), e);
 		}
 		return null;
 	}
 
 	/**
+	 * Recycle the node connection for next usage
 	 * 
 	 * @param jvmRoute
+	 *            The node ID
 	 * @param channel
+	 *            the channel to be recycled
 	 */
 	public void recycle(String jvmRoute, NioChannel channel) {
-		if (channel != null && channel.isOpen()) {
+		if (channel == null) {
+			return;
+		}
+		if (channel.isOpen()) {
 			checkJvmRoute(jvmRoute);
 			this.connections.get(jvmRoute).offer(channel);
 		}
 	}
 
 	/**
+	 * Close the channel and update counters
+	 * 
+	 * @param channel
+	 */
+	public void close(NioChannel channel) {
+		if (channel == null) {
+			return;
+		}
+
+		try {
+			channel.close();
+		} catch (Exception exp) {
+			// NOPE
+			exp.printStackTrace();
+		}
+	}
+
+	/**
+	 * Check if there is already a connection list tied to the specified
+	 * {@code jvmRoute}. If there is no list, then a new list is created and
+	 * attached with it.
 	 * 
 	 * @param jvmRoute
+	 *            the jvmRoute (it represents the ID of a node)
 	 */
 	private void checkJvmRoute(String jvmRoute) {
 		if (this.connections.get(jvmRoute) == null) {

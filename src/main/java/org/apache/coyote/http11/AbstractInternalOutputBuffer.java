@@ -172,6 +172,14 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	/**
 	 * 
 	 * @param data
+	 */
+	public void writeToClient(byte[] data) {
+		writeToClient(data, 0, data.length);
+	}
+
+	/**
+	 * 
+	 * @param data
 	 * @param off
 	 * @param length
 	 */
@@ -197,14 +205,6 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 * synchronous or asynchronous
 	 */
 	protected abstract void tryWrite();
-
-	/**
-	 * 
-	 * @param data
-	 */
-	public void writeToClient(byte[] data) {
-		writeToClient(data, 0, data.length);
-	}
 
 	/**
 	 * Returns the smaller of two {@code int} values. That is, the result the
@@ -709,7 +709,10 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	public abstract boolean flushLeftover() throws IOException;
 
 	/**
-	 * @return a new byte buffer
+	 * Try to retrieve an instance of {@link ByteBuffer} from the pool, if the
+	 * later is empty, a new instance is created
+	 * 
+	 * @return an instance of byte buffer
 	 */
 	protected static ByteBuffer poll() {
 		ByteBuffer buffer = poolBuffer.poll();
@@ -717,7 +720,7 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 			buffer = ByteBuffer.allocateDirect(Constants.MIN_BUFFER_SIZE);
 		}
 
-		return (ByteBuffer) buffer.clear();
+		return buffer;
 	}
 
 	/**
