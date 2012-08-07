@@ -65,30 +65,6 @@ public final class Constants {
 	/**
 	 * 
 	 */
-	public static final String REQUEST_NAME = "REQUEST";
-	/**
-	 * 
-	 */
-	public static final String RESPONSE_NAME = "RESPONSE";
-	/**
-	 * 
-	 */
-	public static final String CHANNEL_NAME = "CHANNEL";
-	/**
-	 * 
-	 */
-	public static final String IN_BUFFER_NAME = "INPUT_BUFFER";
-	/**
-	 * 
-	 */
-	public static final String OUT_BUFFER_NAME = "OUTPUT_BUFFER";
-	/**
-	 * 
-	 */
-	public static final String NODE_NAME = "NODE";
-	/**
-	 * 
-	 */
 	public static final int DEFAULT_CONNECTION_LINGER = -1;
 	/**
 	 * 

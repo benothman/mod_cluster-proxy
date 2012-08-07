@@ -628,12 +628,14 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 					// Accept the next incoming connection from the server
 					// channel
 					final NioChannel channel = serverSocketChannelFactory.accept(listener);
+					
 					boolean ok = false;
 					if (addChannel(channel) && setChannelOptions(channel) && channel.isOpen()) {
 						if (channel.isSecure()) {
 							handshake(channel);
 							ok = true;
 						} else {
+							logger.info("Accepting new connection -> " + channel);
 							ok = processChannel(channel, null);
 						}
 					}

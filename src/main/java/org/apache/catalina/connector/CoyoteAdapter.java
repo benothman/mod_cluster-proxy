@@ -69,15 +69,6 @@ public class CoyoteAdapter implements Adapter {
 			"Servlet/3.0; JBossWeb-3");
 
 	/**
-	 * 
-	 */
-	public static final String NODE_DATA_BUFFER = "NODE_DATA_BUFFER";
-	/**
-	 * 
-	 */
-	public static final String HTTP_RESPONSE_PARSER = "HTTP_RESPONSE_PARSER";
-
-	/**
 	 * The CoyoteConnector with which this processor is associated.
 	 */
 	private Connector connector = null;
