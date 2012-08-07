@@ -154,7 +154,6 @@ public class CoyoteAdapter implements Adapter {
 				.getNote(Constants.IN_BUFFER_NOTE);
 		
 		if(inBuffer.position() > 0) {
-			System.out.println("IN_BUFFER -> position = " + inBuffer.position()+", limit = " + inBuffer.limit());
 			inBuffer.flip();
 		}
 		// Write the request to the node
