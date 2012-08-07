@@ -438,7 +438,7 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 		} catch (IOException e) {
 			error = true;
 		} catch (Throwable t) {
-			log.error("*** IN END REQUEST **** " + sm.getString("http11processor.request.finish"),
+			log.error(sm.getString("http11processor.request.finish"),
 					t);
 			// 500 - Internal Server Error
 			response.setStatus(500);
@@ -450,7 +450,7 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 		} catch (IOException e) {
 			error = true;
 		} catch (Throwable t) {
-			log.error("*** OUT END REQUEST *** " + sm.getString("http11processor.response.finish"),
+			log.error(sm.getString("http11processor.response.finish"),
 					t);
 			error = true;
 		}

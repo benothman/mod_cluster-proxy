@@ -311,6 +311,12 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 					public void failed(Throwable exc,
 						Tuple<NioChannel, NioChannel, ByteBuffer> attachment) {
 						log.error("Node To Client");
+						if(attachment.first.isOpen()) {
+							close(attachment.first);
+						}
+						if(attachment.middle.isOpen()) {
+							close(attachment.middle);
+						}
 						offer(attachment.last);
 					}
 				});

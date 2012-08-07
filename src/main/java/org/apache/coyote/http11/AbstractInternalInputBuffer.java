@@ -306,8 +306,8 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	 */
 	public void endRequest() throws IOException {
 		if (swallowInput && (lastActiveFilter != -1)) {
-			// int extraBytes = (int) activeFilters[lastActiveFilter].end();
-			int extraBytes = 0;
+			int extraBytes = (int) activeFilters[lastActiveFilter].end();
+			//int extraBytes = 0;
 			pos = pos - extraBytes;
 		}
 	}

@@ -750,7 +750,7 @@ public final class Response {
 	 * 
 	 */
 	public void recycle() {
-
+		
 		contentType = null;
 		contentLanguage = null;
 		this.transferEncoding = null;

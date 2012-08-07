@@ -39,6 +39,8 @@ import org.apache.tomcat.util.net.NioChannel;
 import org.apache.tomcat.util.net.SocketStatus;
 import org.jboss.cluster.proxy.container.Node;
 import org.jboss.logging.Logger;
+import org.apache.coyote.Request;
+import org.apache.coyote.Response;
 
 /**
  * {@code CoyoteAdapter}
@@ -121,8 +123,7 @@ public class CoyoteAdapter implements Adapter {
 	 * 
 	 * @return false to indicate an error, expected or not
 	 */
-	public boolean event(org.apache.coyote.Request req,
-			org.apache.coyote.Response res, SocketStatus status) {
+	public boolean event(Request req, Response res, SocketStatus status) {
 
 		// TODO
 
@@ -132,9 +133,8 @@ public class CoyoteAdapter implements Adapter {
 	/**
 	 * Service method.
 	 */
-	public void service(final org.apache.coyote.Request request,
-			final org.apache.coyote.Response response) throws Exception {
-		request.clearNotes();
+	public void service(final Request request, Response response)
+			throws Exception {
 		prepare(request, response);
 		// Send the request to the selected node
 		sendToNode(request, response);
@@ -146,19 +146,23 @@ public class CoyoteAdapter implements Adapter {
 	 * @param params
 	 *            a map containing all required parameters
 	 */
-	private void sendToNode(final org.apache.coyote.Request request,
-			final org.apache.coyote.Response response) throws Exception {
-		final NioChannel channel = (NioChannel) response
-				.getNote(Constants.CHANNEL_NOTE);
+	private void sendToNode(final Request request, final Response response)
+			throws Exception {
+		final NioChannel nodeChannel = (NioChannel) response
+				.getNote(Constants.NODE_CHANNEL_NOTE);
 		final ByteBuffer inBuffer = (ByteBuffer) response
 				.getNote(Constants.IN_BUFFER_NOTE);
-		// Write the request to the server
-		channel.write(inBuffer, response,
-				new CompletionHandler<Integer, org.apache.coyote.Response>() {
+		
+		if(inBuffer.position() > 0) {
+			System.out.println("IN_BUFFER -> position = " + inBuffer.position()+", limit = " + inBuffer.limit());
+			inBuffer.flip();
+		}
+		// Write the request to the node
+		nodeChannel.write(inBuffer, response,
+				new CompletionHandler<Integer, Response>() {
 
 					@Override
-					public void completed(Integer nBytes,
-							org.apache.coyote.Response attachment) {
+					public void completed(Integer nBytes, Response attachment) {
 						if (nBytes < 0) {
 							failed(new ClosedChannelException(), attachment);
 						} else {
@@ -166,9 +170,16 @@ public class CoyoteAdapter implements Adapter {
 									.getNote(Constants.IN_BUFFER_NOTE);
 							if (buff.hasRemaining()) {
 								NioChannel ch = (NioChannel) attachment
-										.getNote(Constants.CHANNEL_NOTE);
+										.getNote(Constants.NODE_CHANNEL_NOTE);
 								ch.write(buff, attachment, this);
 							} else {
+								
+								
+								buff.flip();
+								byte [] data = new byte[buff.limit()];
+								buff.get(data);
+								System.out.println("DATA SENT TO NODE :\n" + new String(data));
+								
 								// Read response from the node and forward it
 								// back
 								// to
@@ -184,10 +195,9 @@ public class CoyoteAdapter implements Adapter {
 					}
 
 					@Override
-					public void failed(Throwable exc,
-							org.apache.coyote.Response attachment) {
+					public void failed(Throwable exc, Response attachment) {
 						logger.error(
-								"SEND TO NODE FAILT : Connection with node is closed -> try again",
+								"WRITE TO NODE FAIL : Connection with node is closed -> try again",
 								exc);
 						try {
 							// try again with node
@@ -208,9 +218,9 @@ public class CoyoteAdapter implements Adapter {
 			final org.apache.coyote.Response response) throws Exception {
 
 		final NioChannel nodeChannel = (NioChannel) response
-				.getNote(Constants.CHANNEL_NOTE);
+				.getNote(Constants.NODE_CHANNEL_NOTE);
 		final ByteBuffer buffer = (ByteBuffer) response
-				.getNote(Constants.IN_BUFFER_NOTE);
+				.getNote(Constants.OUT_BUFFER_NOTE);
 		buffer.clear();
 
 		// Read bytes from node.
@@ -220,12 +230,13 @@ public class CoyoteAdapter implements Adapter {
 					private long contentLength = 0;
 
 					@Override
-					public void completed(Integer nBytes,
-							org.apache.coyote.Response attachment) {
+					public void completed(Integer nBytes, Response attachment) {
 						if (nBytes < 0) {
 							failed(new ClosedChannelException(), attachment);
 						} else if (nBytes > 0) {
-							buffer.flip();
+							ByteBuffer buff = (ByteBuffer) response
+									.getNote(Constants.OUT_BUFFER_NOTE);
+							buff.flip();
 
 							AbstractInternalOutputBuffer outputBuffer = (AbstractInternalOutputBuffer) attachment
 									.getOutputBuffer();
@@ -234,42 +245,45 @@ public class CoyoteAdapter implements Adapter {
 							HttpResponseParser httpResponseParser = attachment
 									.getResponseParser();
 
-							byte bytes[] = outputBuffer.getBytes();
-							buffer.get(bytes, 0, nBytes);
+							byte data[] = outputBuffer.getBytes();
+							buff.get(data, 0, nBytes);
 
 							if (httpResponseParser.parsingHeader()) {
-								httpResponseParser.parse(response, bytes,
+								httpResponseParser.parse(attachment, data,
 										nBytes);
 							}
 
 							contentLength += nBytes;
-							buffer.clear();
+							buff.clear();
 							outputBuffer.writeToClient(outputBuffer.getBytes(),
 									0, nBytes);
 
-							if (this.contentLength < response
+							if (this.contentLength < attachment
 									.getContentLength()
 									+ httpResponseParser.getHeaderLength()) {
-								nodeChannel.read(buffer, attachment, this);
+								final NioChannel ch = (NioChannel) response
+										.getNote(Constants.NODE_CHANNEL_NOTE);
+								ch.read(buff, attachment, this);
 							} else {
-								Http11AbstractProcessor<?> processor = (Http11AbstractProcessor<?>) response.hook;
-								boolean chunked = response.isChunked();
+								Http11AbstractProcessor<?> processor = (Http11AbstractProcessor<?>) attachment.hook;
+								boolean chunked = attachment.isChunked();
 								processor.endRequest();
 								processor.nextRequest();
 								if (chunked) {
 									((InternalNioOutputBuffer) outputBuffer)
 											.configChunked(nodeChannel);
 								} else {
-									if (!processor.isKeepAlive()) {
-										processor.closeSocket();
-										// TODO
-									} else {
+									if (processor.isKeepAlive()) {
 										processor.awaitForNext();
+									} else {
+										processor.closeSocket();
 									}
 									Node node = (Node) attachment
 											.getNote(Constants.NODE_NOTE);
+									NioChannel channel = (NioChannel) attachment
+											.getNote(Constants.NODE_CHANNEL_NOTE);
 									connector.getConnectionManager().recycle(
-											node.getJvmRoute(), nodeChannel);
+											node.getJvmRoute(), channel);
 								}
 								// Recycle the processor
 								processor.recycle();
@@ -281,13 +295,13 @@ public class CoyoteAdapter implements Adapter {
 					public void failed(Throwable exc,
 							org.apache.coyote.Response attachment) {
 						logger.error(
-								"READ FROM TO NODE FAILT : Connection with node is closed -> try again",
+								"READ FROM TO NODE FAIL : Connection with node is closed -> try again",
 								exc);
 						exc.printStackTrace();
 						try {
 							// try again with node
 							tryWithNode(attachment);
-							readFromNode(attachment.getRequest(), attachment);
+							sendToNode(attachment.getRequest(), attachment);
 						} catch (Throwable e) {
 							e.printStackTrace();
 						}
@@ -303,17 +317,18 @@ public class CoyoteAdapter implements Adapter {
 	 */
 	private void prepare(final org.apache.coyote.Request request,
 			final org.apache.coyote.Response response) {
+
 		Node node = this.connector.getNodeService().getNode(
 				request.requestURI().getString());
-		NioChannel channel = this.connector.getConnectionManager().getChannel(
-				node);
+		NioChannel nodeChannel = this.connector.getConnectionManager()
+				.getChannel(node);
 
 		// Client request
 		AbstractInternalInputBuffer inputBuffer = (AbstractInternalInputBuffer) request
 				.getInputBuffer();
 
-		final ByteBuffer inBuffer = (ByteBuffer) inputBuffer.getByteBuffer()
-				.clear();
+		final ByteBuffer inBuffer = (ByteBuffer) inputBuffer.getByteBuffer();
+		inBuffer.clear();
 
 		// Client response
 		AbstractInternalOutputBuffer outputBuffer = (AbstractInternalOutputBuffer) response
@@ -326,7 +341,7 @@ public class CoyoteAdapter implements Adapter {
 				.flip();
 
 		// Put relevant elements in the map attachment
-		response.setNote(Constants.CHANNEL_NOTE, channel);
+		response.setNote(Constants.NODE_CHANNEL_NOTE, nodeChannel);
 		response.setNote(Constants.NODE_NOTE, node);
 		response.setNote(Constants.IN_BUFFER_NOTE, inBuffer);
 		response.setNote(Constants.OUT_BUFFER_NOTE, outBuffer);
@@ -338,18 +353,16 @@ public class CoyoteAdapter implements Adapter {
 	 */
 	private void tryWithNode(org.apache.coyote.Response response) {
 		// Closing the current channel
-		NioChannel channel = (NioChannel) response.getNote(Constants.CHANNEL_NOTE);
+		NioChannel channel = (NioChannel) response
+				.getNote(Constants.NODE_CHANNEL_NOTE);
 		connector.getConnectionManager().close(channel);
-		
+
 		// Try with another node
-		System.out.println("Old node : " + response.getNote(Constants.NODE_NOTE));
 		Node node = this.connector.getNodeService().getNode(
 				response.getRequest().requestURI().getString());
 		response.setNote(Constants.NODE_NOTE, node);
-		System.out.println("New node : " + node);
-		
 		channel = this.connector.getConnectionManager().getChannel(node);
-		response.setNote(Constants.CHANNEL_NOTE, channel);
+		response.setNote(Constants.NODE_CHANNEL_NOTE, channel);
 	}
 
 	/**

@@ -45,7 +45,6 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	private static final Logger logger = Logger.getLogger(ConnectionManager.class);
 	private ConcurrentHashMap<String, ConcurrentLinkedQueue<NioChannel>> connections;
 	AtomicInteger counter = new AtomicInteger(0);
-	private ConcurrentHashMap<String, AtomicInteger> counters;
 
 	/**
 	 * Create a new instance of {@code ConnectionManager}
@@ -65,7 +64,6 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 		}
 
 		this.connections = new ConcurrentHashMap<>();
-		this.counters = new ConcurrentHashMap<>();
 		setInitialized(true);
 	}
 
@@ -103,6 +101,7 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 		} while (channel != null && channel.isClosed());
 
 		if (channel == null) {
+			System.out.println("\t--> get channel for node " + node.getJvmRoute() +" ==> open new connection");
 			channel = open(node);
 		}
 
