@@ -173,13 +173,6 @@ public class CoyoteAdapter implements Adapter {
 										.getNote(Constants.NODE_CHANNEL_NOTE);
 								ch.write(buff, attachment, this);
 							} else {
-								
-								
-								buff.flip();
-								byte [] data = new byte[buff.limit()];
-								buff.get(data);
-								System.out.println("DATA SENT TO NODE :\n" + new String(data));
-								
 								// Read response from the node and forward it
 								// back
 								// to
@@ -196,9 +189,7 @@ public class CoyoteAdapter implements Adapter {
 
 					@Override
 					public void failed(Throwable exc, Response attachment) {
-						logger.error(
-								"WRITE TO NODE FAIL : Connection with node is closed -> try again",
-								exc);
+						// logger.error( "WRITE TO NODE FAIL : Connection with node is closed -> try again", exc);
 						try {
 							// try again with node
 							tryWithNode(attachment);
@@ -294,7 +285,7 @@ public class CoyoteAdapter implements Adapter {
 					@Override
 					public void failed(Throwable exc,
 							org.apache.coyote.Response attachment) {
-						// logger.error("READ FROM TO NODE FAIL : Connection with node is closed -> try again", exc);
+						// logger.error("READ FROM NODE FAIL : Connection with node is closed -> try again", exc);
 						//exc.printStackTrace();
 						try {
 							// try again with node

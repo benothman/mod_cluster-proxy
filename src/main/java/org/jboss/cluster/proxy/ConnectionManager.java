@@ -101,7 +101,7 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 		} while (channel != null && channel.isClosed());
 
 		if (channel == null) {
-			System.out.println("\t--> get channel for node " + node.getJvmRoute() +" ==> open new connection");
+			//System.out.println("\t--> get channel for node " + node.getJvmRoute() +" ==> open new connection");
 			channel = open(node);
 		}
 
@@ -120,7 +120,6 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 			channel.connect(address).get();
 			return channel;
 		} catch (Exception e) {
-			e.printStackTrace();
 			logger.error(e.getMessage(), e);
 		}
 		return null;
