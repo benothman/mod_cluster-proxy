@@ -294,10 +294,8 @@ public class CoyoteAdapter implements Adapter {
 					@Override
 					public void failed(Throwable exc,
 							org.apache.coyote.Response attachment) {
-						logger.error(
-								"READ FROM TO NODE FAIL : Connection with node is closed -> try again",
-								exc);
-						exc.printStackTrace();
+						// logger.error("READ FROM TO NODE FAIL : Connection with node is closed -> try again", exc);
+						//exc.printStackTrace();
 						try {
 							// try again with node
 							tryWithNode(attachment);

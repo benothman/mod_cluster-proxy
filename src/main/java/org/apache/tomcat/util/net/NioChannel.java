@@ -523,7 +523,7 @@ public class NioChannel implements AsynchronousByteChannel, NetworkChannel {
 			return;
 		}
 		// Closing the channel
-		System.out.println("--> Closing channel " + this);
+		//System.out.println("--> Closing channel " + this);
 		this.channel.close();
 	}
 
