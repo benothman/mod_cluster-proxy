@@ -23,9 +23,12 @@ package org.jboss.cluster.proxy;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.channels.AsynchronousChannelGroup;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.LifeCycleServiceAdapter;
@@ -45,7 +48,8 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	private static final Logger logger = Logger
 			.getLogger(ConnectionManager.class);
 	private ConcurrentHashMap<String, ConcurrentLinkedQueue<NioChannel>> connections;
-	AtomicInteger counter = new AtomicInteger(0);
+	private ExecutorService executorService;
+	private AsynchronousChannelGroup channelGroup;
 
 	/**
 	 * Create a new instance of {@code ConnectionManager}
@@ -63,7 +67,15 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 		if (isInitialized()) {
 			return;
 		}
-
+		
+		int nThreads = Runtime.getRuntime().availableProcessors() * 32;
+		this.executorService = Executors.newFixedThreadPool(nThreads);
+		try {
+			this.channelGroup = AsynchronousChannelGroup.withThreadPool(executorService);
+		} catch (IOException e) {
+			logger.warn("Unable to create channel group, using default channel group", e);
+		}
+		
 		this.connections = new ConcurrentHashMap<>();
 		setInitialized(true);
 	}
@@ -117,7 +129,7 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 		try {
 			InetSocketAddress address = new InetSocketAddress(
 					node.getHostname(), node.getPort());
-			NioChannel channel = NioChannel.open();
+			NioChannel channel = NioChannel.open(this.channelGroup);
 			channel.connect(address).get();
 			return channel;
 		} catch (Exception e) {
