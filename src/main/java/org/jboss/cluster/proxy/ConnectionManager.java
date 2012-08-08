@@ -42,7 +42,8 @@ import org.jboss.logging.Logger;
  */
 public class ConnectionManager extends LifeCycleServiceAdapter {
 
-	private static final Logger logger = Logger.getLogger(ConnectionManager.class);
+	private static final Logger logger = Logger
+			.getLogger(ConnectionManager.class);
 	private ConcurrentHashMap<String, ConcurrentLinkedQueue<NioChannel>> connections;
 	AtomicInteger counter = new AtomicInteger(0);
 
@@ -74,9 +75,9 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	 */
 	public void destroy() {
 		for (Collection<NioChannel> cl : this.connections.values()) {
-			for (NioChannel ch : cl) {
+			for (NioChannel nch : cl) {
 				try {
-					ch.close();
+					nch.close();
 				} catch (IOException e) {
 					// NOPE
 				}
@@ -101,7 +102,6 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 		} while (channel != null && channel.isClosed());
 
 		if (channel == null) {
-			//System.out.println("\t--> get channel for node " + node.getJvmRoute() +" ==> open new connection");
 			channel = open(node);
 		}
 
@@ -115,14 +115,15 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	 */
 	private NioChannel open(Node node) {
 		try {
-			InetSocketAddress address = new InetSocketAddress(node.getHostname(), node.getPort());
+			InetSocketAddress address = new InetSocketAddress(
+					node.getHostname(), node.getPort());
 			NioChannel channel = NioChannel.open();
 			channel.connect(address).get();
 			return channel;
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
+			return null;
 		}
-		return null;
 	}
 
 	/**
@@ -171,7 +172,8 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	 */
 	private void checkJvmRoute(String jvmRoute) {
 		if (this.connections.get(jvmRoute) == null) {
-			this.connections.put(jvmRoute, new ConcurrentLinkedQueue<NioChannel>());
+			this.connections.put(jvmRoute,
+					new ConcurrentLinkedQueue<NioChannel>());
 		}
 	}
 }

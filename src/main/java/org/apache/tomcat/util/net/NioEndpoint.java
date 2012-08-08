@@ -560,10 +560,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 			}
 		}
 
-		if (this.counter.get() >= this.maxConnections) {
-			logger.warn("Maximum number of connections reached!");
-		}
-
 		return false;
 	}
 
@@ -652,8 +648,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 							handshake(channel);
 							ok = true;
 						} else {
-							logger.info("Accepting new connection -> "
-									+ channel);
 							ok = processChannel(channel, null);
 						}
 					}
