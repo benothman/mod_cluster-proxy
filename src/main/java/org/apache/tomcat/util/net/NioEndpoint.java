@@ -172,7 +172,8 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 				this.maxThreads = Integer.valueOf(property);
 				logger.info("Configure max thread number : " + this.maxThreads);
 			} catch (Exception e) {
-				logger.warn("Invalid MAX-THREAD number, using the default value " + this.maxThreads);
+				logger.warn("Invalid MAX-THREAD number, using the default value "
+						+ this.maxThreads);
 			}
 		}
 		// Setting the max connection number
@@ -180,7 +181,8 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 		if (property != null) {
 			try {
 				this.maxConnections = Integer.valueOf(property);
-				logger.info("Configure max connection number : " + this.maxConnections);
+				logger.info("Configure max connection number : "
+						+ this.maxConnections);
 			} catch (Exception e) {
 				logger.warn("Invalid MAX-CONNECTION number, using the default value "
 						+ this.maxConnections);
@@ -202,7 +204,8 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 
 		// Create the thread factory
 		if (this.threadFactory == null) {
-			this.threadFactory = new DefaultThreadFactory(getName() + "-", threadPriority);
+			this.threadFactory = new DefaultThreadFactory(getName() + "-",
+					threadPriority);
 		}
 
 		if (this.connections == null) {
@@ -219,7 +222,8 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 
 		// If the executor is not set, create it with a fixed thread pool
 		if (this.executor == null) {
-			this.executor = Executors.newFixedThreadPool(this.maxThreads, this.threadFactory);
+			this.executor = Executors.newFixedThreadPool(this.maxThreads,
+					this.threadFactory);
 		}
 
 		ExecutorService executorService = (ExecutorService) this.executor;
@@ -244,12 +248,13 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 
 		if (listener == null) {
 			try {
-				listener = this.serverSocketChannelFactory.createServerChannel(port, backlog,
-						address, reuseAddress);
+				listener = this.serverSocketChannelFactory.createServerChannel(
+						port, backlog, address, reuseAddress);
 			} catch (BindException be) {
 				logger.fatal(be.getMessage(), be);
 				throw new BindException(be.getMessage() + " "
-						+ (address == null ? "<null>" : address.toString()) + ":" + port);
+						+ (address == null ? "<null>" : address.toString())
+						+ ":" + port);
 			}
 		}
 
@@ -273,14 +278,16 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 
 			// Start acceptor threads
 			for (int i = 0; i < acceptorThreadCount; i++) {
-				Thread acceptorThread = newThread(new Acceptor(), "Acceptor", daemon);
+				Thread acceptorThread = newThread(new Acceptor(), "Acceptor",
+						daemon);
 				acceptorThread.start();
 			}
 
 			// Starting the event poller
 			this.eventPoller = new EventPoller(this.maxThreads);
 			this.eventPoller.init();
-			Thread eventPollerThread = newThread(this.eventPoller, "EventPoller", true);
+			Thread eventPollerThread = newThread(this.eventPoller,
+					"EventPoller", true);
 			eventPollerThread.start();
 		}
 	}
@@ -353,7 +360,8 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 		try {
 			// Set channel options: timeout, linger, etc
 			if (keepAliveTimeout > 0) {
-				channel.setOption(StandardSocketOptions.SO_KEEPALIVE, Boolean.TRUE);
+				channel.setOption(StandardSocketOptions.SO_KEEPALIVE,
+						Boolean.TRUE);
 			}
 			if (soLinger >= 0) {
 				channel.setOption(StandardSocketOptions.SO_LINGER, soLinger);
@@ -402,11 +410,13 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 	 * 
 	 * @see #addEventChannel(NioChannel, long, int)
 	 */
-	public void addEventChannel(NioChannel channel, long timeout, boolean read, boolean write,
-			boolean resume, boolean wakeup) {
+	public void addEventChannel(NioChannel channel, long timeout, boolean read,
+			boolean write, boolean resume, boolean wakeup) {
 
-		int flags = (read ? ChannelInfo.READ : 0) | (write ? ChannelInfo.WRITE : 0)
-				| (resume ? ChannelInfo.RESUME : 0) | (wakeup ? ChannelInfo.WAKEUP : 0);
+		int flags = (read ? ChannelInfo.READ : 0)
+				| (write ? ChannelInfo.WRITE : 0)
+				| (resume ? ChannelInfo.RESUME : 0)
+				| (wakeup ? ChannelInfo.WAKEUP : 0);
 
 		addEventChannel(channel, timeout, flags);
 	}
@@ -507,7 +517,8 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 	/**
 	 * @return peek a processor from the recycled processors list
 	 */
-	private ChannelProcessor getChannelProcessor(NioChannel channel, SocketStatus status) {
+	private ChannelProcessor getChannelProcessor(NioChannel channel,
+			SocketStatus status) {
 		ChannelProcessor processor = this.recycledChannelProcessors.poll();
 		if (processor == null) {
 			processor = new ChannelProcessor(channel, status);
@@ -547,6 +558,10 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 				this.counter.incrementAndGet();
 				return true;
 			}
+		}
+
+		if (this.counter.get() >= this.maxConnections) {
+			logger.warn("Maximum number of connections reached!");
 		}
 
 		return false;
@@ -627,15 +642,18 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 				try {
 					// Accept the next incoming connection from the server
 					// channel
-					final NioChannel channel = serverSocketChannelFactory.accept(listener);
-					
+					final NioChannel channel = serverSocketChannelFactory
+							.accept(listener);
+
 					boolean ok = false;
-					if (addChannel(channel) && setChannelOptions(channel) && channel.isOpen()) {
+					if (addChannel(channel) && setChannelOptions(channel)
+							&& channel.isOpen()) {
 						if (channel.isSecure()) {
 							handshake(channel);
 							ok = true;
 						} else {
-							logger.info("Accepting new connection -> " + channel);
+							logger.info("Accepting new connection -> "
+									+ channel);
 							ok = processChannel(channel, null);
 						}
 					}
@@ -791,7 +809,8 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 		 * @param unit
 		 * @param flags
 		 */
-		public ChannelInfo(NioChannel channel, long timeout, TimeUnit unit, int flags) {
+		public ChannelInfo(NioChannel channel, long timeout, TimeUnit unit,
+				int flags) {
 			this(channel, TimeUnit.MILLISECONDS.convert(timeout, unit), flags);
 		}
 
@@ -880,8 +899,10 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 		 * @return the result of merging the tow flags
 		 */
 		public static int merge(int flag1, int flag2) {
-			return ((flag1 & READ) | (flag2 & READ)) | ((flag1 & WRITE) | (flag2 & WRITE))
-					| ((flag1 & RESUME) | (flag2 & RESUME)) | ((flag1 & WAKEUP) & (flag2 & WAKEUP));
+			return ((flag1 & READ) | (flag2 & READ))
+					| ((flag1 & WRITE) | (flag2 & WRITE))
+					| ((flag1 & RESUME) | (flag2 & RESUME))
+					| ((flag1 & WAKEUP) & (flag2 & WAKEUP));
 		}
 	}
 
@@ -1022,8 +1043,8 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 		@Override
 		public void run() {
 			try {
-				Handler.SocketState state = ((status == null) ? handler.process(channel) : handler
-						.event(channel, status));
+				Handler.SocketState state = ((status == null) ? handler
+						.process(channel) : handler.event(channel, status));
 
 				if (state == SocketState.CLOSED) {
 					close(channel);
@@ -1247,7 +1268,8 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 		 * @return a reference of {@link java.nio.CompletionHandler}
 		 */
 		private CompletionHandler<Integer, NioChannel> getCompletionHandler() {
-			CompletionHandler<Integer, NioChannel> handler = this.recycledCompletionHandlers.poll();
+			CompletionHandler<Integer, NioChannel> handler = this.recycledCompletionHandlers
+					.poll();
 			if (handler == null) {
 				handler = new CompletionHandler<Integer, NioChannel>() {
 
@@ -1283,7 +1305,8 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 		 * 
 		 * @param handler
 		 */
-		private void recycleHanlder(CompletionHandler<Integer, NioChannel> handler) {
+		private void recycleHanlder(
+				CompletionHandler<Integer, NioChannel> handler) {
 			this.recycledCompletionHandlers.offer(handler);
 		}
 
@@ -1382,7 +1405,8 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 		 */
 		public DefaultThreadFactory(String namePrefix, int threadPriority) {
 			SecurityManager s = System.getSecurityManager();
-			group = (s != null) ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
+			group = (s != null) ? s.getThreadGroup() : Thread.currentThread()
+					.getThreadGroup();
 			this.namePrefix = namePrefix;
 			this.threadPriority = threadPriority;
 		}
@@ -1394,14 +1418,16 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 		 * @param threadPriority
 		 */
 		public DefaultThreadFactory(int threadPriority) {
-			this("pool-" + poolNumber.getAndIncrement() + "-thread-", threadPriority);
+			this("pool-" + poolNumber.getAndIncrement() + "-thread-",
+					threadPriority);
 		}
 
 		/**
 		 * Create and return a new thread
 		 */
 		public Thread newThread(Runnable r) {
-			Thread thread = new Thread(group, r, namePrefix + threadNumber.getAndIncrement(), 0);
+			Thread thread = new Thread(group, r, namePrefix
+					+ threadNumber.getAndIncrement(), 0);
 			if (thread.isDaemon())
 				thread.setDaemon(false);
 
