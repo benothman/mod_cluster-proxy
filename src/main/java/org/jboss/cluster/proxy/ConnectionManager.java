@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.LifeCycleServiceAdapter;
 import org.apache.tomcat.util.net.NioChannel;
@@ -49,6 +50,7 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	private ConcurrentHashMap<String, ConcurrentLinkedQueue<NioChannel>> connections;
 	private ExecutorService executorService;
 	private AsynchronousChannelGroup channelGroup;
+	private AtomicInteger counter = new AtomicInteger(0);
 
 	/**
 	 * Create a new instance of {@code ConnectionManager}
@@ -137,6 +139,9 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 					node.getHostname(), node.getPort());
 			NioChannel channel = NioChannel.open(this.channelGroup);
 			channel.connect(address).get();
+			counter.incrementAndGet();
+			logger.info("New node connection established -> total = " + counter.get());
+			
 			return channel;
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
@@ -174,6 +179,8 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 
 		try {
 			channel.close();
+			counter.decrementAndGet();
+			logger.info("Closing node connection -> total = " + counter.get());
 		} catch (Exception exp) {
 			// NOPE
 			exp.printStackTrace();
