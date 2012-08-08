@@ -29,7 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.LifeCycleServiceAdapter;
 import org.apache.tomcat.util.net.NioChannel;
@@ -67,17 +66,21 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 		if (isInitialized()) {
 			return;
 		}
-		
+		logger.info("Initializing Connection Manager");
 		int nThreads = Runtime.getRuntime().availableProcessors() * 32;
 		this.executorService = Executors.newFixedThreadPool(nThreads);
 		try {
-			this.channelGroup = AsynchronousChannelGroup.withThreadPool(executorService);
+			this.channelGroup = AsynchronousChannelGroup
+					.withThreadPool(executorService);
 		} catch (IOException e) {
-			logger.warn("Unable to create channel group, using default channel group", e);
+			logger.warn(
+					"Unable to create channel group, using default channel group",
+					e);
 		}
-		
+
 		this.connections = new ConcurrentHashMap<>();
 		setInitialized(true);
+		logger.info("Connection Manager Initialized");
 	}
 
 	/*
@@ -86,6 +89,8 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	 * @see org.apache.LifeCycleServiceAdapter#destroy()
 	 */
 	public void destroy() {
+		logger.info("Destroying Connection Manager");
+		this.channelGroup.shutdown();
 		for (Collection<NioChannel> cl : this.connections.values()) {
 			for (NioChannel nch : cl) {
 				try {
@@ -100,6 +105,7 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 		this.connections.clear();
 		this.connections = null;
 		setInitialized(false);
+		logger.info("Connection Manager Destroyed");
 	}
 
 	/**
