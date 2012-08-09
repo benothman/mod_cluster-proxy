@@ -30,6 +30,9 @@ package org.jboss.cluster.proxy;
  */
 public interface Constants {
 
+	
+	public static final int DEFAULT_MAX_THREADS = Runtime.getRuntime().availableProcessors() * 64;
+	
 	/**
 	 * 
 	 */
