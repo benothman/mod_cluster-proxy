@@ -729,6 +729,7 @@ public class Http11NioProtocol extends Http11AbstractProtocol<NioChannel> {
 	 */
 	public void recycleProcessor(Http11NioProcessor processor) {
 		this.cHandler.recycledProcessors.offer(processor);
+		log.info("Recycling processor ---> n = " + this.cHandler.recycledProcessors.size());
 	}
 	
 	/**
@@ -978,6 +979,7 @@ public class Http11NioProtocol extends Http11AbstractProtocol<NioChannel> {
 				synchronized (this) {
 					try {
 						long count = registerCount.incrementAndGet();
+						log.info("Creating new processor ---> total = " + count);
 						ObjectName rpName = new ObjectName(proto.getDomain()
 								+ ":type=RequestProcessor,worker=" + proto.getName()
 								+ ",name=HttpRequest" + count);
