@@ -1036,6 +1036,7 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 		@Override
 		public void run() {
 			try {
+				logger.info("Process channel " + channel);
 				Handler.SocketState state = ((status == null) ? handler
 						.process(channel) : handler.event(channel, status));
 
