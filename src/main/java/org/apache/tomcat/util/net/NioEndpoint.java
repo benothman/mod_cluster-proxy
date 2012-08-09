@@ -227,8 +227,7 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 		}
 
 		ExecutorService executorService = (ExecutorService) this.executor;
-		AsynchronousChannelGroup threadGroup = AsynchronousChannelGroup
-				.withThreadPool(executorService);
+		AsynchronousChannelGroup threadGroup = AsynchronousChannelGroup.withThreadPool(executorService);
 
 		if (this.serverSocketChannelFactory == null) {
 			this.serverSocketChannelFactory = NioServerSocketChannelFactory

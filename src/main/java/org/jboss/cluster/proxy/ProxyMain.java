@@ -47,7 +47,8 @@ public class ProxyMain {
 	private static boolean running = true;
 	private static final List<Thread> threads = new ArrayList<>();
 	private static final Logger logger = Logger.getLogger(ProxyMain.class);
-	private static final String CONFIG_PATH = "conf" + File.separatorChar + "config.properties";
+	private static final String CONFIG_PATH = "conf" + File.separatorChar
+			+ "config.properties";
 
 	/**
 	 * Create a new instance of {@code ProxyMain}
@@ -68,7 +69,8 @@ public class ProxyMain {
 				.println("\n=========================================================================\n");
 		System.out.println("  JBoss Mod Cluster Proxy Bootstrap Environment\n");
 		System.out.println("  JAVA_HOME: " + java_home + "\n");
-		System.out.println("  JBOSS_CLUSER_HOME: " + System.getProperty("user.dir") + "\n");
+		System.out.println("  JBOSS_CLUSER_HOME: "
+				+ System.getProperty("user.dir") + "\n");
 		System.out
 				.println("=========================================================================\n\n");
 
@@ -83,18 +85,20 @@ public class ProxyMain {
 		}
 
 		try {
-			String protocol = System.getProperty("http-protocol", DEFAULT_PROTOCOL);
+			String protocol = System.getProperty("http-protocol",
+					DEFAULT_PROTOCOL);
 			String scheme = System.getProperty("scheme", DEFAULT_SCHEME);
 			// Creating the web connector service
 			service = new WebConnectorService(protocol, scheme);
 			// configure the web connector service
 
 			// Setting the address (host:port)
-			int port = Integer.valueOf(System
-					.getProperty("org.apache.tomcat.util.net.PORT", "8081"));
-			String hostname = System.getProperty("org.apache.tomcat.util.net.ADDRESS", "0.0.0.0");
-			InetSocketAddress address = (hostname == null) ? new InetSocketAddress(port)
-					: new InetSocketAddress(hostname, port);
+			int port = Integer.valueOf(System.getProperty(
+					"org.apache.tomcat.util.net.PORT", "8081"));
+			String hostname = System.getProperty(
+					"org.apache.tomcat.util.net.ADDRESS", "0.0.0.0");
+			InetSocketAddress address = (hostname == null) ? new InetSocketAddress(
+					port) : new InetSocketAddress(hostname, port);
 			service.setAddress(address);
 
 			// TODO finish configuration setup
@@ -133,14 +137,16 @@ public class ProxyMain {
 
 			@Override
 			public void run() {
-				try (BufferedReader br = new BufferedReader(new InputStreamReader(System.in))) {
+				try (BufferedReader br = new BufferedReader(
+						new InputStreamReader(System.in))) {
 					String line = null;
 					while ((line = br.readLine()) != null) {
 						line = line.trim();
 						if (line.isEmpty()) {
 							continue;
 						}
-						if (line.equalsIgnoreCase("stop") || line.equalsIgnoreCase("quit")) {
+						if (line.equalsIgnoreCase("stop")
+								|| line.equalsIgnoreCase("quit")) {
 							logger.info("Processing command '" + line + "'");
 							running = false;
 							break;

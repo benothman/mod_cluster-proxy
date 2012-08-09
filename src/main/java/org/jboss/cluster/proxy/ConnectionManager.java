@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.LifeCycleServiceAdapter;
 import org.apache.tomcat.util.net.NioChannel;
+import org.apache.tomcat.util.net.NioChannelFactory;
 import org.jboss.cluster.proxy.container.Node;
 import org.jboss.logging.Logger;
 
@@ -49,8 +50,8 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 			.getLogger(ConnectionManager.class);
 	private ConcurrentHashMap<String, ConcurrentLinkedQueue<NioChannel>> connections;
 	private ExecutorService executorService;
-	private AsynchronousChannelGroup channelGroup;
 	private AtomicInteger counter = new AtomicInteger(0);
+	private NioChannelFactory factory;
 
 	/**
 	 * Create a new instance of {@code ConnectionManager}
@@ -64,22 +65,22 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	 * 
 	 * @see org.apache.LifeCycleServiceAdapter#init()
 	 */
-	public void init() {
+	public void init() throws Exception {
 		if (isInitialized()) {
 			return;
 		}
 		logger.info("Initializing Connection Manager");
+
+		String secureStr = System.getProperty(
+				"org.apache.tomcat.util.net.factory.SECURE", "false");
+		boolean secure = Boolean.valueOf(secureStr).booleanValue();
 		int nThreads = Runtime.getRuntime().availableProcessors() * 32;
 		this.executorService = Executors.newFixedThreadPool(nThreads);
-		try {
-			this.channelGroup = AsynchronousChannelGroup
-					.withThreadPool(executorService);
-		} catch (IOException e) {
-			logger.warn(
-					"Unable to create channel group, using default channel group",
-					e);
-		}
-
+		AsynchronousChannelGroup channelGroup = AsynchronousChannelGroup
+				.withThreadPool(executorService);
+		this.factory = NioChannelFactory.createNioChannelFactory(channelGroup,
+				secure);
+		this.factory.init();
 		this.connections = new ConcurrentHashMap<>();
 		setInitialized(true);
 		logger.info("Connection Manager Initialized");
@@ -90,9 +91,9 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	 * 
 	 * @see org.apache.LifeCycleServiceAdapter#destroy()
 	 */
-	public void destroy() {
+	public void destroy() throws Exception {
 		logger.info("Destroying Connection Manager");
-		this.channelGroup.shutdown();
+		this.factory.destroy();
 		for (Collection<NioChannel> cl : this.connections.values()) {
 			for (NioChannel nch : cl) {
 				try {
@@ -122,31 +123,29 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 		} while (channel != null && channel.isClosed());
 
 		if (channel == null) {
-			channel = open(node);
+			channel = connect(node);
 		}
 
 		return channel;
 	}
 
 	/**
+	 * Try to connect to the specified node
 	 * 
 	 * @param node
-	 * @return
+	 *            the node to which the channel will be connected
+	 * @return a new connection to the node
 	 */
-	private NioChannel open(Node node) {
+	private NioChannel connect(Node node) {
 		try {
-			InetSocketAddress address = new InetSocketAddress(
+			InetSocketAddress socketAddress = new InetSocketAddress(
 					node.getHostname(), node.getPort());
-			NioChannel channel = NioChannel.open(this.channelGroup);
-			channel.connect(address).get();
-			counter.incrementAndGet();
-			logger.info("New node connection established -> total = " + counter.get());
-			
+			NioChannel channel = this.factory.connect(socketAddress);
 			return channel;
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
-			return null;
 		}
+		return null;
 	}
 
 	/**
