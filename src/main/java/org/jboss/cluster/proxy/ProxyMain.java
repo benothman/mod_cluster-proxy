@@ -29,13 +29,8 @@ import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
-import org.jboss.as.threads.ManagedJBossThreadPoolExecutorService;
 import org.jboss.logging.Logger;
-import org.jboss.threads.JBossThreadPoolExecutor;
 
 /**
  * {@code ProxyMain}
@@ -106,16 +101,6 @@ public class ProxyMain {
 					port) : new InetSocketAddress(hostname, port);
 			service.setAddress(address);
 
-			String maxThreadsStr = System.getProperty("org.apache.tomcat.util.net.MAX_THREADS", ""
-					+ Constants.DEFAULT_MAX_THREADS);
-			int maxThreads = Integer.valueOf(maxThreadsStr);
-			Executor executor = new ManagedJBossThreadPoolExecutorService(
-					new JBossThreadPoolExecutor(maxThreads, maxThreads, 0l,
-							TimeUnit.MILLISECONDS,
-							new LinkedBlockingQueue<Runnable>()));
-
-			service.setExecutor(executor);
-			
 			// TODO finish configuration setup
 
 			// Starting the web connector service
