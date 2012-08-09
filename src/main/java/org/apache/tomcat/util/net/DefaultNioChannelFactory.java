@@ -43,10 +43,10 @@ public class DefaultNioChannelFactory extends NioChannelFactory {
 	/**
 	 * Create a new instance of {@code DefaultNioChannelFactory}
 	 * 
-	 * @param threadGroup
+	 * @param channelGroup
 	 */
-	protected DefaultNioChannelFactory(AsynchronousChannelGroup threadGroup) {
-		this.threadGroup = threadGroup;
+	protected DefaultNioChannelFactory(AsynchronousChannelGroup channelGroup) {
+		this.channelGroup = channelGroup;
 	}
 
 	/*
@@ -69,8 +69,8 @@ public class DefaultNioChannelFactory extends NioChannelFactory {
 	@Override
 	public void destroy() throws IOException {
 		log.info("Destroying the channel factory");
-		if (this.threadGroup != null) {
-			this.threadGroup.shutdown();
+		if (this.channelGroup != null) {
+			this.channelGroup.shutdown();
 		}
 
 		this.attributes.clear();

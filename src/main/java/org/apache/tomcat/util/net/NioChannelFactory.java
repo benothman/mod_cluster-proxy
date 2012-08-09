@@ -42,7 +42,7 @@ public abstract class NioChannelFactory implements Cloneable {
 
 	private static NioChannelFactory theFactory;
 	protected Hashtable<String, Object> attributes = new Hashtable<String, Object>();
-	protected AsynchronousChannelGroup threadGroup;
+	protected AsynchronousChannelGroup channelGroup;
 
 	/**
 	 * Create a new instance of {@code NioChannelFactory}
@@ -57,7 +57,7 @@ public abstract class NioChannelFactory implements Cloneable {
 	 * @param threadGroup
 	 */
 	protected NioChannelFactory(AsynchronousChannelGroup threadGroup) {
-		this.threadGroup = threadGroup;
+		this.channelGroup = threadGroup;
 	}
 
 	/**

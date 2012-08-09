@@ -27,7 +27,6 @@ import java.nio.channels.AsynchronousChannelGroup;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -49,7 +48,6 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	private static final Logger logger = Logger
 			.getLogger(ConnectionManager.class);
 	private ConcurrentHashMap<String, ConcurrentLinkedQueue<NioChannel>> connections;
-	private ExecutorService executorService;
 	private AtomicInteger counter = new AtomicInteger(0);
 	private NioChannelFactory factory;
 
@@ -75,9 +73,8 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 				"org.apache.tomcat.util.net.factory.SECURE", "false");
 		boolean secure = Boolean.valueOf(secureStr).booleanValue();
 		int nThreads = Runtime.getRuntime().availableProcessors() * 32;
-		this.executorService = Executors.newFixedThreadPool(nThreads);
 		AsynchronousChannelGroup channelGroup = AsynchronousChannelGroup
-				.withThreadPool(executorService);
+				.withFixedThreadPool(nThreads, Executors.defaultThreadFactory());
 		this.factory = NioChannelFactory.createNioChannelFactory(channelGroup,
 				secure);
 		this.factory.init();
@@ -138,9 +135,13 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	 */
 	private NioChannel connect(Node node) {
 		try {
+
 			InetSocketAddress socketAddress = new InetSocketAddress(
 					node.getHostname(), node.getPort());
 			NioChannel channel = this.factory.connect(socketAddress);
+			counter.incrementAndGet();
+			logger.info("New node connection established -> total = "
+					+ counter.get());
 			return channel;
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
