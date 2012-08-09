@@ -122,6 +122,7 @@ public class ProxyMain {
 			service.start();
 		} catch (Throwable e) {
 			logger.error("creating protocol handler error", e);
+			e.printStackTrace();
 			System.exit(-1);
 		}
 
