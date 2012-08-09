@@ -106,7 +106,7 @@ public class ProxyMain {
 					port) : new InetSocketAddress(hostname, port);
 			service.setAddress(address);
 
-			String maxThreadsStr = System.getProperty("", ""
+			String maxThreadsStr = System.getProperty("org.apache.tomcat.util.net.MAX_THREADS", ""
 					+ Constants.DEFAULT_MAX_THREADS);
 			int maxThreads = Integer.valueOf(maxThreadsStr);
 			Executor executor = new ManagedJBossThreadPoolExecutorService(
