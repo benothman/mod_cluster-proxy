@@ -399,12 +399,7 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 
 			if(error) {
 				inputBuffer.setSwallowInput(false);
-				endRequest();
-				inputBuffer.nextRequest();
-				outputBuffer.nextRequest();
-				recycle();
 			}
-			
 			
 			/*
 			 * // Finish the handling of the request if (error) { // If there is
@@ -435,12 +430,11 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 		if(error) {
 			log.warn("An error occurs during request parsing!");
 			rp.setStage(org.apache.coyote.Constants.STAGE_ENDED);
-			inputBuffer.nextRequest();
-			outputBuffer.nextRequest();
+			endRequest();
+			nextRequest();
 			recycle();
 			return SocketState.CLOSED;
 		}
-		
 		
 		return SocketState.OPEN;
 	}

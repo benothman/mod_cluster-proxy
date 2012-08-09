@@ -918,9 +918,8 @@ public class Http11NioProtocol extends Http11AbstractProtocol<NioChannel> {
 								processor.getReadNotifications(), false,
 								processor.getResumeNotification(), false);
 					}
-				} else {
-					// recycledProcessors.offer(processor);
 				}
+				
 				return state;
 
 			} catch (IOException e) {
