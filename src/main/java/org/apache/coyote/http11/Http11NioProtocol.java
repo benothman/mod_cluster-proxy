@@ -744,6 +744,8 @@ public class Http11NioProtocol extends Http11AbstractProtocol<NioChannel> {
 		protected Http11NioProtocol proto;
 		protected AtomicLong registerCount = new AtomicLong(0);
 		protected RequestGroupInfo global = new RequestGroupInfo();
+		
+		private AtomicInteger counter = new AtomicInteger(0);
 
 		protected ConcurrentHashMap<Long, Http11NioProcessor> connections = new ConcurrentHashMap<Long, Http11NioProcessor>();
 		protected ConcurrentLinkedQueue<Http11NioProcessor> recycledProcessors = new ConcurrentLinkedQueue<Http11NioProcessor>() {
@@ -951,6 +953,7 @@ public class Http11NioProtocol extends Http11AbstractProtocol<NioChannel> {
 		 * @return
 		 */
 		protected Http11NioProcessor createProcessor() {
+			log.info("Create new processor ---> total = " + counter.incrementAndGet());
 			Http11NioProcessor processor = new Http11NioProcessor(proto.maxHttpHeaderSize,
 					proto.endpoint);
 			processor.setAdapter(proto.adapter);
@@ -979,7 +982,6 @@ public class Http11NioProtocol extends Http11AbstractProtocol<NioChannel> {
 				synchronized (this) {
 					try {
 						long count = registerCount.incrementAndGet();
-						log.info("Creating new processor ---> total = " + count);
 						ObjectName rpName = new ObjectName(proto.getDomain()
 								+ ":type=RequestProcessor,worker=" + proto.getName()
 								+ ",name=HttpRequest" + count);
