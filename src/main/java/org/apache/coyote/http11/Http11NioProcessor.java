@@ -210,6 +210,7 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 								// Reach the end of the stream
 								failed(new ClosedChannelException(), attachment);
 							} else {
+								recycle();
 								endpoint.processChannel(attachment, null);
 							}
 						}
