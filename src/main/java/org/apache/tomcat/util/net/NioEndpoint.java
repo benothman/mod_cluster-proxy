@@ -487,6 +487,7 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 		try {
 			ChannelProcessor processor = getChannelProcessor(channel, status);
 			this.executor.execute(processor);
+			logger.info("Task submitted for processing --> " + channel);
 			return true;
 		} catch (Throwable t) {
 			logger.error("Error allocating channel processor");
