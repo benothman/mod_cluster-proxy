@@ -94,7 +94,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 					failed(new ClosedChannelException(), attachment);
 					return;
 				}
-
+				System.out.println("Response written to " + channel);
 				if (attachment.hasRemaining()) {
 					channel.write(attachment, writeTimeout, TimeUnit.MILLISECONDS, attachment, this);
 				} else {
