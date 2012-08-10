@@ -398,7 +398,9 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 		if (nonBlocking) {
 			nonBlockingRead(bbuf, readTimeout, unit);
 		} else {
+			System.out.println("Trying blocking read form client channel --> " + channel);
 			nRead = blockingRead(bbuf, readTimeout, unit);
+			System.out.println("Finishing blocking read form client channel --> " + channel +", nRead = " + nRead);
 			if (nRead > 0) {
 				bbuf.flip();
 				bbuf.get(buf, pos, nRead);
