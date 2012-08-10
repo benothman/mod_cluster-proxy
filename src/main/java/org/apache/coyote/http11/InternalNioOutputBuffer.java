@@ -174,6 +174,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 		int nw = 0;
 		try {
 			nw = this.channel.writeBytes(buffer, timeout, unit);
+			writing = false;
 			if (nw < 0) {
 				close(channel);
 			} else {
