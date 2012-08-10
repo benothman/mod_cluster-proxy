@@ -128,6 +128,11 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 * Write timeout
 	 */
 	protected int writeTimeout = -1;
+	
+	/**
+	 * The response content length
+	 */
+	protected long contentLength = 0;
 
 	/**
 	 * Create a new instance of {@code AbstractInternalOutputBuffer}
@@ -351,6 +356,7 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 		lastActiveFilter = -1;
 		committed = false;
 		finished = false;
+		this.contentLength = 0;
 	}
 
 	/**
@@ -733,6 +739,20 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	}
 
 	// ----------------------------------- OutputBufferImpl Inner Class
+
+	/**
+	 * @return the contentLength
+	 */
+	public long getContentLength() {
+		return contentLength;
+	}
+
+	/**
+	 * @param contentLength the contentLength to set
+	 */
+	public void setContentLength(long contentLength) {
+		this.contentLength = contentLength;
+	}
 
 	/**
 	 * {@code OutputBufferImpl} This class is an output buffer which will write

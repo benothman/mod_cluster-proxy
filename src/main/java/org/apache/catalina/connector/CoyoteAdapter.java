@@ -28,6 +28,8 @@ import java.nio.channels.CompletionHandler;
 import org.apache.catalina.http.HttpResponseParser;
 import org.apache.catalina.util.URLEncoder;
 import org.apache.coyote.Adapter;
+import org.apache.coyote.Request;
+import org.apache.coyote.Response;
 import org.apache.coyote.http11.AbstractInternalInputBuffer;
 import org.apache.coyote.http11.AbstractInternalOutputBuffer;
 import org.apache.coyote.http11.Http11AbstractProcessor;
@@ -39,8 +41,6 @@ import org.apache.tomcat.util.net.NioChannel;
 import org.apache.tomcat.util.net.SocketStatus;
 import org.jboss.cluster.proxy.container.Node;
 import org.jboss.logging.Logger;
-import org.apache.coyote.Request;
-import org.apache.coyote.Response;
 
 /**
  * {@code CoyoteAdapter}
@@ -235,6 +235,7 @@ public class CoyoteAdapter implements Adapter {
 							}
 
 							contentLength += nBytes;
+							outputBuffer.setContentLength(attachment.getContentLengthLong() + httpResponseParser.getHeaderLength());
 							buff.clear();
 							outputBuffer.writeToClient(outputBuffer.getBytes(),
 									0, nBytes);
@@ -267,7 +268,7 @@ public class CoyoteAdapter implements Adapter {
 											node.getJvmRoute(), channel);
 								}
 								// Recycle the processor
-								processor.recycle();
+								//processor.recycle();
 							}
 						}
 					}
