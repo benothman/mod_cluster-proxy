@@ -170,12 +170,14 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 	 * 
 	 * @return the number of bytes written, -1 in case of errors
 	 */
-	private int blockingWrite(long timeout, TimeUnit unit) {
+	private int blockingWrite(ByteBuffer buffer, long timeout, TimeUnit unit) {
 		int nw = 0;
 		try {
-			nw = this.channel.writeBytes(this.bbuf, timeout, unit);
+			nw = this.channel.writeBytes(buffer, timeout, unit);
 			if (nw < 0) {
 				close(channel);
+			} else {
+				tryWrite();
 			}
 		} catch (Throwable t) {
 			if (log.isDebugEnabled()) {
@@ -216,7 +218,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 	protected void tryWrite() {
 		if (!writing && !this.localPool.isEmpty()) {
 			writing = true;
-			nonBlockingWrite(this.localPool.poll(), writeTimeout, TimeUnit.MILLISECONDS);
+			blockingWrite(this.localPool.poll(), writeTimeout, TimeUnit.MILLISECONDS);
 		}
 	}
 
@@ -234,7 +236,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 			return 0;
 		}
 
-		return blockingWrite(timeout, unit);
+		return blockingWrite(bbuf, timeout, unit);
 	}
 
 	/**
@@ -382,7 +384,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 					// Update the offset of the leftover ByteChunck
 					leftover.setOffset(off + n);
 					while (bbuf.hasRemaining()) {
-						res = blockingWrite(writeTimeout, TimeUnit.MILLISECONDS);
+						res = blockingWrite(bbuf, writeTimeout, TimeUnit.MILLISECONDS);
 						if (res < 0) {
 							break;
 						}
@@ -407,7 +409,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 				nonBlockingWrite(this.bbuf, writeTimeout, TimeUnit.MILLISECONDS);
 			} else {
 				while (bbuf.hasRemaining()) {
-					res = blockingWrite(writeTimeout, TimeUnit.MILLISECONDS);
+					res = blockingWrite(bbuf, writeTimeout, TimeUnit.MILLISECONDS);
 					if (res <= 0) {
 						break;
 					}

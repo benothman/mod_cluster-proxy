@@ -490,7 +490,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 			this.executor.execute(processor);
 			return true;
 		} catch (Throwable t) {
-			logger.error("Error allocating channel processor");
 			// This means we got an OOM or similar creating a thread, or that
 			// the pool and its queue are full
 			logger.error(sm.getString("endpoint.process.fail"), t);
