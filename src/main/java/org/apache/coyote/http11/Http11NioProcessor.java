@@ -486,6 +486,7 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 	 * @see org.apache.coyote.http11.Http11AbstractProcessor#recycle()
 	 */
 	public void recycle() {
+		log.info("Recycling Http11NioProcessor");
 		inputBuffer.recycle();
 		outputBuffer.recycle();
 		this.channel = null;
