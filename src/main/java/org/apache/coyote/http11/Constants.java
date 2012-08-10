@@ -40,6 +40,41 @@ public final class Constants {
 	public static final boolean DEFAULT_TCP_NO_DELAY = true;
 
 	/**
+	 * 
+	 */
+	public static final int MAX_NOTES = 32;
+
+	/**
+	 * 
+	 */
+	public static final int NODE_NOTE = MAX_NOTES - 1;
+	/**
+	 * 
+	 */
+	public static final int NODE_CHANNEL_NOTE = MAX_NOTES - 2;
+	/**
+	 * 
+	 */
+	public static final int CLIENT_CHANNEL_NOTE = MAX_NOTES - 3;
+	/**
+	 * 
+	 */
+	public static final int HTTP_RESPONSE_PARSER_NOTE = MAX_NOTES - 4;
+	/**
+	 * 
+	 */
+	public static final int IN_BUFFER_NOTE = MAX_NOTES - 5;
+	/**
+	 * 
+	 */
+	public static final int OUT_BUFFER_NOTE = MAX_NOTES - 6;
+	/**
+	 * 
+	 */
+	public static final int NODE_DATA_BUFFER_NOTE = MAX_NOTES - 7;
+	
+	
+	/**
 	 * CRLF.
 	 */
 	public static final String CRLF = "\r\n";

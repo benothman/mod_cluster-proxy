@@ -27,11 +27,13 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.CompletionHandler;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.catalina.connector.CoyoteAdapter;
 import org.apache.coyote.ActionCode;
 import org.apache.coyote.Response;
 import org.apache.tomcat.util.buf.ByteChunk;
 import org.apache.tomcat.util.net.NioChannel;
 import org.apache.tomcat.util.net.NioEndpoint;
+import org.jboss.cluster.proxy.container.Node;
 
 /**
  * {@code InternalNioOutputBuffer}
@@ -56,7 +58,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 	 * NIO endpoint.
 	 */
 	protected NioEndpoint endpoint;
-		
+
 	private long accum = 0;
 
 	/**
@@ -112,9 +114,34 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 						}
 					} else {
 						writing = false;
-						if(accum >= contentLength) {
+						if (accum >= contentLength) {
 							// TODO recycle all
 							Http11AbstractProcessor<?> processor = (Http11AbstractProcessor<?>) response.hook;
+							boolean chunked = response.isChunked();
+							processor.endRequest();
+							processor.nextRequest();
+
+							Node node = (Node) response
+									.getNote(Constants.NODE_NOTE);
+							NioChannel nodeChannel = (NioChannel) response
+									.getNote(Constants.NODE_CHANNEL_NOTE);
+
+							if (chunked) {
+								((InternalNioOutputBuffer) outputBuffer)
+										.configChunked(nodeChannel);
+							} else {
+								if (processor.isKeepAlive()) {
+									processor.awaitForNext();
+								} else {
+									processor.closeSocket();
+								}
+
+								CoyoteAdapter coyoteAdapter = (CoyoteAdapter) processor.adapter; 
+								
+								coyoteAdapter.getConnector().getConnectionManager().recycle(
+										node.getJvmRoute(), channel);
+							}
+							// Recycle the processor
 							processor.recycle();
 						}
 					}
@@ -270,7 +297,6 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 			}
 		}
 	}
-	
 
 	/**
 	 * 
@@ -516,7 +542,6 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 		return true;
 	}
 
-	
 	/**
 	 * {@code Tuple}
 	 * 
