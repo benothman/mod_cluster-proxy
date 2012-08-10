@@ -114,6 +114,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 						}
 					} else {
 						writing = false;
+						System.out.println("contentLength = " + contentLength+", accum = " + accum);
 						if (accum >= contentLength) {
 							// TODO recycle all
 							Http11AbstractProcessor<?> processor = (Http11AbstractProcessor<?>) response.hook;
@@ -127,8 +128,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 									.getNote(Constants.NODE_CHANNEL_NOTE);
 
 							if (chunked) {
-								((InternalNioOutputBuffer) outputBuffer)
-										.configChunked(nodeChannel);
+								configChunked(nodeChannel);
 							} else {
 								if (processor.isKeepAlive()) {
 									processor.awaitForNext();
@@ -137,7 +137,6 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 								}
 
 								CoyoteAdapter coyoteAdapter = (CoyoteAdapter) processor.adapter; 
-								
 								coyoteAdapter.getConnector().getConnectionManager().recycle(
 										node.getJvmRoute(), channel);
 							}
