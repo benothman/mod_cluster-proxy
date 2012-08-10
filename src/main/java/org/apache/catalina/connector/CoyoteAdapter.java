@@ -143,8 +143,8 @@ public class CoyoteAdapter implements Adapter {
 				.getNote(Constants.NODE_CHANNEL_NOTE);
 		final ByteBuffer inBuffer = (ByteBuffer) response
 				.getNote(Constants.IN_BUFFER_NOTE);
-
-		if (inBuffer.position() > 0) {
+		
+		if(inBuffer.position() > 0) {
 			inBuffer.flip();
 		}
 		// Write the request to the node
@@ -179,9 +179,7 @@ public class CoyoteAdapter implements Adapter {
 
 					@Override
 					public void failed(Throwable exc, Response attachment) {
-						// logger.error(
-						// "WRITE TO NODE FAIL : Connection with node is closed -> try again",
-						// exc);
+						// logger.error( "WRITE TO NODE FAIL : Connection with node is closed -> try again", exc);
 						try {
 							// try again with node
 							tryWithNode(attachment);
@@ -237,9 +235,7 @@ public class CoyoteAdapter implements Adapter {
 							}
 
 							contentLength += nBytes;
-							outputBuffer.setContentLength(attachment
-									.getContentLengthLong()
-									+ httpResponseParser.getHeaderLength());
+							outputBuffer.setContentLength(attachment.getContentLengthLong() + httpResponseParser.getHeaderLength());
 							buff.clear();
 							outputBuffer.writeToClient(outputBuffer.getBytes(),
 									0, nBytes);
@@ -251,7 +247,6 @@ public class CoyoteAdapter implements Adapter {
 										.getNote(Constants.NODE_CHANNEL_NOTE);
 								ch.read(buff, attachment, this);
 							} else {
-								/*
 								Http11AbstractProcessor<?> processor = (Http11AbstractProcessor<?>) attachment.hook;
 								boolean chunked = attachment.isChunked();
 								processor.endRequest();
@@ -273,9 +268,7 @@ public class CoyoteAdapter implements Adapter {
 											node.getJvmRoute(), channel);
 								}
 								// Recycle the processor
-								// processor.recycle();
-								 * 
-								 */
+								//processor.recycle();
 							}
 						}
 					}
@@ -283,8 +276,7 @@ public class CoyoteAdapter implements Adapter {
 					@Override
 					public void failed(Throwable exc,
 							org.apache.coyote.Response attachment) {
-						// logger.error("READ FROM NODE FAIL : Connection with node is closed -> try again",
-						// exc);
+						//logger.error("READ FROM NODE FAIL : Connection with node is closed -> try again", exc);
 						try {
 							// try again with node
 							tryWithNode(attachment);
@@ -350,13 +342,6 @@ public class CoyoteAdapter implements Adapter {
 		response.setNote(Constants.NODE_NOTE, node);
 		channel = this.connector.getConnectionManager().getChannel(node);
 		response.setNote(Constants.NODE_CHANNEL_NOTE, channel);
-	}
-
-	/**
-	 * @return
-	 */
-	public Connector getConnector() {
-		return this.connector;
 	}
 
 	/**

@@ -577,7 +577,6 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 			endpoint.close(ch);
 		}
 		if (ch == this.channel) {
-			System.out.println("Calling recycling processor !!!!!");
 			this.recycle();
 		}
 	}

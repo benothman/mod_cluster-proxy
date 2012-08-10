@@ -40,41 +40,6 @@ public final class Constants {
 	public static final boolean DEFAULT_TCP_NO_DELAY = true;
 
 	/**
-	 * 
-	 */
-	public static final int MAX_NOTES = 32;
-
-	/**
-	 * 
-	 */
-	public static final int NODE_NOTE = MAX_NOTES - 1;
-	/**
-	 * 
-	 */
-	public static final int NODE_CHANNEL_NOTE = MAX_NOTES - 2;
-	/**
-	 * 
-	 */
-	public static final int CLIENT_CHANNEL_NOTE = MAX_NOTES - 3;
-	/**
-	 * 
-	 */
-	public static final int HTTP_RESPONSE_PARSER_NOTE = MAX_NOTES - 4;
-	/**
-	 * 
-	 */
-	public static final int IN_BUFFER_NOTE = MAX_NOTES - 5;
-	/**
-	 * 
-	 */
-	public static final int OUT_BUFFER_NOTE = MAX_NOTES - 6;
-	/**
-	 * 
-	 */
-	public static final int NODE_DATA_BUFFER_NOTE = MAX_NOTES - 7;
-	
-	
-	/**
 	 * CRLF.
 	 */
 	public static final String CRLF = "\r\n";
@@ -82,8 +47,8 @@ public final class Constants {
 	/**
 	 * Server string.
 	 */
-	public static final byte[] SERVER_BYTES = ByteChunk.convertToBytes("Server: Apache-Coyote/1.1"
-			+ CRLF);
+	public static final byte[] SERVER_BYTES = ByteChunk
+			.convertToBytes("Server: Apache-Coyote/1.1" + CRLF);
 
 	/**
 	 * CR.
@@ -149,7 +114,7 @@ public final class Constants {
 	 * Minimum buffer size
 	 */
 	public static final int MIN_BUFFER_SIZE = 8 * 1024;
-	
+
 	/**
 	 * 
 	 */
@@ -162,10 +127,11 @@ public final class Constants {
 	public static final String CLOSE = "close";
 	public static final byte[] CLOSE_BYTES = ByteChunk.convertToBytes(CLOSE);
 	public static final String KEEPALIVE = "keep-alive";
-	public static final byte[] KEEPALIVE_BYTES = ByteChunk.convertToBytes(KEEPALIVE);
+	public static final byte[] KEEPALIVE_BYTES = ByteChunk
+			.convertToBytes(KEEPALIVE);
 	public static final String CHUNKED = "chunked";
-	public static final byte[] ACK_BYTES = ByteChunk.convertToBytes("HTTP/1.1 100 Continue" + CRLF
-			+ CRLF);
+	public static final byte[] ACK_BYTES = ByteChunk
+			.convertToBytes("HTTP/1.1 100 Continue" + CRLF + CRLF);
 	public static final String TRANSFERENCODING = "Transfer-Encoding";
 	public static final byte[] _200_BYTES = ByteChunk.convertToBytes("200");
 	public static final byte[] _400_BYTES = ByteChunk.convertToBytes("400");
@@ -208,7 +174,8 @@ public final class Constants {
 	/**
 	 * 
 	 */
-	public static final byte[] HTTP_11_BYTES = ByteChunk.convertToBytes(HTTP_11);
+	public static final byte[] HTTP_11_BYTES = ByteChunk
+			.convertToBytes(HTTP_11);
 
 	/**
 	 * GET.

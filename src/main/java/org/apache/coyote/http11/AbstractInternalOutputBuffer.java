@@ -56,7 +56,7 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 */
 	protected static StringManager sm = StringManager.getManager(Constants.Package);
 
-	protected static final ConcurrentLinkedQueue<ByteBuffer> poolBuffer = new ConcurrentLinkedQueue<>();
+	protected static final ConcurrentLinkedQueue<ByteBuffer> bufferPool = new ConcurrentLinkedQueue<>();
 	protected ConcurrentLinkedQueue<ByteBuffer> localPool = new ConcurrentLinkedQueue<>();
 
 	/**
@@ -721,7 +721,7 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 * @return an instance of byte buffer
 	 */
 	protected static ByteBuffer poll() {
-		ByteBuffer buffer = poolBuffer.poll();
+		ByteBuffer buffer = bufferPool.poll();
 		if (buffer == null) {
 			buffer = ByteBuffer.allocateDirect(Constants.MIN_BUFFER_SIZE);
 		}
@@ -735,7 +735,7 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 * @param buffer
 	 */
 	protected static void offer(ByteBuffer buffer) {
-		poolBuffer.offer((ByteBuffer) buffer.clear());
+		bufferPool.offer((ByteBuffer) buffer.clear());
 	}
 
 	// ----------------------------------- OutputBufferImpl Inner Class

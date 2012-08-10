@@ -27,13 +27,11 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.CompletionHandler;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.catalina.connector.CoyoteAdapter;
 import org.apache.coyote.ActionCode;
 import org.apache.coyote.Response;
 import org.apache.tomcat.util.buf.ByteChunk;
 import org.apache.tomcat.util.net.NioChannel;
 import org.apache.tomcat.util.net.NioEndpoint;
-import org.jboss.cluster.proxy.container.Node;
 
 /**
  * {@code InternalNioOutputBuffer}
@@ -58,8 +56,6 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 	 * NIO endpoint.
 	 */
 	protected NioEndpoint endpoint;
-
-	private long accum = 0;
 
 	/**
 	 * The completion handler used for asynchronous write operations
@@ -99,7 +95,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 					failed(new ClosedChannelException(), attachment);
 					return;
 				}
-				accum += nBytes;
+				System.out.println("Response written to " + channel);
 				if (attachment.hasRemaining()) {
 					channel.write(attachment, writeTimeout,
 							TimeUnit.MILLISECONDS, attachment, this);
@@ -109,40 +105,12 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 						try {
 							channel.write(buffer, writeTimeout,
 									TimeUnit.MILLISECONDS, buffer, this);
+							nonBlockingWrite(buffer, writeTimeout, TimeUnit.MILLISECONDS);
 						} catch (Throwable t) {
 							failed(t, attachment);
 						}
 					} else {
 						writing = false;
-						System.out.println("contentLength = " + contentLength+", accum = " + accum);
-						if (accum >= contentLength) {
-							// TODO recycle all
-							Http11AbstractProcessor<?> processor = (Http11AbstractProcessor<?>) response.hook;
-							boolean chunked = response.isChunked();
-							processor.endRequest();
-							processor.nextRequest();
-
-							Node node = (Node) response
-									.getNote(Constants.NODE_NOTE);
-							NioChannel nodeChannel = (NioChannel) response
-									.getNote(Constants.NODE_CHANNEL_NOTE);
-
-							if (chunked) {
-								configChunked(nodeChannel);
-							} else {
-								if (processor.isKeepAlive()) {
-									processor.awaitForNext();
-								} else {
-									processor.closeSocket();
-								}
-
-								CoyoteAdapter coyoteAdapter = (CoyoteAdapter) processor.adapter; 
-								coyoteAdapter.getConnector().getConnectionManager().recycle(
-										node.getJvmRoute(), nodeChannel);
-							}
-							// Recycle the processor
-							processor.recycle();
-						}
 					}
 					offer(attachment);
 				}
@@ -181,9 +149,8 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 	public void recycle() {
 		super.recycle();
 		setChannel(null);
-		poolBuffer.addAll(localPool);
+		bufferPool.addAll(localPool);
 		localPool.clear();
-		this.accum = 0;
 	}
 
 	/**
@@ -259,7 +226,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 	protected void tryWrite() {
 		if (!writing && !this.localPool.isEmpty()) {
 			writing = true;
-			nonBlockingWrite(this.localPool.poll(), writeTimeout,
+			blockingWrite(this.localPool.poll(), writeTimeout,
 					TimeUnit.MILLISECONDS);
 		}
 	}
@@ -296,6 +263,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 			}
 		}
 	}
+	
 
 	/**
 	 * 
@@ -541,6 +509,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 		return true;
 	}
 
+	
 	/**
 	 * {@code Tuple}
 	 * 
