@@ -138,7 +138,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 
 								CoyoteAdapter coyoteAdapter = (CoyoteAdapter) processor.adapter; 
 								coyoteAdapter.getConnector().getConnectionManager().recycle(
-										node.getJvmRoute(), channel);
+										node.getJvmRoute(), nodeChannel);
 							}
 							// Recycle the processor
 							processor.recycle();
