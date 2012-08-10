@@ -100,7 +100,11 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 				} else {
 					if (!localPool.isEmpty()) {
 						ByteBuffer buffer = localPool.poll();
+						try {
 						channel.write(buffer, writeTimeout, TimeUnit.MILLISECONDS, buffer, this);
+						} catch (Throwable t) {
+							failed(t, attachment);
+						}
 					} else {
 						writing = false;
 					}
@@ -110,8 +114,8 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 
 			@Override
 			public void failed(Throwable exc, ByteBuffer attachment) {
-				endpoint.removeEventChannel(channel);
-				// endpoint.processChannel(attachment, SocketStatus.ERROR);
+				exc.printStackTrace();
+				endpoint.close(channel);
 			}
 		};
 	}
