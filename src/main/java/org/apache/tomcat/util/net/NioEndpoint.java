@@ -31,7 +31,7 @@ import java.nio.channels.CompletionHandler;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -222,8 +222,10 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 
 		// If the executor is not set, create it with a fixed thread pool
 		if (this.executor == null) {
-			this.executor = Executors.newFixedThreadPool(this.maxThreads,
-					this.threadFactory);
+			//this.executor = Executors.newFixedThreadPool(this.maxThreads,
+				//	this.threadFactory);
+			int parallelism = Runtime.getRuntime().availableProcessors();
+			this.executor = new ForkJoinPool(parallelism, ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true);
 		}
 
 		ExecutorService executorService = (ExecutorService) this.executor;
