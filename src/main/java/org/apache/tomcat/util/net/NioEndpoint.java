@@ -31,6 +31,7 @@ import java.nio.channels.CompletionHandler;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -222,10 +223,8 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 
 		// If the executor is not set, create it with a fixed thread pool
 		if (this.executor == null) {
-			//this.executor = Executors.newFixedThreadPool(this.maxThreads,
-				//	this.threadFactory);
-			int parallelism = Runtime.getRuntime().availableProcessors();
-			this.executor = new ForkJoinPool(parallelism, ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true);
+			this.executor = Executors.newFixedThreadPool(this.maxThreads,
+					this.threadFactory);
 		}
 
 		ExecutorService executorService = (ExecutorService) this.executor;
@@ -489,7 +488,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 		try {
 			ChannelProcessor processor = getChannelProcessor(channel, status);
 			this.executor.execute(processor);
-			logger.info("Task submitted for processing --> " + channel);
 			return true;
 		} catch (Throwable t) {
 			logger.error("Error allocating channel processor");
