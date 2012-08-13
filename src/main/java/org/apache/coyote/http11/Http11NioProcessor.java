@@ -93,13 +93,15 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 	public Http11NioProcessor(int headerBufferSize, NioEndpoint endpoint) {
 		this.endpoint = endpoint;
 		request = new Request();
-		inputBuffer = new InternalNioInputBuffer(request, headerBufferSize, endpoint);
+		inputBuffer = new InternalNioInputBuffer(request, headerBufferSize,
+				endpoint);
 		request.setInputBuffer(inputBuffer);
 
 		response = new Response();
 		response.setResponseParser(new HttpResponseParser());
 		response.setHook(this);
-		outputBuffer = new InternalNioOutputBuffer(response, headerBufferSize, endpoint);
+		outputBuffer = new InternalNioOutputBuffer(response, headerBufferSize,
+				endpoint);
 		response.setOutputBuffer(outputBuffer);
 		request.setResponse(response);
 		sslEnabled = endpoint.getSSLEnabled();
@@ -149,10 +151,12 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 			} else if (obj instanceof OutputFilter) {
 				outputBuffer.addFilter((OutputFilter) obj);
 			} else {
-				log.warn(sm.getString("http11processor.filter.unknown", className));
+				log.warn(sm.getString("http11processor.filter.unknown",
+						className));
 			}
 		} catch (Exception e) {
-			log.error(sm.getString("http11processor.filter.error", className), e);
+			log.error(sm.getString("http11processor.filter.error", className),
+					e);
 		}
 	}
 
@@ -196,33 +200,30 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 	 * @see org.apache.coyote.http11.Http11AbstractProcessor#awaitForNext()
 	 */
 	public void awaitForNext() {
-		final NioChannel ch = channel;
-		// Perform an asynchronous read operation to wait for
-		// incoming data
+		final NioChannel ch = this.channel;
+		// Asynchronous wait for next request.
+		ch.awaitRead(endpoint.getKeepAliveTimeout(), TimeUnit.MILLISECONDS, ch,
+				new CompletionHandler<Integer, NioChannel>() {
 
-		try {
-			ch.awaitRead(endpoint.getKeepAliveTimeout(), TimeUnit.MILLISECONDS, ch,
-					new CompletionHandler<Integer, NioChannel>() {
-
-						@Override
-						public void completed(Integer nBytes, NioChannel attachment) {
-							if (nBytes < 0) {
-								// Reach the end of the stream
-								failed(new ClosedChannelException(), attachment);
-							} else {
-								recycle();
-								endpoint.processChannel(attachment, null);
-							}
+					@Override
+					public void completed(Integer nBytes, NioChannel attachment) {
+						if (nBytes < 0) {
+							// Reach the end of the stream
+							failed(new ClosedChannelException(), attachment);
+						} else {
+							// Process channel
+							endpoint.processChannel(attachment, null);
+							// Recycle the processor
+							recycle();
 						}
+					}
 
-						@Override
-						public void failed(Throwable exc, NioChannel attachment) {
-							closeSocket(attachment);
-						}
-					});
-		} catch (Throwable t) {
-			t.printStackTrace();
-		}
+					@Override
+					public void failed(Throwable exc, NioChannel attachment) {
+						// Close the channel and recycle the processor
+						closeSocket(attachment);
+					}
+				});
 	}
 
 	/*
@@ -233,56 +234,8 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 	 * .util.net.SocketStatus)
 	 */
 	public SocketState event(SocketStatus status) throws IOException {
-
-		RequestInfo rp = request.getRequestProcessor();
-		try {
-			// If processing a write event, must flush any leftover bytes first
-			if (status == SocketStatus.OPEN_WRITE) {
-				// If the flush does not manage to flush all leftover bytes, the
-				// socket should
-				// go back to the poller.
-				if (!outputBuffer.flushLeftover()) {
-					return SocketState.LONG;
-				}
-				// The write notification is now done
-				writeNotification = false;
-				// Allow convenient synchronous blocking writes
-				response.setFlushLeftovers(true);
-			} else if (status == SocketStatus.OPEN_CALLBACK) {
-				// The resume notification is now done
-				resumeNotification = false;
-			} else if (status == SocketStatus.ERROR) {
-				// Set error flag right away
-				error = true;
-			}
-			containerThread.set(Boolean.TRUE);
-			rp.setStage(org.apache.coyote.Constants.STAGE_SERVICE);
-			error = !adapter.event(request, response, status);
-		} catch (InterruptedIOException e) {
-			error = true;
-		} catch (Throwable t) {
-			log.error(sm.getString("http11processor.request.process"), t);
-			// 500 - Internal Server Error
-			response.setStatus(500);
-			error = true;
-		}
-
-		rp.setStage(org.apache.coyote.Constants.STAGE_ENDED);
-
-		if (error) {
-			inputBuffer.nextRequest();
-			outputBuffer.nextRequest();
-			recycle();
-			return SocketState.CLOSED;
-		} else if (!event) {
-			endRequest();
-			boolean pipelined = inputBuffer.nextRequest();
-			outputBuffer.nextRequest();
-			recycle();
-			return (pipelined || !keepAlive) ? SocketState.CLOSED : SocketState.OPEN;
-		} else {
-			return SocketState.LONG;
-		}
+		throw new UnsupportedOperationException(
+				"The event operation is not supported for the mod_cluster proxy");
 	}
 
 	/**
@@ -361,7 +314,8 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 				prepareRequest();
 			} catch (Throwable t) {
 				if (log.isDebugEnabled()) {
-					log.debug(sm.getString("http11processor.request.prepare"), t);
+					log.debug(sm.getString("http11processor.request.prepare"),
+							t);
 				}
 				// 500 - Internal Server Error
 				response.setStatus(500);
@@ -391,17 +345,20 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 					error = true;
 				} catch (Throwable t) {
 					t.printStackTrace();
-					log.error("**** 1 ****" + sm.getString("http11processor.request.process"), t);
+					log.error(
+							"**** 1 ****"
+									+ sm.getString("http11processor.request.process"),
+							t);
 					// 500 - Internal Server Error
 					response.setStatus(500);
 					error = true;
 				}
 			}
 
-			if(error) {
+			if (error) {
 				inputBuffer.setSwallowInput(false);
 			}
-			
+
 			/*
 			 * // Finish the handling of the request if (error) { // If there is
 			 * an unspecified error, the connection // will be // closed
@@ -427,8 +384,8 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 		 * recycle(); return (openChannel) ? SocketState.OPEN :
 		 * SocketState.CLOSED; }
 		 */
-		
-		if(error) {
+
+		if (error) {
 			log.warn("An error occurs during request parsing!");
 			rp.setStage(org.apache.coyote.Constants.STAGE_ENDED);
 			endRequest();
@@ -436,7 +393,7 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 			recycle();
 			return SocketState.CLOSED;
 		}
-		
+
 		return SocketState.OPEN;
 	}
 
@@ -446,15 +403,15 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 	 * @see org.apache.coyote.http11.Http11AbstractProcessor#endRequest()
 	 */
 	public void endRequest() {
-		request.getRequestProcessor().setStage(org.apache.coyote.Constants.STAGE_ENDED);
+		request.getRequestProcessor().setStage(
+				org.apache.coyote.Constants.STAGE_ENDED);
 		// Finish the handling of the request
 		try {
 			inputBuffer.endRequest();
 		} catch (IOException e) {
 			error = true;
 		} catch (Throwable t) {
-			log.error(sm.getString("http11processor.request.finish"),
-					t);
+			log.error(sm.getString("http11processor.request.finish"), t);
 			// 500 - Internal Server Error
 			response.setStatus(500);
 			error = true;
@@ -465,8 +422,7 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 		} catch (IOException e) {
 			error = true;
 		} catch (Throwable t) {
-			log.error(sm.getString("http11processor.response.finish"),
-					t);
+			log.error(sm.getString("http11processor.response.finish"), t);
 			error = true;
 		}
 	}
@@ -588,7 +544,8 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 	private void requestHostAddressAttr() {
 		if (remoteAddr == null && (channel != null)) {
 			try {
-				remoteAddr = ((InetSocketAddress) this.channel.getRemoteAddress()).getHostName();
+				remoteAddr = ((InetSocketAddress) this.channel
+						.getRemoteAddress()).getHostName();
 			} catch (Exception e) {
 				log.warn(sm.getString("http11processor.socket.info"), e);
 			}
@@ -602,7 +559,8 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 	private void requestLocalNameAttr() {
 		if (localName == null && (channel != null)) {
 			try {
-				localName = ((InetSocketAddress) this.channel.getLocalAddress()).getHostName();
+				localName = ((InetSocketAddress) this.channel.getLocalAddress())
+						.getHostName();
 			} catch (Exception e) {
 				log.warn(sm.getString("http11processor.socket.info"), e);
 			}
@@ -616,10 +574,11 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 	private void requestHostAttribute() {
 		if (remoteHost == null && (channel != null)) {
 			try {
-				remoteHost = ((InetSocketAddress) this.channel.getRemoteAddress()).getHostName();
+				remoteHost = ((InetSocketAddress) this.channel
+						.getRemoteAddress()).getHostName();
 				if (remoteHost == null) {
-					remoteAddr = ((InetSocketAddress) this.channel.getRemoteAddress()).getAddress()
-							.getHostAddress();
+					remoteAddr = ((InetSocketAddress) this.channel
+							.getRemoteAddress()).getAddress().getHostAddress();
 					remoteHost = remoteAddr;
 				}
 			} catch (Exception e) {
@@ -635,8 +594,8 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 	private void requestLocalHostAddressAttr() {
 		if (localAddr == null && (channel != null)) {
 			try {
-				localAddr = ((InetSocketAddress) this.channel.getLocalAddress()).getAddress()
-						.getHostAddress();
+				localAddr = ((InetSocketAddress) this.channel.getLocalAddress())
+						.getAddress().getHostAddress();
 			} catch (Exception e) {
 				log.warn(sm.getString("http11processor.socket.info"), e);
 			}
@@ -651,7 +610,8 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 	private void requestRemotePortAttr() {
 		if (remotePort == -1 && (channel != null)) {
 			try {
-				remotePort = ((InetSocketAddress) this.channel.getRemoteAddress()).getPort();
+				remotePort = ((InetSocketAddress) this.channel
+						.getRemoteAddress()).getPort();
 			} catch (Exception e) {
 				log.warn(sm.getString("http11processor.socket.info"), e);
 			}
@@ -665,7 +625,8 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 	private void requestLocalPortAttr() {
 		if (localPort == -1 && (channel != null)) {
 			try {
-				localPort = ((InetSocketAddress) this.channel.getLocalAddress()).getPort();
+				localPort = ((InetSocketAddress) this.channel.getLocalAddress())
+						.getPort();
 			} catch (Exception e) {
 				log.warn(sm.getString("http11processor.socket.info"), e);
 			}
@@ -730,7 +691,8 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 		InputFilter savedBody = new SavedRequestInputFilter(body);
 		savedBody.setRequest(request);
 
-		InternalNioInputBuffer internalBuffer = (InternalNioInputBuffer) request.getInputBuffer();
+		InternalNioInputBuffer internalBuffer = (InternalNioInputBuffer) request
+				.getInputBuffer();
 		internalBuffer.addActiveFilter(savedBody);
 	}
 
@@ -776,7 +738,8 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 		// done
 		// when the channel gets back to the poller
 		if (!eventProcessing && !resumeNotification) {
-			endpoint.addEventChannel(channel, keepAliveTimeout, false, false, true, true);
+			//endpoint.addEventChannel(channel, keepAliveTimeout, false, false,
+			//		true, true);
 		}
 		resumeNotification = true;
 	}
@@ -791,7 +754,7 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 		// done
 		// when the channel gets back to the poller
 		if (!eventProcessing && !writeNotification) {
-			endpoint.addEventChannel(channel, timeout, false, true, false, true);
+			// endpoint.addEventChannel(channel, timeout, false, true, false, true);
 		}
 		writeNotification = true;
 	}
@@ -973,7 +936,8 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 		MessageBytes expectMB = null;
 		if (http11)
 			expectMB = headers.getValue("expect");
-		if ((expectMB != null) && (expectMB.indexOfIgnoreCase("100-continue", 0) != -1)) {
+		if ((expectMB != null)
+				&& (expectMB.indexOfIgnoreCase("100-continue", 0) != -1)) {
 			inputBuffer.setSwallowInput(false);
 			expectation = true;
 		}
@@ -986,7 +950,8 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 			if (userAgentValueMB != null) {
 				String userAgentValue = userAgentValueMB.toString();
 				for (int i = 0; i < restrictedUserAgents.length; i++) {
-					if (restrictedUserAgents[i].matcher(userAgentValue).matches()) {
+					if (restrictedUserAgents[i].matcher(userAgentValue)
+							.matches()) {
 						http11 = false;
 						keepAlive = false;
 						break;
@@ -1008,7 +973,8 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 				if (slashPos == -1) {
 					slashPos = uriBC.getLength();
 					// Set URI as "/"
-					request.requestURI().setBytes(uriB, uriBCStart + pos + 1, 1);
+					request.requestURI()
+							.setBytes(uriB, uriBCStart + pos + 1, 1);
 				} else {
 					request.requestURI().setBytes(uriB, uriBCStart + slashPos,
 							uriBC.getLength() - slashPos);
@@ -1033,7 +999,8 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 			int commaPos = transferEncodingValue.indexOf(',');
 			String encodingName = null;
 			while (commaPos != -1) {
-				encodingName = transferEncodingValue.substring(startPos, commaPos)
+				encodingName = transferEncodingValue
+						.substring(startPos, commaPos)
 						.toLowerCase(Locale.ENGLISH).trim();
 				if (!addInputFilter(inputFilters, encodingName)) {
 					// Unsupported transfer encoding
@@ -1045,8 +1012,8 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 				startPos = commaPos + 1;
 				commaPos = transferEncodingValue.indexOf(',', startPos);
 			}
-			encodingName = transferEncodingValue.substring(startPos).toLowerCase(Locale.ENGLISH)
-					.trim();
+			encodingName = transferEncodingValue.substring(startPos)
+					.toLowerCase(Locale.ENGLISH).trim();
 			if (!addInputFilter(inputFilters, encodingName)) {
 				// Unsupported transfer encoding
 				System.err.println("3) The error is here");
@@ -1059,7 +1026,8 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 		// Parse content-length header
 		long contentLength = request.getContentLengthLong();
 		if (contentLength >= 0 && !contentDelimitation) {
-			inputBuffer.addActiveFilter(inputFilters[Constants.IDENTITY_FILTER]);
+			inputBuffer
+					.addActiveFilter(inputFilters[Constants.IDENTITY_FILTER]);
 			contentDelimitation = true;
 		}
 
@@ -1202,7 +1170,8 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 	 * @return false if the encoding was not found (which would mean it is
 	 *         unsupported)
 	 */
-	protected boolean addInputFilter(InputFilter[] inputFilters, String encodingName) {
+	protected boolean addInputFilter(InputFilter[] inputFilters,
+			String encodingName) {
 		if (encodingName.equals("identity")) {
 			// Skip
 		} else if (encodingName.equals("chunked")) {
@@ -1210,7 +1179,8 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 			contentDelimitation = true;
 		} else {
 			for (int i = 2; i < inputFilters.length; i++) {
-				if (inputFilters[i].getEncodingName().toString().equals(encodingName)) {
+				if (inputFilters[i].getEncodingName().toString()
+						.equals(encodingName)) {
 					inputBuffer.addActiveFilter(inputFilters[i]);
 					return true;
 				}

@@ -807,76 +807,7 @@ public class Http11NioProtocol extends Http11AbstractProtocol<NioChannel> {
 		 */
 		@Override
 		public SocketState event(NioChannel channel, SocketStatus status) {
-
-			Http11NioProcessor processor = connections.get(channel.getId());
-			SocketState state = SocketState.CLOSED;
-
-			if (processor != null) {
-				processor.startProcessing();
-				// Call the appropriate event
-				try {
-					state = processor.event(status);
-				} catch (java.net.SocketException e) {
-					// SocketExceptions are normal
-					Http11NioProtocol.log.debug(
-							sm.getString("http11protocol.proto.socketexception.debug"), e);
-				} catch (java.io.IOException e) {
-					// IOExceptions are normal
-					Http11NioProtocol.log.debug(
-							sm.getString("http11protocol.proto.ioexception.debug"), e);
-				}
-				// Future developers: if you discover any other
-				// rare-but-nonfatal exceptions, catch them here, and log as
-				// above.
-				catch (Throwable e) {
-					// any other exception or error is odd. Here we log it
-					// with "ERROR" level, so it will show up even on
-					// less-than-verbose logs.
-					Http11NioProtocol.log.error(sm.getString("http11protocol.proto.error"), e);
-				} finally {
-					if (state != SocketState.LONG) {
-						connections.remove(channel.getId());
-						recycledProcessors.offer(processor);
-						if (proto.endpoint.isRunning() && state == SocketState.OPEN) {
-							final NioChannel ch = channel;
-							proto.endpoint.removeEventChannel(ch);
-							try {
-								ch.awaitRead(proto.getKeepAliveTimeout(), TimeUnit.MILLISECONDS,
-										proto.endpoint,
-										new CompletionHandler<Integer, NioEndpoint>() {
-
-											@Override
-											public void completed(Integer nBytes,
-													NioEndpoint endpoint) {
-												if (nBytes < 0) {
-													failed(new ClosedChannelException(), endpoint);
-												} else {
-													endpoint.processChannel(ch, null);
-												}
-											}
-
-											@Override
-											public void failed(Throwable exc, NioEndpoint endpoint) {
-												endpoint.close(ch);
-											}
-										});
-							} catch (Exception exp) {
-								// NOPE
-							}
-						}
-					} else {
-						if (proto.endpoint.isRunning()) {
-							proto.endpoint.addEventChannel(channel, processor.getTimeout(),
-									processor.getReadNotifications(),
-									processor.getWriteNotification(),
-									processor.getResumeNotification(), false);
-						}
-					}
-					processor.endProcessing();
-				}
-			}
-
-			return state;
+			throw new UnsupportedOperationException("Not supported for mod_cluster proxy.");
 		}
 
 		/*
@@ -913,9 +844,9 @@ public class Http11NioProtocol extends Http11AbstractProtocol<NioChannel> {
 						// Call a read event right away
 						processor.inputBuffer.readAsync();
 					} else {
-						proto.endpoint.addEventChannel(channel, processor.getTimeout(),
-								processor.getReadNotifications(), false,
-								processor.getResumeNotification(), false);
+						//proto.endpoint.addEventChannel(channel, processor.getTimeout(),
+						//		processor.getReadNotifications(), false,
+						//		processor.getResumeNotification(), false);
 					}
 				}
 				

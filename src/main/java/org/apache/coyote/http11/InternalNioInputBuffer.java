@@ -115,7 +115,6 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 
 			@Override
 			public void failed(Throwable exc, NioChannel attachment) {
-				endpoint.removeEventChannel(attachment);
 				endpoint.processChannel(attachment, SocketStatus.ERROR);
 			}
 		};

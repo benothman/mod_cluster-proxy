@@ -26,13 +26,10 @@ import java.net.BindException;
 import java.net.StandardSocketOptions;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousServerSocketChannel;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.CompletionHandler;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -75,11 +72,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 	protected Handler handler = null;
 
 	/**
-	 * The event poller
-	 */
-	private EventPoller eventPoller;
-
-	/**
 	 * 
 	 */
 	protected NioServerSocketChannelFactory serverSocketChannelFactory = null;
@@ -108,15 +100,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 	 */
 	public Handler getHandler() {
 		return handler;
-	}
-
-	/**
-	 * Number of keep-alive channels.
-	 * 
-	 * @return the number of connection
-	 */
-	public int getKeepAliveCount() {
-		return this.eventPoller.channelList.size();
 	}
 
 	/**
@@ -228,7 +211,8 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 		}
 
 		ExecutorService executorService = (ExecutorService) this.executor;
-		AsynchronousChannelGroup threadGroup = AsynchronousChannelGroup.withThreadPool(executorService);
+		AsynchronousChannelGroup threadGroup = AsynchronousChannelGroup
+				.withThreadPool(executorService);
 
 		if (this.serverSocketChannelFactory == null) {
 			this.serverSocketChannelFactory = NioServerSocketChannelFactory
@@ -282,13 +266,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 						daemon);
 				acceptorThread.start();
 			}
-
-			// Starting the event poller
-			this.eventPoller = new EventPoller(this.maxThreads);
-			this.eventPoller.init();
-			Thread eventPollerThread = newThread(this.eventPoller,
-					"EventPoller", true);
-			eventPollerThread.start();
 		}
 	}
 
@@ -323,11 +300,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 			} finally {
 				listener = null;
 			}
-		}
-
-		// destroy the send file thread
-		if (this.eventPoller != null) {
-			this.eventPoller.destroy();
 		}
 
 		// Shut down the executor
@@ -385,77 +357,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 
 			return false;
 		}
-	}
-
-	/**
-	 * Add specified channel and associated pool to the poller. The added will
-	 * be added to a temporary array, and polled first after a maximum amount of
-	 * time equal to pollTime (in most cases, latency will be much lower,
-	 * however). Note: If both read and write are false, the socket will only be
-	 * checked for timeout; if the socket was already present in the poller, a
-	 * callback event will be generated and the socket will be removed from the
-	 * poller.
-	 * 
-	 * @param channel
-	 *            the channel to add to the poller
-	 * @param timeout
-	 *            to use for this connection
-	 * @param read
-	 *            to do read polling
-	 * @param write
-	 *            to do write polling
-	 * @param resume
-	 *            to send a callback event
-	 * @param wakeup
-	 * 
-	 * @see #addEventChannel(NioChannel, long, int)
-	 */
-	public void addEventChannel(NioChannel channel, long timeout, boolean read,
-			boolean write, boolean resume, boolean wakeup) {
-
-		int flags = (read ? ChannelInfo.READ : 0)
-				| (write ? ChannelInfo.WRITE : 0)
-				| (resume ? ChannelInfo.RESUME : 0)
-				| (wakeup ? ChannelInfo.WAKEUP : 0);
-
-		addEventChannel(channel, timeout, flags);
-	}
-
-	/**
-	 * Same as
-	 * {@link #addEventChannel(NioChannel, long, boolean, boolean, boolean, boolean)}
-	 * 
-	 * @param channel
-	 *            the channel to add to the poller
-	 * @param timeout
-	 *            the channel timeout
-	 * @param flags
-	 *            a merge of read, write, resume and wake up event types
-	 * 
-	 * @see #addEventChannel(NioChannel, long, boolean, boolean, boolean,
-	 *      boolean)
-	 */
-	public void addEventChannel(NioChannel channel, long timeout, int flags) {
-
-		long eventTimeout = timeout <= 0 ? keepAliveTimeout : timeout;
-
-		if (eventTimeout <= 0) {
-			// Always put a timeout in
-			eventTimeout = soTimeout > 0 ? soTimeout : Integer.MAX_VALUE;
-		}
-
-		if (!this.eventPoller.add(channel, eventTimeout, flags)) {
-			close(channel);
-		}
-	}
-
-	/**
-	 * Remove the channel from the list of venet channels
-	 * 
-	 * @param channel
-	 */
-	public void removeEventChannel(NioChannel channel) {
-		this.eventPoller.remove(channel);
 	}
 
 	/**
@@ -1086,292 +987,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 		 */
 		public void setChannel(NioChannel channel) {
 			this.channel = channel;
-		}
-	}
-
-	/**
-	 * {@code EventPoller}
-	 * 
-	 * Created on Mar 26, 2012 at 12:51:53 PM
-	 * 
-	 * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
-	 */
-	public class EventPoller implements Runnable {
-
-		/**
-		 * Last run of maintain. Maintain will run usually every 5s.
-		 */
-		protected long lastMaintain = System.currentTimeMillis();
-
-		protected ConcurrentHashMap<Long, ChannelInfo> channelList;
-		protected ConcurrentLinkedQueue<ChannelInfo> recycledChannelList;
-		private ConcurrentLinkedQueue<CompletionHandler<Integer, NioChannel>> recycledCompletionHandlers;
-		private Object mutex;
-		private int size;
-
-		/**
-		 * Create a new instance of {@code EventPoller}
-		 * 
-		 * @param size
-		 */
-		public EventPoller(int size) {
-			this.size = size;
-		}
-
-		/*
-		 * (non-Javadoc)
-		 * 
-		 * @see java.lang.Runnable#run()
-		 */
-		@Override
-		public void run() {
-			while (running) {
-				// Loop if endpoint is paused
-				while (paused) {
-					try {
-						Thread.sleep(1000);
-					} catch (InterruptedException e) {
-						// Ignore
-					}
-				}
-
-				while (this.channelList.size() < 1 && running) {
-					synchronized (this.mutex) {
-						try {
-							this.mutex.wait(10000);
-						} catch (InterruptedException e) {
-							// NOPE
-						}
-					}
-				}
-
-				while (this.channelList.size() > 0 && running) {
-					maintain();
-					try {
-						Thread.sleep(5000);
-					} catch (InterruptedException e) {
-						// NOPE
-					}
-				}
-
-			}
-		}
-
-		/**
-		 * Check timeouts and raise timeout event
-		 */
-		public void maintain() {
-			long date = System.currentTimeMillis();
-			// Maintain runs at most once every 5s, although it will likely get
-			// called more
-			if ((date - lastMaintain) < 5000L) {
-				return;
-			}
-
-			// Update the last maintain time
-			lastMaintain = date;
-
-			for (ChannelInfo info : this.channelList.values()) {
-				if (date >= info.timeout) {
-					NioChannel ch = info.channel;
-					remove(info);
-					if (!processChannel(ch, SocketStatus.TIMEOUT)) {
-						close(ch);
-					}
-				}
-			}
-		}
-
-		/**
-		 * Remove the channel having the specified id
-		 * 
-		 * @param id
-		 */
-		protected boolean remove(long id) {
-			ChannelInfo info = this.channelList.remove(id);
-			return offer(info);
-		}
-
-		/**
-		 * @param channel
-		 * @return true if the channel is removed successfully else false
-		 */
-		public boolean remove(NioChannel channel) {
-			return channel != null ? remove(channel.getId()) : false;
-		}
-
-		/**
-		 * @param info
-		 * @return true if the channel-info is removed successfully else false
-		 */
-		public boolean remove(ChannelInfo info) {
-			return info != null ? remove(info.channel) : false;
-		}
-
-		/**
-		 * Initialize the event poller
-		 */
-		public void init() {
-			this.mutex = new Object();
-			this.channelList = new ConcurrentHashMap<>(this.size);
-			this.recycledChannelList = new ConcurrentLinkedQueue<>();
-			this.recycledCompletionHandlers = new ConcurrentLinkedQueue<>();
-		}
-
-		/**
-		 * Destroy the event poller
-		 */
-		public void destroy() {
-			synchronized (this.mutex) {
-				this.channelList.clear();
-				this.recycledChannelList.clear();
-				this.recycledCompletionHandlers.clear();
-				this.mutex.notifyAll();
-			}
-		}
-
-		/**
-		 * 
-		 * @return
-		 */
-		protected ChannelInfo poll() {
-			ChannelInfo info = this.recycledChannelList.poll();
-			if (info == null) {
-				info = new ChannelInfo();
-			}
-			return info;
-		}
-
-		/**
-		 * Recycle the the {@link ChannelInfo}
-		 * 
-		 * @param info
-		 */
-		protected boolean offer(ChannelInfo info) {
-			if (info != null) {
-				info.recycle();
-				return this.recycledChannelList.offer(info);
-			}
-			return false;
-		}
-
-		/**
-		 * Peek a {@link java.nio.CompletionHandler} from the list of recycled
-		 * handlers. If the list is empty, create a new one and return it.
-		 * 
-		 * @return a reference of {@link java.nio.CompletionHandler}
-		 */
-		private CompletionHandler<Integer, NioChannel> getCompletionHandler() {
-			CompletionHandler<Integer, NioChannel> handler = this.recycledCompletionHandlers
-					.poll();
-			if (handler == null) {
-				handler = new CompletionHandler<Integer, NioChannel>() {
-
-					@Override
-					public void completed(Integer nBytes, NioChannel attach) {
-						if (nBytes < 0) {
-							failed(new ClosedChannelException(), attach);
-						} else {
-							remove(attach);
-							if (!processChannel(attach, SocketStatus.OPEN_READ)) {
-								close(attach);
-							}
-							// Recycle the completion handler
-							recycleHanlder(this);
-						}
-					}
-
-					@Override
-					public void failed(Throwable exc, NioChannel attach) {
-						remove(attach);
-						processChannel(attach, SocketStatus.ERROR);
-						// Recycle the completion handler
-						recycleHanlder(this);
-					}
-				};
-			}
-
-			return handler;
-		}
-
-		/**
-		 * Recycle the {@link java.nio.CompletionHandler}
-		 * 
-		 * @param handler
-		 */
-		private void recycleHanlder(
-				CompletionHandler<Integer, NioChannel> handler) {
-			this.recycledCompletionHandlers.offer(handler);
-		}
-
-		/**
-		 * Add the channel to the list of channels
-		 * 
-		 * @param channel
-		 * @param timeout
-		 * @param flag
-		 * @return <tt>true</tt> if the channel is added successfully else
-		 *         <tt>false</tt>
-		 */
-		public boolean add(final NioChannel channel, long timeout, int flag) {
-			if (this.channelList.size() > this.size) {
-				return false;
-			}
-
-			long date = timeout + System.currentTimeMillis();
-			ChannelInfo info = this.channelList.get(channel.getId());
-
-			if (info == null) {
-				info = poll();
-				info.channel = channel;
-				info.flags = flag;
-				this.channelList.put(channel.getId(), info);
-			} else {
-				info.flags = ChannelInfo.merge(info.flags, flag);
-			}
-			// Setting the channel timeout
-			info.timeout = date;
-
-			final NioChannel ch = channel;
-
-			if (info.resume()) {
-				remove(info);
-				if (!processChannel(ch, SocketStatus.OPEN_CALLBACK)) {
-					close(ch);
-				}
-			} else if (info.read()) {
-				try {
-					// Trying awaiting for read event
-					ch.awaitRead(ch, getCompletionHandler());
-				} catch (Exception e) {
-					// Ignore
-					if (logger.isDebugEnabled()) {
-						logger.debug(e.getMessage(), e);
-					}
-				}
-			} else if (info.write()) {
-				remove(info);
-				if (!processChannel(ch, SocketStatus.OPEN_WRITE)) {
-					close(ch);
-				}
-			} else if (info.wakeup()) {
-				remove(info);
-				// TODO
-			} else {
-				if (logger.isDebugEnabled()) {
-					logger.debug("Unknown Event");
-				}
-				remove(info);
-				if (!processChannel(ch, SocketStatus.ERROR)) {
-					close(ch);
-				}
-			}
-
-			// Wake up all waiting threads
-			synchronized (this.mutex) {
-				this.mutex.notifyAll();
-			}
-			return true;
 		}
 	}
 
