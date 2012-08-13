@@ -63,16 +63,6 @@ public class ProxyMain {
 	 */
 	public static void main(String[] args) throws Exception {
 		long time = System.currentTimeMillis();
-		String java_home = System.getProperty("java.home");
-		java_home = java_home.substring(0, java_home.length() - 3);
-		System.out
-				.println("\n=========================================================================\n");
-		System.out.println("  JBoss Mod Cluster Proxy Bootstrap Environment\n");
-		System.out.println("  JAVA_HOME: " + java_home + "\n");
-		System.out.println("  JBOSS_CLUSER_HOME: "
-				+ System.getProperty("user.dir") + "\n");
-		System.out
-				.println("=========================================================================\n\n");
 
 		// Loading configuration first
 
