@@ -48,18 +48,19 @@ import org.jboss.logging.Logger;
 public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 
 	// TODO remove this field
-	private static final AtomicInteger counter = new AtomicInteger(0);
+	protected static final AtomicInteger counter = new AtomicInteger(0);
 
-	
 	/**
 	 * 
 	 */
-	protected static final Logger log = Logger.getLogger(AbstractInternalOutputBuffer.class);
+	protected static final Logger log = Logger
+			.getLogger(AbstractInternalOutputBuffer.class);
 
 	/**
 	 * The string manager for this package.
 	 */
-	protected static StringManager sm = StringManager.getManager(Constants.Package);
+	protected static StringManager sm = StringManager
+			.getManager(Constants.Package);
 
 	protected static final ConcurrentLinkedQueue<ByteBuffer> bufferPool = new ConcurrentLinkedQueue<>();
 	protected ConcurrentLinkedQueue<ByteBuffer> localPool = new ConcurrentLinkedQueue<>();
@@ -133,7 +134,7 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 * Write timeout
 	 */
 	protected int writeTimeout = -1;
-	
+
 	/**
 	 * The response content length
 	 */
@@ -165,26 +166,6 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 
 		// Cause loading of HttpMessages
 		HttpMessages.getMessage(200);
-		
-		
-		// TODO remove this thread
-					Thread t = new Thread(new Runnable() {
-						
-						@Override
-						public void run() {
-							
-							while(true) {
-								try {
-									Thread.sleep(5000);
-									log.info("COUNTER = " + counter.get()+", RECYCLED = " + bufferPool.size());
-								} catch (InterruptedException e) {
-									// NOPE
-								}
-							}
-						}
-					});
-					t.start();
-		
 	}
 
 	/**
@@ -556,7 +537,8 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 * @throws IOException
 	 *             an undelying I/O error occured
 	 */
-	public abstract int doWrite(ByteChunk chunk, Response res) throws IOException;
+	public abstract int doWrite(ByteChunk chunk, Response res)
+			throws IOException;
 
 	/**
 	 * Commit the response.
@@ -774,7 +756,8 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	}
 
 	/**
-	 * @param contentLength the contentLength to set
+	 * @param contentLength
+	 *            the contentLength to set
 	 */
 	public void setContentLength(long contentLength) {
 		this.contentLength = contentLength;
