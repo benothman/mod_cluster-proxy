@@ -267,8 +267,6 @@ public class CoyoteAdapter implements Adapter {
 									connector.getConnectionManager().recycle(
 											node.getJvmRoute(), channel);
 								}
-								// Recycle the processor
-								//processor.recycle();
 							}
 						}
 					}
@@ -276,7 +274,7 @@ public class CoyoteAdapter implements Adapter {
 					@Override
 					public void failed(Throwable exc,
 							org.apache.coyote.Response attachment) {
-						//logger.error("READ FROM NODE FAIL : Connection with node is closed -> try again", exc);
+						
 						try {
 							// try again with node
 							tryWithNode(attachment);
