@@ -765,7 +765,8 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 * @param buffer
 	 */
 	protected static void offer(ByteBuffer buffer) {
-		bufferPool.offer((ByteBuffer) buffer.clear());
+		buffer.clear();
+		bufferPool.offer(buffer);
 	}
 
 	// ----------------------------------- OutputBufferImpl Inner Class

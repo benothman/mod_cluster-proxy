@@ -736,9 +736,6 @@ public class Http11NioProtocol extends Http11AbstractProtocol<NioChannel> {
 	 * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
 	 */
 	static class Http11ConnectionHandler implements NioEndpoint.Handler {
-
-		// TODO remove this field
-		private AtomicInteger counter = new AtomicInteger(0);
 		
 		protected Http11NioProtocol proto;
 		protected AtomicLong registerCount = new AtomicLong(0);
@@ -798,24 +795,6 @@ public class Http11NioProtocol extends Http11AbstractProtocol<NioChannel> {
 		 */
 		Http11ConnectionHandler(Http11NioProtocol proto) {
 			this.proto = proto;
-			
-			// TODO remove this thread
-			Thread t = new Thread(new Runnable() {
-				
-				@Override
-				public void run() {
-					
-					while(true) {
-						try {
-							Thread.sleep(5000);
-							log.info("COUNTER = " + counter.get()+", RECYCLED = " + recycledProcessors.size());
-						} catch (InterruptedException e) {
-							// NOPE
-						}
-					}
-				}
-			});
-			t.start();
 		}
 
 		/*
@@ -900,7 +879,7 @@ public class Http11NioProtocol extends Http11AbstractProtocol<NioChannel> {
 		 * @return
 		 */
 		protected Http11NioProcessor createProcessor() {
-			counter.incrementAndGet();
+			
 			Http11NioProcessor processor = new Http11NioProcessor(proto.maxHttpHeaderSize,
 					proto.endpoint);
 			processor.setAdapter(proto.adapter);

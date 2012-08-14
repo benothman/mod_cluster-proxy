@@ -228,7 +228,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 	protected void tryWrite() {
 		if (!writing && !this.localPool.isEmpty()) {
 			writing = true;
-			blockingWrite(this.localPool.poll(), writeTimeout,
+			nonBlockingWrite(this.localPool.poll(), writeTimeout,
 					TimeUnit.MILLISECONDS);
 		}
 	}
