@@ -77,28 +77,6 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 		this.endpoint = endpoint;
 		// Initialize the input buffer
 		this.init();
-		
-		
-		// TODO remove this thread
-				Thread t = new Thread(new Runnable() {
-
-					@Override
-					public void run() {
-
-						while (true) {
-							try {
-								Thread.sleep(5000);
-								log.info("COUNTER = " + counter.get() + ", RECYCLED = "
-										+ bufferPool.size());
-							} catch (InterruptedException e) {
-								// NOPE
-							}
-						}
-					}
-				});
-				t.start();
-		
-		
 	}
 
 	/*

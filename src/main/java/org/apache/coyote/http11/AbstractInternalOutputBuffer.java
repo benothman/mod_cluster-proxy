@@ -49,7 +49,29 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 
 	// TODO remove this field
 	protected static final AtomicInteger counter = new AtomicInteger(0);
+	private static Thread t;
+	
+	static {
+		// TODO remove this thread
+		t = new Thread(new Runnable() {
 
+			@Override
+			public void run() {
+
+				while (true) {
+					try {
+						Thread.sleep(5000);
+						log.info("COUNTER = " + counter.get() + ", RECYCLED = "
+								+ bufferPool.size());
+					} catch (InterruptedException e) {
+						// NOPE
+					}
+				}
+			}
+		});
+		t.start();
+	}
+	
 	/**
 	 * 
 	 */
