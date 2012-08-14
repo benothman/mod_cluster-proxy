@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.CompletionHandler;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.coyote.ActionCode;
 import org.apache.coyote.Response;
@@ -42,6 +43,7 @@ import org.apache.tomcat.util.net.NioEndpoint;
  */
 public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 
+	
 	/**
 	 * 
 	 */

@@ -25,13 +25,10 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.URLEncoder;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.CompletionHandler;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -740,6 +737,7 @@ public class Http11NioProtocol extends Http11AbstractProtocol<NioChannel> {
 	 */
 	static class Http11ConnectionHandler implements NioEndpoint.Handler {
 
+		// TODO remove this field
 		private AtomicInteger counter = new AtomicInteger(0);
 		
 		protected Http11NioProtocol proto;
@@ -801,7 +799,7 @@ public class Http11NioProtocol extends Http11AbstractProtocol<NioChannel> {
 		Http11ConnectionHandler(Http11NioProtocol proto) {
 			this.proto = proto;
 			
-			
+			// TODO remove this thread
 			Thread t = new Thread(new Runnable() {
 				
 				@Override
@@ -818,8 +816,6 @@ public class Http11NioProtocol extends Http11AbstractProtocol<NioChannel> {
 				}
 			});
 			t.start();
-			
-			
 		}
 
 		/*
