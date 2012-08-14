@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.coyote.ActionCode;
 import org.apache.coyote.OutputBuffer;
@@ -47,31 +46,6 @@ import org.jboss.logging.Logger;
  */
 public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 
-	// TODO remove this field
-	protected static final AtomicInteger counter = new AtomicInteger(0);
-	private static Thread t;
-	
-	static {
-		// TODO remove this thread
-		t = new Thread(new Runnable() {
-
-			@Override
-			public void run() {
-
-				while (true) {
-					try {
-						Thread.sleep(5000);
-						log.info("COUNTER = " + counter.get() + ", RECYCLED = "
-								+ bufferPool.size());
-					} catch (InterruptedException e) {
-						// NOPE
-					}
-				}
-			}
-		});
-		t.start();
-	}
-	
 	/**
 	 * 
 	 */
@@ -752,7 +726,6 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	protected static ByteBuffer poll() {
 		ByteBuffer buffer = bufferPool.poll();
 		if (buffer == null) {
-			counter.incrementAndGet();
 			buffer = ByteBuffer.allocateDirect(Constants.MIN_BUFFER_SIZE);
 		}
 

@@ -104,7 +104,9 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 					if (!localPool.isEmpty()) {
 						ByteBuffer buffer = localPool.poll();
 						try {
-							nonBlockingWrite(buffer, writeTimeout, TimeUnit.MILLISECONDS);
+							channel.write(buffer, writeTimeout,
+									TimeUnit.MILLISECONDS, buffer, this);
+							//nonBlockingWrite(buffer, writeTimeout, TimeUnit.MILLISECONDS);
 						} catch (Throwable t) {
 							failed(t, attachment);
 						}
@@ -188,6 +190,8 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 			if (log.isDebugEnabled()) {
 				log.debug(t.getMessage(), t);
 			}
+		} finally {
+			offer(buffer);
 		}
 
 		return nw;
