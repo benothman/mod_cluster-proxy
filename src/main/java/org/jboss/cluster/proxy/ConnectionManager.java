@@ -61,6 +61,7 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	 * 
 	 * @see org.apache.LifeCycleServiceAdapter#init()
 	 */
+    @Override
 	public void init() throws Exception {
 		if (isInitialized()) {
 			return;
