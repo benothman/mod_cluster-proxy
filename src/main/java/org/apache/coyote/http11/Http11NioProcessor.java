@@ -284,7 +284,10 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 				if (!disableUploadTimeout) {
 					endpoint.setSoTimeout(timeout * 1000);
 				}
+				long time = System.currentTimeMillis();
 				inputBuffer.parseHeaders();
+				time = System.currentTimeMillis() - time;
+				System.out.println("Parsing headers time = " + time +"ms");
 			} catch (IOException e) {
 				error = true;
 				break;
