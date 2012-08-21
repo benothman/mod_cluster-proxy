@@ -274,21 +274,7 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 					// (long keep-alive), so that the processor should be
 					// recycled and the method should return true
 					final NioChannel ch = channel;
-					// Perform an asynchronous read operation to wait for
-					// incoming data
-					/*
-					 * ch.awaitRead(endpoint.getKeepAliveTimeout(),
-					 * TimeUnit.MILLISECONDS, ch, new CompletionHandler<Integer,
-					 * NioChannel>() {
-					 * 
-					 * @Override public void completed(Integer nBytes,
-					 * NioChannel attachment) { if (nBytes < 0) { // Reach the
-					 * end of the stream failed(null, attachment); } else {
-					 * endpoint.processChannel(ch, null); } }
-					 * 
-					 * @Override public void failed(Throwable exc, NioChannel
-					 * attachment) { closeSocket(attachment); } });
-					 */
+					
 					break;
 				}
 				request.setStartTime(System.currentTimeMillis());
