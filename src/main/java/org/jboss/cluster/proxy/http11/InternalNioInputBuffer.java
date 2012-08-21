@@ -45,7 +45,7 @@ public class InternalNioInputBuffer implements InputBuffer {
 	private byte[] buff;
 	private NioEndpoint endpoint;
 	private long timeout;
-	private Request request;
+	private org.apache.coyote.Request request;
 	private CompletionHandler<Integer, NioChannel> completionHandler;
 	private int pos;
 	private int lastValid;
@@ -55,7 +55,7 @@ public class InternalNioInputBuffer implements InputBuffer {
 	 * 
 	 * @param request
 	 */
-	public InternalNioInputBuffer(Request request) {
+	public InternalNioInputBuffer(org.apache.coyote.Request request) {
 		this.request = request;
 	}
 

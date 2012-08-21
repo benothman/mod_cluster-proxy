@@ -261,8 +261,10 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 		int soTimeout = endpoint.getSoTimeout();
 		boolean keptAlive = false;
 
+		int counter = 0;
+		
 		while (!error && keepAlive && !event) {
-
+			System.out.println("counter = " + (++counter));
 			// Parsing the request header
 			try {
 				if (!disableUploadTimeout && keptAlive && soTimeout > 0) {
@@ -344,32 +346,7 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 			if (error) {
 				inputBuffer.setSwallowInput(false);
 			}
-
-			/*
-			 * // Finish the handling of the request if (error) { // If there is
-			 * an unspecified error, the connection // will be // closed
-			 * inputBuffer.setSwallowInput(false); } if (!event) { endRequest();
-			 * }
-			 * 
-			 * // If there was an error, make sure the request is counted as //
-			 * and error, and update the statistics counter if (error) {
-			 * response.setStatus(500); } request.updateCounters(); boolean
-			 * pipelined = false; if (!event) { // Next request pipelined =
-			 * inputBuffer.nextRequest(); outputBuffer.nextRequest(); }
-			 * 
-			 * rp.setStage(org.apache.coyote.Constants.STAGE_KEEPALIVE);
-			 */
 		}
-
-		/*
-		 * rp.setStage(org.apache.coyote.Constants.STAGE_ENDED);
-		 * 
-		 * if (event) { if (error) { inputBuffer.nextRequest();
-		 * outputBuffer.nextRequest(); recycle(); return SocketState.CLOSED; }
-		 * else { eventProcessing = false; return SocketState.LONG; } } else {
-		 * recycle(); return (openChannel) ? SocketState.OPEN :
-		 * SocketState.CLOSED; }
-		 */
 
 		if (error) {
 			log.warn("An error occurs during request parsing!");
