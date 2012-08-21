@@ -230,10 +230,8 @@ public class CoyoteAdapter implements Adapter {
 							buff.get(data, 0, nBytes);
 
 							if (httpResponseParser.parsingHeader()) {
-								long time = System.currentTimeMillis();
 								httpResponseParser.parse(attachment, data,
 										nBytes);
-								System.out.println("Parsing header response time = " + (System.currentTimeMillis()-time) + "ms");
 							}
 
 							contentLength += nBytes;
