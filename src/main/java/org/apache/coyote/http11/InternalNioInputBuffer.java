@@ -404,10 +404,7 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 			nRead = this.channel.readBytes(bbuf, readTimeout, TIME_UNIT);
 			if (nRead < 0) {
 				close(channel);
-			}
-			
-			System.out.println(" --> nRead = " + nRead);
-			
+			}			
 		} catch (Exception e) {
 			if (log.isDebugEnabled()) {
 				log.debug("An error occurs when trying a blocking read "
@@ -420,6 +417,10 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 			bbuf.get(buf, pos, nRead);
 			System.arraycopy(buf, pos, buf2, pos, nRead);
 			lastValid = pos + nRead;
+
+			System.out.println(" --> nRead = " + nRead);
+			System.out.print(new String(buf2, pos, nRead));
+			
 		} else if (nRead == NioChannel.OP_STATUS_CLOSED) {
 			throw new IOException(sm.getString("iib.failedread"));
 		} else if (nRead == NioChannel.OP_STATUS_READ_TIMEOUT) {
