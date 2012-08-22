@@ -270,6 +270,16 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 					endpoint.setSoTimeout(soTimeout * 1000);
 				}
 
+				long time = System.currentTimeMillis();
+				boolean bool = inputBuffer.parseRequestLine(keptAlive);
+				time =  System.currentTimeMillis()- time;
+				System.out.println("Parsing Request line time : " + time +"ms");
+				
+				if(!bool /*inputBuffer.parseRequestLine(keptAlive)*/) {
+					break;
+				}
+				
+				/*
 				if (!inputBuffer.parseRequestLine(keptAlive)) {
 					// This means that no data is available right now
 					// (long keep-alive), so that the processor should be
@@ -278,12 +288,13 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 					
 					break;
 				}
+				*/
 				request.setStartTime(System.currentTimeMillis());
 				keptAlive = true;
 				if (!disableUploadTimeout) {
 					endpoint.setSoTimeout(timeout * 1000);
 				}
-				long time = System.currentTimeMillis();
+				time = System.currentTimeMillis();
 				inputBuffer.parseHeaders();
 				time = System.currentTimeMillis() - time;
 				System.out.println("Parsing Request headers time = " + time +"ms");
