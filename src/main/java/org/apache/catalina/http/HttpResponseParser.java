@@ -24,7 +24,6 @@ package org.apache.catalina.http;
 import org.apache.catalina.NodeResponse;
 import org.apache.coyote.Response;
 import org.apache.coyote.http11.Constants;
-import org.jboss.logging.Logger;
 
 /**
  * {@code HttpResponseParser}
@@ -34,8 +33,6 @@ import org.jboss.logging.Logger;
  * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
  */
 public class HttpResponseParser {
-
-	private static final Logger logger = Logger.getLogger(HttpResponseParser.class);
 
 	private boolean parsingHeader = true;
 	private boolean responseLine = false;

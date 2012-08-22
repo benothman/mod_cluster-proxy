@@ -41,6 +41,11 @@ public interface Constants {
 	/**
 	 * 
 	 */
+	public static final String SECURE_PROP_NAME = "org.apache.tomcat.util.net.factory.SECURE";
+	
+	/**
+	 * 
+	 */
 	public static final int DEFAULT_CONNECTION_LINGER = -1;
 	/**
 	 * 

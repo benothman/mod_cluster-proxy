@@ -40,7 +40,6 @@ import org.apache.tomcat.util.buf.MessageBytes;
 import org.apache.tomcat.util.net.NioChannel;
 import org.apache.tomcat.util.net.SocketStatus;
 import org.jboss.cluster.proxy.container.Node;
-import org.jboss.logging.Logger;
 
 /**
  * {@code CoyoteAdapter}
@@ -53,11 +52,10 @@ import org.jboss.logging.Logger;
  * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
  */
 public class CoyoteAdapter implements Adapter {
+
 	/**
 	 * 
 	 */
-	private static Logger logger = Logger.getLogger(CoyoteAdapter.class);
-
 	protected static final boolean ALLOW_BACKSLASH = Boolean
 			.valueOf(
 					System.getProperty(
@@ -179,7 +177,6 @@ public class CoyoteAdapter implements Adapter {
 
 					@Override
 					public void failed(Throwable exc, Response attachment) {
-						// logger.error( "WRITE TO NODE FAIL : Connection with node is closed -> try again", exc);
 						try {
 							// try again with node
 							tryWithNode(attachment);

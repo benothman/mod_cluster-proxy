@@ -68,8 +68,7 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 		}
 		logger.info("Initializing Connection Manager");
 
-		String secureStr = System.getProperty(
-				"org.apache.tomcat.util.net.factory.SECURE", "false");
+		String secureStr = System.getProperty(Constants.SECURE_PROP_NAME, "false");
 		boolean secure = Boolean.valueOf(secureStr).booleanValue();
 		int nThreads = Runtime.getRuntime().availableProcessors() * 32;
 		AsynchronousChannelGroup channelGroup = AsynchronousChannelGroup
