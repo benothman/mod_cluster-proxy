@@ -487,10 +487,14 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 		
 		boolean bool = false;
 		do {
-			long time = System.currentTimeMillis();			
+			long time = System.currentTimeMillis();
+			int s = pos;
 			bool = parseHeader();
 			time = System.currentTimeMillis() - time;
 			System.out.println("  ---> Parsing header time : " + time +"ms");
+			if(time > 20) {
+				System.out.println("\t---> " + new String(buf, s, pos-s));
+			}
 		} while(bool);
 		
 		
