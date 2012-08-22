@@ -21,7 +21,6 @@
  */
 package org.apache.coyote.http11;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
@@ -90,6 +89,7 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 
 	/*
 	 * (non-Javadoc)
+	 * 
 	 * @see org.apache.coyote.http11.AbstractInternalInputBuffer#init()
 	 */
 	public void init() {
@@ -183,182 +183,7 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 		return result;
 	}
 
-	/**
-	 * Read the request line. This function is meant to be used during the HTTP
-	 * request header parsing. Do NOT attempt to read the request body using it.
-	 * 
-	 * @param useAvailableData
-	 * 
-	 * @throws IOException
-	 *             If an exception occurs during the underlying socket read
-	 *             operations, or if the given buffer is not big enough to
-	 *             accommodate the whole line.
-	 * @return true if data is properly fed; false if no data is available
-	 *         immediately and thread should be freed
-	 */
-	public boolean parseRequestLine(boolean useAvailableData)
-			throws IOException {
-
-		int start = 0;
-		// Skipping blank lines
-
-		byte chr = 0;
-		do {
-			// Read new bytes if needed
-			if (pos >= lastValid) {
-				if (useAvailableData) {
-					return false;
-				}
-				if (!fill()) {
-					throw new EOFException(sm.getString("iib.eof.error"));
-				}
-			}
-
-			chr = buf[pos++];
-		} while ((chr == Constants.CR) || (chr == Constants.LF));
-
-		pos--;
-
-		// Mark the current buffer position
-		start = pos;
-
-		if (pos >= lastValid) {
-			if (useAvailableData) {
-				return false;
-			}
-			if (!fill()) {
-				throw new EOFException(sm.getString("iib.eof.error"));
-			}
-		}
-
-		// Reading the method name
-		// Method name is always US-ASCII
-
-		boolean space = false;
-
-		while (!space) {
-
-			// Read new bytes if needed
-			if (pos >= lastValid) {
-				if (!fill()) {
-					throw new EOFException(sm.getString("iib.eof.error"));
-				}
-			}
-
-			// Spec says single SP but it also says be tolerant of HT
-			if (buf[pos] == Constants.SP || buf[pos] == Constants.HT) {
-				space = true;
-				request.method().setBytes(buf, start, pos - start);
-			}
-
-			pos++;
-		}
-
-		// Spec says single SP but also says be tolerant of multiple and/or HT
-		while (space) {
-			// Read new bytes if needed
-			if (pos >= lastValid) {
-				if (!fill()) {
-					throw new EOFException(sm.getString("iib.eof.error"));
-				}
-			}
-			if (buf[pos] == Constants.SP || buf[pos] == Constants.HT) {
-				pos++;
-			} else {
-				space = false;
-			}
-		}
-
-		// Mark the current buffer position
-		start = pos;
-		int end = 0;
-		int questionPos = -1;
-
-		// Reading the URI
-		boolean eol = false;
-
-		while (!space) {
-			// Read new bytes if needed
-			if (pos >= lastValid) {
-				if (!fill())
-					throw new EOFException(sm.getString("iib.eof.error"));
-			}
-
-			// Spec says single SP but it also says be tolerant of HT
-			if (buf[pos] == Constants.SP || buf[pos] == Constants.HT) {
-				space = true;
-				end = pos;
-			} else if ((buf[pos] == Constants.CR) || (buf[pos] == Constants.LF)) {
-				// HTTP/0.9 style request
-				eol = true;
-				space = true;
-				end = pos;
-			} else if ((buf[pos] == Constants.QUESTION) && (questionPos == -1)) {
-				questionPos = pos;
-			}
-
-			pos++;
-		}
-
-		request.unparsedURI().setBytes(buf, start, end - start);
-		if (questionPos >= 0) {
-			request.queryString().setBytes(buf, questionPos + 1,
-					end - questionPos - 1);
-			request.requestURI().setBytes(buf, start, questionPos - start);
-		} else {
-			request.requestURI().setBytes(buf, start, end - start);
-		}
-
-		// Spec says single SP but also says be tolerant of multiple and/or HT
-		while (space) {
-			// Read new bytes if needed
-			if (pos >= lastValid) {
-				if (!fill())
-					throw new EOFException(sm.getString("iib.eof.error"));
-			}
-			if (buf[pos] == Constants.SP || buf[pos] == Constants.HT) {
-				pos++;
-			} else {
-				space = false;
-			}
-		}
-
-		// Mark the current buffer position
-		start = pos;
-		end = 0;
-
-		//
-		// Reading the protocol
-		// Protocol is always US-ASCII
-		//
-		while (!eol) {
-			// Read new bytes if needed
-			if (pos >= lastValid) {
-				if (!fill()) {
-					throw new EOFException(sm.getString("iib.eof.error"));
-				}
-			}
-
-			if (buf[pos] == Constants.CR) {
-				end = pos;
-			} else if (buf[pos] == Constants.LF) {
-				if (end == 0)
-					end = pos;
-				eol = true;
-			}
-
-			pos++;
-		}
-
-		if ((end - start) > 0) {
-			request.protocol().setBytes(buf, start, end - start);
-		} else {
-			request.protocol().setString("");
-		}
-
-		return true;
-	}
-
+	
 	/**
 	 * Available bytes (note that due to encoding, this may not correspond )
 	 */
@@ -394,33 +219,28 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 	 * @see org.apache.coyote.http11.AbstractInternalInputBuffer#fill()
 	 */
 	protected boolean fill() throws IOException {
-		System.out.println("Calling fill() method");
 		int nRead = 0;
 		// Prepare the internal input buffer for reading
 		this.prepare();
 		// Reading from client
-		
+
 		try {
 			nRead = this.channel.readBytes(bbuf, readTimeout, TIME_UNIT);
 			if (nRead < 0) {
 				close(channel);
-			}			
+			}
 		} catch (Exception e) {
 			if (log.isDebugEnabled()) {
 				log.debug("An error occurs when trying a blocking read "
 						+ e.getMessage());
 			}
 		}
-		
+
 		if (nRead > 0) {
 			bbuf.flip();
 			bbuf.get(buf, pos, nRead);
 			System.arraycopy(buf, pos, buf2, pos, nRead);
 			lastValid = pos + nRead;
-
-			System.out.println(" --> nRead = " + nRead);
-			System.out.print(new String(buf2, pos, nRead));
-			
 		} else if (nRead == NioChannel.OP_STATUS_CLOSED) {
 			throw new IOException(sm.getString("iib.failedread"));
 		} else if (nRead == NioChannel.OP_STATUS_READ_TIMEOUT) {
@@ -497,7 +317,7 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 	 * @return the number of bytes read or -1 if the end of the stream was
 	 *         reached
 	 */
-	private int blockingRead() {
+	protected int blockingRead() {
 		int nr = 0;
 		try {
 			nr = this.channel.readBytes(this.bbuf, readTimeout, TIME_UNIT);

@@ -479,29 +479,191 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	}
 
 	/**
+	 * Read the request line. This function is meant to be used during the HTTP
+	 * request header parsing. Do NOT attempt to read the request body using it.
+	 * 
+	 * @param useAvailableData
+	 * 
+	 * @throws IOException
+	 *             If an exception occurs during the underlying socket read
+	 *             operations, or if the given buffer is not big enough to
+	 *             accommodate the whole line.
+	 * @return true if data is properly fed; false if no data is available
+	 *         immediately and thread should be freed
+	 */
+	public boolean parseRequestLine(boolean useAvailableData)
+			throws IOException {
+
+		int start = 0;
+		// Skipping blank lines
+
+		byte chr = 0;
+		do {
+			// Read new bytes if needed
+			if (pos >= lastValid) {
+				if (useAvailableData) {
+					return false;
+				}
+				if (!fill()) {
+					throw new EOFException(sm.getString("iib.eof.error"));
+				}
+			}
+
+			chr = buf[pos++];
+		} while ((chr == Constants.CR) || (chr == Constants.LF));
+
+		pos--;
+
+		// Mark the current buffer position
+		start = pos;
+
+		if (pos >= lastValid) {
+			if (useAvailableData) {
+				return false;
+			}
+			if (!fill()) {
+				throw new EOFException(sm.getString("iib.eof.error"));
+			}
+		}
+
+		// Reading the method name
+		// Method name is always US-ASCII
+
+		boolean space = false;
+
+		while (!space) {
+
+			// Read new bytes if needed
+			if (pos >= lastValid) {
+				if (!fill()) {
+					throw new EOFException(sm.getString("iib.eof.error"));
+				}
+			}
+
+			// Spec says single SP but it also says be tolerant of HT
+			if (buf[pos] == Constants.SP || buf[pos] == Constants.HT) {
+				space = true;
+				request.method().setBytes(buf, start, pos - start);
+			}
+
+			pos++;
+		}
+
+		// Spec says single SP but also says be tolerant of multiple and/or HT
+		while (space) {
+			// Read new bytes if needed
+			if (pos >= lastValid) {
+				if (!fill()) {
+					throw new EOFException(sm.getString("iib.eof.error"));
+				}
+			}
+			if (buf[pos] == Constants.SP || buf[pos] == Constants.HT) {
+				pos++;
+			} else {
+				space = false;
+			}
+		}
+
+		// Mark the current buffer position
+		start = pos;
+		int end = 0;
+		int questionPos = -1;
+
+		// Reading the URI
+		boolean eol = false;
+
+		while (!space) {
+			// Read new bytes if needed
+			if (pos >= lastValid) {
+				if (!fill())
+					throw new EOFException(sm.getString("iib.eof.error"));
+			}
+
+			// Spec says single SP but it also says be tolerant of HT
+			if (buf[pos] == Constants.SP || buf[pos] == Constants.HT) {
+				space = true;
+				end = pos;
+			} else if ((buf[pos] == Constants.CR) || (buf[pos] == Constants.LF)) {
+				// HTTP/0.9 style request
+				eol = true;
+				space = true;
+				end = pos;
+			} else if ((buf[pos] == Constants.QUESTION) && (questionPos == -1)) {
+				questionPos = pos;
+			}
+
+			pos++;
+		}
+
+		request.unparsedURI().setBytes(buf, start, end - start);
+		if (questionPos >= 0) {
+			request.queryString().setBytes(buf, questionPos + 1,
+					end - questionPos - 1);
+			request.requestURI().setBytes(buf, start, questionPos - start);
+		} else {
+			request.requestURI().setBytes(buf, start, end - start);
+		}
+
+		// Spec says single SP but also says be tolerant of multiple and/or HT
+		while (space) {
+			// Read new bytes if needed
+			if (pos >= lastValid) {
+				if (!fill())
+					throw new EOFException(sm.getString("iib.eof.error"));
+			}
+			if (buf[pos] == Constants.SP || buf[pos] == Constants.HT) {
+				pos++;
+			} else {
+				space = false;
+			}
+		}
+
+		// Mark the current buffer position
+		start = pos;
+		end = 0;
+
+		//
+		// Reading the protocol
+		// Protocol is always US-ASCII
+		//
+		while (!eol) {
+			// Read new bytes if needed
+			if (pos >= lastValid) {
+				if (!fill()) {
+					throw new EOFException(sm.getString("iib.eof.error"));
+				}
+			}
+
+			if (buf[pos] == Constants.CR) {
+				end = pos;
+			} else if (buf[pos] == Constants.LF) {
+				if (end == 0)
+					end = pos;
+				eol = true;
+			}
+
+			pos++;
+		}
+
+		if ((end - start) > 0) {
+			request.protocol().setBytes(buf, start, end - start);
+		} else {
+			request.protocol().setString("");
+		}
+
+		return true;
+	}
+
+	/**
 	 * Parse the HTTP headers.
 	 * 
 	 * @throws IOException
 	 */
 	public void parseHeaders() throws IOException {
-		
-		boolean bool = false;
-		do {
-			long time = System.currentTimeMillis();
-			int s = pos;
-			bool = parseHeader();
-			time = System.currentTimeMillis() - time;
-			System.out.println("  ---> Parsing header time : " + time +"ms");
-			if(time > 20) {
-				System.out.println("\t---> " + new String(buf, s, pos-s));
-			}
-		} while(bool);
-		
-		
-		/*
+
 		while (parseHeader()) {
+			// NOPE
 		}
-		*/
 
 		parsingHeader = false;
 		end = pos;

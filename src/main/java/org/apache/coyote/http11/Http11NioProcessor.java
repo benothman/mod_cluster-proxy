@@ -261,7 +261,6 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 		int soTimeout = endpoint.getSoTimeout();
 		boolean keptAlive = false;
 
-		
 		while (!error && keepAlive && !event) {
 
 			// Parsing the request header
@@ -270,34 +269,21 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 					endpoint.setSoTimeout(soTimeout * 1000);
 				}
 
-				long time = System.currentTimeMillis();
-				boolean bool = inputBuffer.parseRequestLine(keptAlive);
-				time =  System.currentTimeMillis()- time;
-				System.out.println("Parsing Request line time : " + time +"ms");
-				
-				if(!bool /*inputBuffer.parseRequestLine(keptAlive)*/) {
-					break;
-				}
-				
-				/*
 				if (!inputBuffer.parseRequestLine(keptAlive)) {
 					// This means that no data is available right now
 					// (long keep-alive), so that the processor should be
 					// recycled and the method should return true
-					final NioChannel ch = channel;
-					
+
 					break;
 				}
-				*/
+
 				request.setStartTime(System.currentTimeMillis());
 				keptAlive = true;
 				if (!disableUploadTimeout) {
 					endpoint.setSoTimeout(timeout * 1000);
 				}
-				time = System.currentTimeMillis();
+				// Parsing headers
 				inputBuffer.parseHeaders();
-				time = System.currentTimeMillis() - time;
-				System.out.println("Parsing Request headers time = " + time +"ms");
 			} catch (IOException e) {
 				error = true;
 				break;
@@ -714,8 +700,8 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 		// done
 		// when the channel gets back to the poller
 		if (!eventProcessing && !resumeNotification) {
-			//endpoint.addEventChannel(channel, keepAliveTimeout, false, false,
-			//		true, true);
+			// endpoint.addEventChannel(channel, keepAliveTimeout, false, false,
+			// true, true);
 		}
 		resumeNotification = true;
 	}
@@ -730,7 +716,8 @@ public class Http11NioProcessor extends Http11AbstractProcessor<NioChannel> {
 		// done
 		// when the channel gets back to the poller
 		if (!eventProcessing && !writeNotification) {
-			// endpoint.addEventChannel(channel, timeout, false, true, false, true);
+			// endpoint.addEventChannel(channel, timeout, false, true, false,
+			// true);
 		}
 		writeNotification = true;
 	}
