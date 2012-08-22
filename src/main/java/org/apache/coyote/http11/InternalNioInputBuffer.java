@@ -394,6 +394,7 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 	 * @see org.apache.coyote.http11.AbstractInternalInputBuffer#fill()
 	 */
 	protected boolean fill() throws IOException {
+		System.out.println("Calling fill() method");
 		int nRead = 0;
 		// Prepare the internal input buffer for reading
 		this.prepare();
