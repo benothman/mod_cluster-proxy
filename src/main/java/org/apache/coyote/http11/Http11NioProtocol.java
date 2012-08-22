@@ -24,10 +24,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.URLEncoder;
 import java.util.Iterator;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.management.ObjectName;
@@ -745,52 +743,7 @@ public class Http11NioProtocol extends Http11AbstractProtocol<NioChannel> {
 		protected Http11NioProtocol proto;
 		protected AtomicLong registerCount = new AtomicLong(0);
 		protected RequestGroupInfo global = new RequestGroupInfo();
-		protected ConcurrentHashMap<Long, Http11NioProcessor> connections = new ConcurrentHashMap<Long, Http11NioProcessor>();
-		protected ConcurrentLinkedQueue<Http11NioProcessor> recycledProcessors = new ConcurrentLinkedQueue<Http11NioProcessor>() {
-			/**
-             *
-             */
-			private static final long serialVersionUID = 1L;
-			protected AtomicInteger size = new AtomicInteger(0);
-
-			@Override
-			public boolean offer(Http11NioProcessor processor) {
-				boolean offer = (proto.processorCache == -1) ? true : (size
-						.get() < proto.processorCache);
-				// avoid over growing our cache or add after we have stopped
-				boolean result = false;
-				if (offer) {
-					result = super.offer(processor);
-					if (result) {
-						size.incrementAndGet();
-					}
-				}
-				if (!result) {
-					unregister(processor);
-				}
-				return result;
-			}
-
-			@Override
-			public Http11NioProcessor poll() {
-				Http11NioProcessor result = super.poll();
-				if (result != null) {
-					size.decrementAndGet();
-				}
-				return result;
-			}
-
-			@Override
-			public void clear() {
-				Http11NioProcessor next = poll();
-				while (next != null) {
-					unregister(next);
-					next = poll();
-				}
-				super.clear();
-				size.set(0);
-			}
-		};
+		protected ConcurrentLinkedQueue<Http11NioProcessor> recycledProcessors = new ConcurrentLinkedQueue<>();
 
 		/**
 		 * Create a new instance of {@code Http11ConnectionHandler}
@@ -836,32 +789,8 @@ public class Http11NioProtocol extends Http11AbstractProtocol<NioChannel> {
 				} else {
 					processor.setSSLSupport(null);
 				}
-
-				long time = System.currentTimeMillis();
-				SocketState state = processor.process(channel);
-				System.out.println("Process time = "
-						+ (System.currentTimeMillis() - time) + "ms");
-
-				if (state == SocketState.LONG) {
-					// Associate the connection with the processor. The next
-					// request processed by this thread will use either a new or
-					// a recycled processor.
-					connections.put(channel.getId(), processor);
-
-					if ( /* processor.isAvailable() && */processor
-							.getReadNotifications()) {
-						// Call a read event right away
-						processor.inputBuffer.readAsync();
-					} else {
-						// proto.endpoint.addEventChannel(channel,
-						// processor.getTimeout(),
-						// processor.getReadNotifications(), false,
-						// processor.getResumeNotification(), false);
-					}
-				}
-
-				return state;
-
+				// Process the channel
+				return processor.process(channel);
 			} catch (IOException e) {
 				if (e instanceof java.net.SocketException) {
 					// SocketExceptions are normal
@@ -909,7 +838,7 @@ public class Http11NioProtocol extends Http11AbstractProtocol<NioChannel> {
 			processor.setRestrictedUserAgents(proto.restrictedUserAgents);
 			processor.setMaxSavePostSize(proto.maxSavePostSize);
 			processor.setServer(proto.server);
-			register(processor);
+			//register(processor);
 			return processor;
 		}
 
