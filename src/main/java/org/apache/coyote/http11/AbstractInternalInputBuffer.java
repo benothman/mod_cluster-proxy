@@ -45,12 +45,14 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	/**
 	 * 
 	 */
-	protected static final Logger log = Logger.getLogger(AbstractInternalInputBuffer.class);
+	protected static final Logger log = Logger
+			.getLogger(AbstractInternalInputBuffer.class);
 
 	/**
 	 * The string manager for this package.
 	 */
-	protected static StringManager sm = StringManager.getManager(Constants.Package);
+	protected static StringManager sm = StringManager
+			.getManager(Constants.Package);
 
 	/**
 	 * Associated Coyote request.
@@ -127,7 +129,7 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	/**
 	 * The default time unit
 	 */
-	protected static final TimeUnit unit = TimeUnit.MILLISECONDS;
+	protected static final TimeUnit TIME_UNIT = TimeUnit.MILLISECONDS;
 
 	/**
 	 * Create a new instance of {@code AbstractInternalInputBuffer}
@@ -159,6 +161,11 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 		this.buf2 = new byte[size];
 		this.bbuf = ByteBuffer.allocateDirect(size);
 	}
+
+	/**
+	 * Initialize the input buffer
+	 */
+	public abstract void init();
 
 	/**
 	 * @return the byte array
@@ -307,7 +314,7 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	public void endRequest() throws IOException {
 		if (swallowInput && (lastActiveFilter != -1)) {
 			int extraBytes = (int) activeFilters[lastActiveFilter].end();
-			//int extraBytes = 0;
+			// int extraBytes = 0;
 			pos = pos - extraBytes;
 		}
 	}
@@ -415,7 +422,8 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 
 		request.unparsedURI().setBytes(buf, start, end - start);
 		if (questionPos >= 0) {
-			request.queryString().setBytes(buf, questionPos + 1, end - questionPos - 1);
+			request.queryString().setBytes(buf, questionPos + 1,
+					end - questionPos - 1);
 			request.requestURI().setBytes(buf, start, questionPos - start);
 		} else {
 			request.requestURI().setBytes(buf, start, end - start);
@@ -476,8 +484,19 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	 * @throws IOException
 	 */
 	public void parseHeaders() throws IOException {
+		
+		boolean bool = false;
+		do {
+			long time = System.currentTimeMillis();			
+			bool = parseHeader();
+			System.out.println("  ---> Parsing header time : " + time +"ms");
+		} while(bool);
+		
+		
+		/*
 		while (parseHeader()) {
 		}
+		*/
 
 		parsingHeader = false;
 		end = pos;
