@@ -405,6 +405,9 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 			if (nRead < 0) {
 				close(channel);
 			}
+			
+			System.out.println(" --> nRead = " + nRead);
+			
 		} catch (Exception e) {
 			if (log.isDebugEnabled()) {
 				log.debug("An error occurs when trying a blocking read "
