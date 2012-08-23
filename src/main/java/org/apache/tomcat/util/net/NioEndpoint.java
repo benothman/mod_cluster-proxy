@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -66,6 +67,9 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 	private ConcurrentLinkedQueue<ChannelProcessor> recycledChannelProcessors;
 	private ConcurrentLinkedQueue<HandshakeHandler> recycledHandshakeProcessors;
 
+	
+	private ForkJoinPool forkJoinPool;
+	
 	/**
 	 * Handling of accepted sockets.
 	 */
@@ -210,6 +214,10 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 					this.threadFactory);
 		}
 
+		logger.info("Initializing the ForkJoinPool");
+		this.forkJoinPool = new ForkJoinPool(Runtime.getRuntime()
+				.availableProcessors(), ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true);
+		
 		ExecutorService executorService = (ExecutorService) this.executor;
 		AsynchronousChannelGroup threadGroup = AsynchronousChannelGroup
 				.withThreadPool(executorService);
@@ -388,7 +396,16 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 		}
 		try {
 			ChannelProcessor processor = getChannelProcessor(channel, status);
-			this.executor.execute(processor);
+			this.forkJoinPool.execute(processor);
+			
+			
+			//this.executor.execute(processor);
+			
+			
+			
+			
+			
+			
 			return true;
 		} catch (Throwable t) {
 			// This means we got an OOM or similar creating a thread, or that
