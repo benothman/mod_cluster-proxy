@@ -82,6 +82,8 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 			}
 		}
 
+		logger.info("Configure max thread number for nodes : " + nThreads);
+		
 		AsynchronousChannelGroup channelGroup = AsynchronousChannelGroup
 				.withFixedThreadPool(nThreads, Executors.defaultThreadFactory());
 		this.factory = NioChannelFactory.createNioChannelFactory(channelGroup,
