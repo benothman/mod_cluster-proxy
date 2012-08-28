@@ -30,9 +30,9 @@ package org.jboss.cluster.proxy;
  */
 public interface Constants {
 
-	
-	public static final int DEFAULT_MAX_THREADS = Runtime.getRuntime().availableProcessors() * 64;
-	
+	public static final int DEFAULT_MAX_THREADS = Runtime.getRuntime()
+			.availableProcessors() * 32;
+
 	/**
 	 * 
 	 */
@@ -42,7 +42,12 @@ public interface Constants {
 	 * 
 	 */
 	public static final String SECURE_PROP_NAME = "org.apache.tomcat.util.net.factory.SECURE";
-	
+
+	/**
+	 * 
+	 */
+	public static final String MAX_NODE_THREAD_NAME = "org.jboss.cluster.proxy.MAX_NODE_THREADS";
+
 	/**
 	 * 
 	 */
@@ -97,7 +102,8 @@ public interface Constants {
 	/**
 	 * 
 	 */
-	public static final byte[] DISABLE_APP_MSG_BYTES = DISABLE_APP_MSG.getBytes();
+	public static final byte[] DISABLE_APP_MSG_BYTES = DISABLE_APP_MSG
+			.getBytes();
 
 	/**
 	 * New requests for this webapp should not be sent to this node. Use of to
@@ -116,7 +122,8 @@ public interface Constants {
 	/**
 	 * 
 	 */
-	public static final byte[] STOP_APP_RSP_MSG_BYTES = STOP_APP_RSP_MSG.getBytes();
+	public static final byte[] STOP_APP_RSP_MSG_BYTES = STOP_APP_RSP_MSG
+			.getBytes();
 
 	/**
 	 * Remove the information about this webapp from mod_cluster tables
@@ -237,7 +244,8 @@ public interface Constants {
 	/**
 	 * 
 	 */
-	public static final byte[] HTTP_11_500_ERROR_BYTES = HTTP_11_500_ERROR.getBytes();
+	public static final byte[] HTTP_11_500_ERROR_BYTES = HTTP_11_500_ERROR
+			.getBytes();
 
 	/**
 	 * The CRLF

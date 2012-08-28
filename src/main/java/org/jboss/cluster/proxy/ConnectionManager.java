@@ -61,16 +61,27 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	 * 
 	 * @see org.apache.LifeCycleServiceAdapter#init()
 	 */
-    @Override
+	@Override
 	public void init() throws Exception {
 		if (isInitialized()) {
 			return;
 		}
 		logger.info("Initializing Connection Manager");
 
-		String secureStr = System.getProperty(Constants.SECURE_PROP_NAME, "false");
+		String secureStr = System.getProperty(Constants.SECURE_PROP_NAME,
+				"false");
 		boolean secure = Boolean.valueOf(secureStr).booleanValue();
-		int nThreads = Runtime.getRuntime().availableProcessors() * 32;
+
+		int nThreads = Constants.DEFAULT_MAX_THREADS;
+		String str = System.getProperty(Constants.MAX_NODE_THREAD_NAME);
+		if (str != null) {
+			try {
+				nThreads = Integer.valueOf(str);
+			} catch (NumberFormatException e) {
+				logger.warn(e.getMessage());
+			}
+		}
+
 		AsynchronousChannelGroup channelGroup = AsynchronousChannelGroup
 				.withFixedThreadPool(nThreads, Executors.defaultThreadFactory());
 		this.factory = NioChannelFactory.createNioChannelFactory(channelGroup,

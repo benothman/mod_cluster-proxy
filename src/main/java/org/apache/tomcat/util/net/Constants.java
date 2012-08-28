@@ -54,7 +54,7 @@ public final class Constants {
     /**
      * 
      */
-    public static final String MAX_THREAD_NAME = "org.apache.tomcat.util.net.MAX_THREADS";
+    public static final String MAX_THREAD_NAME = "org.apache.tomcat.util.net.MAX_CLIENT_THREADS";
 	/**
 	 * 
 	 */
