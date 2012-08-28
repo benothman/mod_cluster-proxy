@@ -106,5 +106,4 @@ public interface Endpoint<T extends Closeable> {
 	 */
 	public int getPort();
 	
-	
 }
