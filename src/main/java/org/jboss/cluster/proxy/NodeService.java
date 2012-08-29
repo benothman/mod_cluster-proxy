@@ -27,6 +27,7 @@ import java.util.Random;
 import java.util.UUID;
 
 import org.apache.LifeCycleServiceAdapter;
+import org.apache.coyote.Request;
 import org.jboss.cluster.proxy.container.Node;
 import org.jboss.cluster.proxy.xml.XmlConfig;
 import org.jboss.cluster.proxy.xml.XmlNode;
@@ -85,6 +86,19 @@ public class NodeService extends LifeCycleServiceAdapter {
 	public Node getNode() {
 		int index = random.nextInt(this.nodes.size());
 		return this.nodes.get(index);
+	}
+
+	/**
+	 * Select a node for the specified {@code Request}
+	 * 
+	 * @param request
+	 * @return a node instance form the list of nodes
+	 */
+	public Node getNode(Request request) {
+
+		// TODO complete code here
+
+		return getNode();
 	}
 
 	/**
