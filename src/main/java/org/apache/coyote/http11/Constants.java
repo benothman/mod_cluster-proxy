@@ -192,4 +192,22 @@ public final class Constants {
 	 */
 	public static final String POST = "POST";
 
+	public static final String CONFIG = "CONFIG";
+
+	public static final String ENABLE_APP = "ENABLE_APP";
+
+	public static final String DISABLE_APP = "DISABLE_APP";
+
+	public static final String STOP_APP = "STOP_APP";
+
+	public static final String REMOVE_APP = "REMOVE_APP";
+
+	public static final String STATUS = "STATUS";
+
+	public static final String DUMP = "DUMP";
+
+	public static final String INFO = "INFO";
+
+	public static final String PING = "PING";
+
 }
