@@ -141,8 +141,8 @@ public class CoyoteAdapter implements Adapter {
 				.getNote(Constants.NODE_CHANNEL_NOTE);
 		final ByteBuffer inBuffer = (ByteBuffer) response
 				.getNote(Constants.IN_BUFFER_NOTE);
-		
-		if(inBuffer.position() > 0) {
+
+		if (inBuffer.position() > 0) {
 			inBuffer.flip();
 		}
 		// Write the request to the node
@@ -232,7 +232,9 @@ public class CoyoteAdapter implements Adapter {
 							}
 
 							contentLength += nBytes;
-							outputBuffer.setContentLength(attachment.getContentLengthLong() + httpResponseParser.getHeaderLength());
+							outputBuffer.setContentLength(attachment
+									.getContentLengthLong()
+									+ httpResponseParser.getHeaderLength());
 							buff.clear();
 							outputBuffer.writeToClient(outputBuffer.getBytes(),
 									0, nBytes);
@@ -271,7 +273,7 @@ public class CoyoteAdapter implements Adapter {
 					@Override
 					public void failed(Throwable exc,
 							org.apache.coyote.Response attachment) {
-						
+
 						try {
 							// try again with node
 							tryWithNode(attachment);
@@ -292,8 +294,7 @@ public class CoyoteAdapter implements Adapter {
 	private void prepare(final org.apache.coyote.Request request,
 			final org.apache.coyote.Response response) {
 
-		Node node = this.connector.getNodeService().getNode(
-				request.requestURI().getString());
+		Node node = this.connector.getNodeService().getNode(request);
 		NioChannel nodeChannel = this.connector.getConnectionManager()
 				.getChannel(node);
 
