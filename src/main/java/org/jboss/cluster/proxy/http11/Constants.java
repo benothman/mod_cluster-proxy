@@ -1,39 +1,37 @@
-/**
- * JBoss, Home of Professional Open Source. Copyright 2012, Red Hat, Inc., and
- * individual contributors as indicated by the @author tags. See the
- * copyright.txt file in the distribution for a full listing of individual
- * contributors.
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements. See the NOTICE file distributed with this
+ * work for additional information regarding copyright ownership. The ASF
+ * licenses this file to You under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  * 
- * This is free software; you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
+ * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * This software is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU Lesser General Public License
- * along with this software; if not, write to the Free Software Foundation,
- * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA, or see the FSF
- * site: http://www.fsf.org.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
  */
+
 package org.jboss.cluster.proxy.http11;
 
+import org.apache.tomcat.util.buf.ByteChunk;
+
 /**
- * {@code Constants}
+ * Constants.
  * 
- * Created on Jul 3, 2012 at 9:58:20 AM
- * 
- * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
+ * @author Remy Maucherat
  */
 public final class Constants {
 
+	// -------------------------------------------------------------- Constants
+
 	/**
-	 * 
+	 * Package name.
 	 */
-	public static final int MAX_POST_SIZE = 7 * 1500;
+	public static final String Package = "org.apache.coyote.http11";
 
 	public static final int DEFAULT_CONNECTION_LINGER = -1;
 	public static final int DEFAULT_CONNECTION_TIMEOUT = 60000;
@@ -49,7 +47,8 @@ public final class Constants {
 	/**
 	 * Server string.
 	 */
-	public static final byte[] SERVER_BYTES = ("Server: Apache-Coyote/1.1" + CRLF).getBytes();
+	public static final byte[] SERVER_BYTES = ByteChunk
+			.convertToBytes("Server: Apache-Coyote/1.1" + CRLF);
 
 	/**
 	 * CR.
@@ -116,20 +115,27 @@ public final class Constants {
 	 */
 	public static final int MIN_BUFFER_SIZE = 8 * 1024;
 
+	/**
+	 * 
+	 */
+	public static final int WRITE_BUFFER_SIZE = 9000;
+
 	/* Various constant "strings" */
-	public static final byte[] CRLF_BYTES = CRLF.getBytes();
-	public static final byte[] COLON_BYTES = ": ".getBytes();
+	public static final byte[] CRLF_BYTES = ByteChunk.convertToBytes(CRLF);
+	public static final byte[] COLON_BYTES = ByteChunk.convertToBytes(": ");
 	public static final String CONNECTION = "Connection";
 	public static final String CLOSE = "close";
-	public static final byte[] CLOSE_BYTES = CLOSE.getBytes();
+	public static final byte[] CLOSE_BYTES = ByteChunk.convertToBytes(CLOSE);
 	public static final String KEEPALIVE = "keep-alive";
-	public static final byte[] KEEPALIVE_BYTES = KEEPALIVE.getBytes();
+	public static final byte[] KEEPALIVE_BYTES = ByteChunk
+			.convertToBytes(KEEPALIVE);
 	public static final String CHUNKED = "chunked";
-	public static final byte[] ACK_BYTES = ("HTTP/1.1 100 Continue" + CRLF + CRLF).getBytes();
+	public static final byte[] ACK_BYTES = ByteChunk
+			.convertToBytes("HTTP/1.1 100 Continue" + CRLF + CRLF);
 	public static final String TRANSFERENCODING = "Transfer-Encoding";
-	public static final byte[] _200_BYTES = "200".getBytes();
-	public static final byte[] _400_BYTES = "400".getBytes();
-	public static final byte[] _404_BYTES = "404".getBytes();
+	public static final byte[] _200_BYTES = ByteChunk.convertToBytes("200");
+	public static final byte[] _400_BYTES = ByteChunk.convertToBytes("400");
+	public static final byte[] _404_BYTES = ByteChunk.convertToBytes("404");
 
 	/**
 	 * Identity filters (input and output).
@@ -168,7 +174,8 @@ public final class Constants {
 	/**
 	 * 
 	 */
-	public static final byte[] HTTP_11_BYTES = HTTP_11.getBytes();
+	public static final byte[] HTTP_11_BYTES = ByteChunk
+			.convertToBytes(HTTP_11);
 
 	/**
 	 * GET.
@@ -184,12 +191,23 @@ public final class Constants {
 	 * POST.
 	 */
 	public static final String POST = "POST";
+	
+	public static final String CONFIG = "CONFIG";
 
-	/**
-	 * Create a new instance of {@code Constants}
-	 */
-	private Constants() {
-		super();
-	}
+	public static final String ENABLE_APP = "ENABLE_APP";
+
+	public static final String DISABLE_APP = "DISABLE_APP";
+
+	public static final String STOP_APP = "STOP_APP";
+
+	public static final String REMOVE_APP = "REMOVE_APP";
+
+	public static final String STATUS = "STATUS";
+
+	public static final String DUMP = "DUMP";
+
+	public static final String INFO = "INFO";
+
+	public static final String PING = "PING";
 
 }

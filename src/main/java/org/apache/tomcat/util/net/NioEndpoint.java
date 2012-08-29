@@ -378,6 +378,15 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 		return true;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see org.apache.tomcat.util.net.Endpoint#process(java.io.Closeable)
+	 */
+	public boolean process(NioChannel channel) {
+		return processChannel(channel, null);
+	}
+	
+	
 	/**
 	 * Process given channel for an event.
 	 * 

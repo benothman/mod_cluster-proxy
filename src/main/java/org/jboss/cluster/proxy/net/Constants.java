@@ -19,29 +19,21 @@
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA, or see the FSF
  * site: http://www.fsf.org.
  */
-package org.jboss.cluster.proxy.http11;
+package org.jboss.cluster.proxy.net;
 
 /**
- * {@code InputBuffer}
+ * {@code Constants}
  * 
- * Created on Jul 3, 2012 at 10:05:26 AM
+ * Created on Aug 29, 2012 at 12:28:22 PM
  * 
  * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
  */
-public interface InputBuffer {
+public final class Constants {
 
 	/**
-	 * 
+	 * Create a new instance of {@code Constants}
 	 */
-	public void init();
-	
-	/**
-	 * 
-	 * @param request
-	 * @return the number of bytes read from client
-	 */
-	public int doRead(Request request);
-
-	
-	
+	private Constants() {
+		
+	}
 }

@@ -19,33 +19,36 @@
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA, or see the FSF
  * site: http://www.fsf.org.
  */
-package org.apache.catalina.connector;
+package org.jboss.cluster.proxy.container;
 
 import java.lang.reflect.Method;
 import java.util.Set;
 
 import org.apache.catalina.ConnectorService;
+import org.apache.catalina.connector.Constants;
 import org.apache.coyote.Adapter;
 import org.apache.coyote.ProtocolHandler;
 import org.apache.tomcat.util.IntrospectionUtils;
 import org.apache.tomcat.util.res.StringManager;
-import org.jboss.cluster.proxy.ConnectionManager;
-import org.jboss.cluster.proxy.NodeService;
 import org.jboss.logging.Logger;
 
 /**
- * {@code Connector}
- * 
- * Created on Jun 19, 2012 at 11:59:51 AM
- * 
+ * {@code NodeConnector}
+ *
+ * Created on Aug 29, 2012 at 4:05:02 PM
  * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
  */
-public final class Connector implements ConnectorService {
+public class NodeConnector implements ConnectorService {
 
-	private static Logger log = Logger.getLogger(Connector.class);
+	/**
+	 * Create a new instance of {@code NodeConnector}
+	 */
+	public NodeConnector() {
+		// TODO Auto-generated constructor stub
+	}
+
+	private static Logger log = Logger.getLogger(NodeConnector.class);
 	private ProtocolHandler protocolHandler;
-	private NodeService nodeService;
-	private ConnectionManager connectionManager;
 	private String protocol;
 	/**
 	 * Has this component been initialized yet?
@@ -153,7 +156,7 @@ public final class Connector implements ConnectorService {
 	 * 
 	 * @param protocol
 	 */
-	public Connector(String protocol) {
+	public NodeConnector(String protocol) {
 		setProtocolHandlerClassName(protocol);
 		// Instantiate protocol handler
 		try {
@@ -178,17 +181,10 @@ public final class Connector implements ConnectorService {
 		this.initialized = true;
 
 		// Initializing adapter
-
-		if (this.adapter == null) {
 			// By default we use the CoyoteAdapter
-			adapter = new CoyoteAdapter(this);
-		}
+			adapter = new MCMPaddapter(this);
 		protocolHandler.setAdapter(adapter);
 
-		this.nodeService = new NodeService();
-		this.nodeService.init();
-		this.connectionManager = new ConnectionManager();
-		this.connectionManager.init();
 		IntrospectionUtils.setProperty(protocolHandler, "jkHome",
 				System.getProperty("catalina.base"));
 
@@ -616,44 +612,6 @@ public final class Connector implements ConnectorService {
 		this.allowedHosts = allowedHosts;
 	}
 
-	/**
-	 * Getter for nodeService
-	 * 
-	 * @return the nodeService
-	 */
-	public NodeService getNodeService() {
-		return this.nodeService;
-	}
-
-	/**
-	 * Setter for the nodeService
-	 * 
-	 * @param nodeService
-	 *            the nodeService to set
-	 */
-	public void setNodeService(NodeService nodeService) {
-		this.nodeService = nodeService;
-	}
-
-	/**
-	 * Getter for connectionManager
-	 * 
-	 * @return the connectionManager
-	 */
-	public ConnectionManager getConnectionManager() {
-		return this.connectionManager;
-	}
-
-	/**
-	 * Setter for the connectionManager
-	 * 
-	 * @param connectionManager
-	 *            the connectionManager to set
-	 */
-	public void setConnectionManager(ConnectionManager connectionManager) {
-		this.connectionManager = connectionManager;
-	}
-
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -661,8 +619,7 @@ public final class Connector implements ConnectorService {
 	 */
 	@Override
 	public Adapter getAdapter() {
-		// TODO Auto-generated method stub
-		return null;
+		return this.adapter;
 	}
 
 	/*
@@ -674,7 +631,6 @@ public final class Connector implements ConnectorService {
 	 */
 	@Override
 	public void setAdapter(Adapter adapter) {
-		// TODO Auto-generated method stub
-
+		this.adapter = adapter;
 	}
 }

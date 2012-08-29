@@ -104,7 +104,7 @@ public abstract class AbstractEndpoint<T extends Closeable> implements Endpoint<
 	/**
 	 * Maximum amount of worker threads.
 	 */
-	protected int maxThreads = (org.apache.tomcat.util.Constants.LOW_MEMORY) ? 64 : 64 * Runtime
+	protected int maxThreads = (org.apache.tomcat.util.Constants.LOW_MEMORY) ? 32 : 16 * Runtime
 			.getRuntime().availableProcessors();
 
 	/**

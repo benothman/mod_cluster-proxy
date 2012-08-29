@@ -15,7 +15,7 @@
  * the License.
  */
 
-package org.apache.coyote.http11;
+package org.jboss.cluster.proxy.http11;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -30,6 +30,9 @@ import org.apache.coyote.ActionCode;
 import org.apache.coyote.Request;
 import org.apache.coyote.RequestInfo;
 import org.apache.coyote.Response;
+import org.apache.coyote.http11.AbstractHttp11Processor;
+import org.apache.coyote.http11.InputFilter;
+import org.apache.coyote.http11.OutputFilter;
 import org.apache.coyote.http11.filters.BufferedInputFilter;
 import org.apache.coyote.http11.filters.ChunkedInputFilter;
 import org.apache.coyote.http11.filters.ChunkedOutputFilter;
@@ -197,7 +200,8 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see org.apache.coyote.http11.Http11AbstractProcessor#awaitForNext()
+	 * @see
+	 * org.jboss.cluster.proxy.http11.AbstractHttp11Processor#awaitForNext()
 	 */
 	public void awaitForNext() {
 		final NioChannel ch = this.channel;
@@ -230,8 +234,8 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 	 * (non-Javadoc)
 	 * 
 	 * @see
-	 * org.apache.coyote.http11.Http11AbstractProcessor#event(org.apache.tomcat
-	 * .util.net.SocketStatus)
+	 * org.jboss.cluster.proxy.http11.AbstractHttp11Processor#event(org.apache
+	 * .tomcat.util.net.SocketStatus)
 	 */
 	public SocketState event(SocketStatus status) throws IOException {
 		throw new UnsupportedOperationException(
@@ -362,7 +366,7 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see org.apache.coyote.http11.Http11AbstractProcessor#endRequest()
+	 * @see org.jboss.cluster.proxy.http11.AbstractHttp11Processor#endRequest()
 	 */
 	public void endRequest() {
 		request.getRequestProcessor().setStage(
@@ -392,7 +396,7 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see org.apache.coyote.http11.Http11AbstractProcessor#nextRequest()
+	 * @see org.jboss.cluster.proxy.http11.AbstractHttp11Processor#nextRequest()
 	 */
 	public void nextRequest() {
 		inputBuffer.nextRequest();
@@ -402,7 +406,7 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see org.apache.coyote.http11.Http11AbstractProcessor#recycle()
+	 * @see org.jboss.cluster.proxy.http11.AbstractHttp11Processor#recycle()
 	 */
 	public void recycle() {
 		inputBuffer.recycle();
@@ -481,7 +485,7 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see org.apache.coyote.http11.Http11AbstractProcessor#closeSocket()
+	 * @see org.jboss.cluster.proxy.http11.AbstractHttp11Processor#closeSocket()
 	 */
 	public void closeSocket() {
 		closeSocket(this.channel);
@@ -841,7 +845,8 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see org.apache.coyote.http11.Http11AbstractProcessor#prepareRequest()
+	 * @see
+	 * org.jboss.cluster.proxy.http11.AbstractHttp11Processor#prepareRequest()
 	 */
 	protected void prepareRequest() {
 
@@ -881,6 +886,24 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 			methodMB.setString(Constants.GET);
 		} else if (methodMB.equals(Constants.POST)) {
 			methodMB.setString(Constants.POST);
+		} else if (methodMB.equals(Constants.INFO)) {
+			methodMB.setString(Constants.INFO);
+		} else if (methodMB.equals(Constants.PING)) {
+			methodMB.setString(Constants.PING);
+		} else if (methodMB.equals(Constants.CONFIG)) {
+			methodMB.setString(Constants.CONFIG);
+		} else if (methodMB.equals(Constants.STATUS)) {
+			methodMB.setString(Constants.STATUS);
+		} else if (methodMB.equals(Constants.DISABLE_APP)) {
+			methodMB.setString(Constants.DISABLE_APP);
+		} else if (methodMB.equals(Constants.ENABLE_APP)) {
+			methodMB.setString(Constants.ENABLE_APP);
+		} else if (methodMB.equals(Constants.DUMP)) {
+			methodMB.setString(Constants.DUMP);
+		} else if (methodMB.equals(Constants.STOP_APP)) {
+			methodMB.setString(Constants.STOP_APP);
+		} else if (methodMB.equals(Constants.REMOVE_APP)) {
+			methodMB.setString(Constants.REMOVE_APP);
 		}
 
 		MimeHeaders headers = request.getMimeHeaders();
@@ -1089,7 +1112,8 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see org.apache.coyote.http11.Http11AbstractProcessor#prepareResponse()
+	 * @see
+	 * org.jboss.cluster.proxy.http11.AbstractHttp11Processor#prepareResponse()
 	 */
 	protected void prepareResponse() {
 
@@ -1105,7 +1129,9 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see org.apache.coyote.http11.Http11AbstractProcessor#initializeFilters()
+	 * @see
+	 * org.jboss.cluster.proxy.http11.AbstractHttp11Processor#initializeFilters
+	 * ()
 	 */
 	protected void initializeFilters() {
 

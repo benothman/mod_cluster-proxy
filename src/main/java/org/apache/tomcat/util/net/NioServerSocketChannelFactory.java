@@ -77,6 +77,14 @@ public abstract class NioServerSocketChannelFactory implements Cloneable {
 	public abstract void destroy() throws IOException;
 
 	/**
+	 * 
+	 * @param group
+	 */
+	public void setAsyncChannelGroup(AsynchronousChannelGroup group) {
+		this.threadGroup = group;
+	}
+	
+	/**
 	 * General mechanism to pass attributes from the ServerConnector to the
 	 * socket factory.
 	 * 

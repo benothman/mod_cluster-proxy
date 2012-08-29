@@ -47,12 +47,12 @@ import org.jboss.logging.Logger;
  * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
  * @param <E> 
  */
-public abstract class Http11AbstractProcessor<E> implements ActionHook {
+public abstract class AbstractHttp11Processor<E> implements ActionHook {
 
 	/**
 	 * Logger.
 	 */
-	protected static Logger log = Logger.getLogger(Http11AbstractProcessor.class);
+	protected static Logger log = Logger.getLogger(AbstractHttp11Processor.class);
 
 	/**
 	 * The string manager for this package.

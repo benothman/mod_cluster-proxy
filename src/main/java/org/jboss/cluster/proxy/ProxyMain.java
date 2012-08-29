@@ -42,10 +42,12 @@ import org.jboss.logging.Logger;
 public class ProxyMain {
 
 	private static final String DEFAULT_PROTOCOL = "org.apache.coyote.http11.Http11NioProtocol";
+	private static final String DEFAULT_NODE_PROTOCOL = "org.jboss.cluster.proxy.http11.Http11NioProtocol";
 	private static final String DEFAULT_SCHEME = "http";
-	private static WebConnectorService service;
 	private static boolean running = true;
 	private static final List<Thread> threads = new ArrayList<>();
+	private static final List<WebConnectorService> services = new ArrayList<>();
+	
 	private static final Logger logger = Logger.getLogger(ProxyMain.class);
 	private static final String CONFIG_PATH = "conf" + File.separatorChar
 			+ "config.properties";
@@ -79,7 +81,7 @@ public class ProxyMain {
 					DEFAULT_PROTOCOL);
 			String scheme = System.getProperty("scheme", DEFAULT_SCHEME);
 			// Creating the web connector service
-			service = new WebConnectorService(protocol, scheme);
+			WebConnectorService service = new WebConnectorService(protocol, scheme);
 			// configure the web connector service
 
 			// Setting the address (host:port)
@@ -95,6 +97,34 @@ public class ProxyMain {
 
 			// Starting the web connector service
 			service.start();
+			services.add(service);
+			
+			
+			
+			// Adding node web connector service
+			
+			protocol = System.getProperty("http-protocol",
+					DEFAULT_NODE_PROTOCOL);
+			scheme = System.getProperty("scheme", DEFAULT_SCHEME);
+			// Creating the web connector service
+			WebConnectorService nodeService = new WebConnectorService(protocol, scheme);
+			// configure the web connector service
+
+			// Setting the address (host:port)
+			int nodePort = Integer.valueOf(System.getProperty(
+					"org.jboss.cluster.proxy.net.PORT", "6666"));
+			String nodeHostname = System.getProperty(
+					"org.jboss.cluster.proxy.net.ADDRESS", "0.0.0.0");
+			InetSocketAddress nodeAddress = (nodeHostname == null) ? new InetSocketAddress(
+					nodePort) : new InetSocketAddress(nodeHostname, nodePort);
+			nodeService.setAddress(nodeAddress);
+
+			// TODO finish configuration setup
+
+			// Starting the web connector service
+			nodeService.start();
+			services.add(nodeService);
+			
 		} catch (Throwable e) {
 			logger.error("creating protocol handler error", e);
 			e.printStackTrace();
@@ -159,6 +189,7 @@ public class ProxyMain {
 		// Start all threads
 		startThreads();
 	}
+	
 
 	/**
 	 * Add shutdown hook
@@ -171,7 +202,10 @@ public class ProxyMain {
 					long time = System.currentTimeMillis();
 					logger.info("Stopping JBoss Mod Cluster Proxy....");
 					running = false;
-					service.stop();
+					for(WebConnectorService service: services) {
+						service.stop();
+					}
+					
 					interruptThreads();
 					logger.info("JBoss Mod Cluster Proxy stopped in "
 							+ (System.currentTimeMillis() - time) + "ms");

@@ -47,7 +47,7 @@ import org.jboss.logging.Logger;
  * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
  * @param <T>
  */
-public abstract class Http11AbstractProtocol<T> implements ProtocolHandler, MBeanRegistration {
+public abstract class AbstractHttp11Protocol<T> implements ProtocolHandler, MBeanRegistration {
 
 	protected static Logger log = Logger.getLogger(Http11NioProtocol.class);
 
@@ -135,7 +135,7 @@ public abstract class Http11AbstractProtocol<T> implements ProtocolHandler, MBea
 	/**
 	 * Create a new instance of {@code Http11AbstractProtocol}
 	 */
-	public Http11AbstractProtocol() {
+	public AbstractHttp11Protocol() {
 		super();
 	}
 

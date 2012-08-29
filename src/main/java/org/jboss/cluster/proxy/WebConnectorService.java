@@ -26,7 +26,9 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 
+import org.apache.catalina.ConnectorService;
 import org.apache.catalina.connector.Connector;
+import org.jboss.cluster.proxy.container.NodeConnector;
 import org.jboss.logging.Logger;
 
 /**
@@ -51,7 +53,7 @@ public class WebConnectorService {
 	private Integer maxConnections = null;
 	private Executor executor;
 	private InetSocketAddress address;
-	private Connector connector;
+	private ConnectorService connector;
 
 	/**
 	 * Create a new instance of {@code WebConnectorService}
@@ -78,7 +80,14 @@ public class WebConnectorService {
 		logger.info("Starting Web Connector Service");
 		try {
 			// Create connector
-			final Connector connector = new Connector(protocol);
+			ConnectorService connector = null;
+			
+			if(org.apache.coyote.http11.Http11NioProtocol.class.getName().equals(protocol)){
+				connector = new Connector(protocol);
+			} else if(org.jboss.cluster.proxy.http11.Http11NioProtocol.class.getName().equals(protocol)) {
+				connector = new NodeConnector(protocol);
+			}
+			
 			connector.setPort(address.getPort());
 			connector.setScheme(scheme);
 			if (enableLookups != null)
@@ -136,7 +145,7 @@ public class WebConnectorService {
 	 */
 	public synchronized void stop() {
 		logger.info("Stopping Web Connector Service");
-		final Connector connector = this.connector;
+		final ConnectorService connector = this.connector;
 		try {
 			connector.pause();
 		} catch (Exception e) {
@@ -346,7 +355,7 @@ public class WebConnectorService {
 	 * 
 	 * @return the connector
 	 */
-	public Connector getConnector() {
+	public ConnectorService getConnector() {
 		return this.connector;
 	}
 

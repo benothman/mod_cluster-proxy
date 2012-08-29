@@ -542,7 +542,7 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 * @throws IOException
 	 *             an undelying I/O error occured
 	 */
-	protected void commit() throws IOException {
+	public void commit() throws IOException {
 
 		// The response is now committed
 		committed = true;

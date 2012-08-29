@@ -72,6 +72,12 @@ public interface Endpoint<T extends Closeable> {
 	public void destroy() throws Exception;
 
 	/**
+	 * Process the specified object.
+	 * @param obj
+	 */
+	public boolean process(T obj);
+	
+	/**
 	 * @return the name of the endpoint
 	 */
 	public String getName();

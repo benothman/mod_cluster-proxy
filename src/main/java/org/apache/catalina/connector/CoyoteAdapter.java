@@ -32,7 +32,7 @@ import org.apache.coyote.Request;
 import org.apache.coyote.Response;
 import org.apache.coyote.http11.AbstractInternalInputBuffer;
 import org.apache.coyote.http11.AbstractInternalOutputBuffer;
-import org.apache.coyote.http11.Http11AbstractProcessor;
+import org.apache.coyote.http11.AbstractHttp11Processor;
 import org.apache.coyote.http11.InternalNioOutputBuffer;
 import org.apache.tomcat.util.buf.ByteChunk;
 import org.apache.tomcat.util.buf.CharChunk;
@@ -246,7 +246,7 @@ public class CoyoteAdapter implements Adapter {
 										.getNote(Constants.NODE_CHANNEL_NOTE);
 								ch.read(buff, attachment, this);
 							} else {
-								Http11AbstractProcessor<?> processor = (Http11AbstractProcessor<?>) attachment.hook;
+								AbstractHttp11Processor<?> processor = (AbstractHttp11Processor<?>) attachment.hook;
 								boolean chunked = attachment.isChunked();
 								processor.endRequest();
 								processor.nextRequest();
