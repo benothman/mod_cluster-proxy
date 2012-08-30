@@ -1,13 +1,28 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements. See the NOTICE file distributed with this
+ * work for additional information regarding copyright ownership. The ASF
+ * licenses this file to You under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package org.jboss.cluster.proxy.container;
 
-import java.io.IOException;
+import java.util.Enumeration;
 
 import org.apache.coyote.Adapter;
-import org.apache.coyote.InputBuffer;
 import org.apache.coyote.Request;
 import org.apache.coyote.Response;
 import org.apache.coyote.http11.Constants;
-import org.apache.tomcat.util.buf.ByteChunk;
 import org.apache.tomcat.util.buf.MessageBytes;
 import org.apache.tomcat.util.http.Parameters;
 import org.apache.tomcat.util.net.SocketStatus;
@@ -37,7 +52,8 @@ public class MCMPaddapter implements Adapter {
 	private static final String STYPBIG = "SYNTAX: Type field too big";
 	private static final String SALIBAD = "SYNTAX: Alias without Context";
 	private static final String SCONBAD = "SYNTAX: Context without Alias";
-	private static final String SBADFLD = "SYNTAX: Invalid field \"%s\" in message";
+	private static final String SBADFLD = "SYNTAX: Invalid field ";
+	private static final String SBADFLD1 = " in message";
 	private static final String SMISFLD = "SYNTAX: Mandatory field(s) missing in message";
 	private static final String SCMDUNS = "SYNTAX: Command is not supported";
 	private static final String SMULALB = "SYNTAX: Only one Alias in APP command";
@@ -52,6 +68,8 @@ public class MCMPaddapter implements Adapter {
 	private static final String MHOSTRD = "MEM: Can't read host alias";
 	private static final String MHOSTUI = "MEM: Can't update or insert host alias";
 	private static final String MCONTUI = "MEM: Can't update or insert context";
+	
+	static MCMConfig conf;
 	
 	
 	public void service(Request req, Response res) throws Exception
@@ -121,7 +139,67 @@ public class MCMPaddapter implements Adapter {
 				
 		Balancer balancer = new Balancer();
 		Node node = new Node();
-		// Need more...
+		Enumeration<String> names = params.getParameterNames();
+		while (names.hasMoreElements()) {
+			String name = (String) names.nextElement();
+			String[] value = params.getParameterValues(name);
+			if (name.equalsIgnoreCase("Balancer")) {
+				balancer.setName(value[0]);
+			} else if (name.equalsIgnoreCase("StickySession")) {
+				if (value[0].equalsIgnoreCase("No"))
+					balancer.setStickySession(false);
+			} else if (name.equalsIgnoreCase("StickySessionCookie")) {
+				balancer.setStickySessionCookie(value[0]);
+			} else if (name.equalsIgnoreCase("StickySessionPath")) {
+				balancer.setStickySessionPath(value[0]);
+			} else if (name.equalsIgnoreCase("StickySessionRemove")) {
+				if (value[0].equalsIgnoreCase("Yes"))
+					balancer.setStickySessionRemove(true);
+			} else if (name.equalsIgnoreCase("StickySessionForce")) {
+				if (value[0].equalsIgnoreCase("no"))
+						balancer.setStickySessionForce(false);
+			} else if (name.equalsIgnoreCase("WaitWorker")) {
+				balancer.setWaitWorker(Integer.valueOf(value[0]));
+			} else if (name.equalsIgnoreCase("Maxattempts")) {
+				balancer.setMaxattempts(Integer.valueOf(value[0]));
+			} else if (name.equalsIgnoreCase("JVMRoute")) {
+				node.setJvmRoute(value[0]);
+			} else if (name.equalsIgnoreCase("Domain")) {
+				node.setDomain(value[0]);
+			} else if (name.equalsIgnoreCase("Host")) {
+				node.setHostname(value[0]);
+			} else if (name.equalsIgnoreCase("Port")) {
+				node.setPort(Integer.valueOf(value[0]));
+			} else if (name.equalsIgnoreCase("Type")) {
+				node.setType(value[0]);
+			} else if (name.equalsIgnoreCase("Reversed")) {
+				continue; // ignore it.
+			} else if (name.equalsIgnoreCase("flushpacket")) {
+				if (value[0].equalsIgnoreCase("on"))
+					node.setFlushpackets(true);
+				if (value[0].equalsIgnoreCase("auto"))
+						node.setFlushpackets(true);	
+			} else if (name.equalsIgnoreCase("flushwait")) {
+				node.setFlushwait(Integer.valueOf(value[0]));
+			} else if (name.equalsIgnoreCase("ping")) {
+				node.setPing(Integer.valueOf(value[0]));
+			} else if (name.equalsIgnoreCase("smax")) {
+				node.setSmax(Integer.valueOf(value[0]));
+			} else if (name.equalsIgnoreCase("ttl")) {
+				node.setTtl(Integer.valueOf(value[0]));
+			} else if (name.equalsIgnoreCase("Timeout")) {
+				node.setTimeout(Integer.valueOf(value[0]));
+			} else {
+				process_error(TYPESYNTAX, SBADFLD + name + SBADFLD1, res);
+				return;
+			}
+			
+			conf.insertuodate(balancer);
+			conf.insertuodate(node);
+			
+			res.setStatus(200);
+		
+		}
 		
 		
 	}
