@@ -46,7 +46,7 @@ public interface Constants {
 	/**
 	 * 
 	 */
-	public static final String MAX_NODE_THREAD_NAME = "org.jboss.cluster.proxy.MAX_NODE_THREADS";
+	public static final String MAX_THREAD_NAME = "org.jboss.cluster.proxy.MAX_THREADS";
 
 	/**
 	 * 

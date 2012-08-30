@@ -99,8 +99,6 @@ public class ProxyMain {
 			service.start();
 			services.add(service);
 			
-			
-			
 			// Adding node web connector service
 			
 			protocol = System.getProperty("http-protocol",

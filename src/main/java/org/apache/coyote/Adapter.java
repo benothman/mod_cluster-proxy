@@ -28,6 +28,10 @@ import org.apache.tomcat.util.net.SocketStatus;
  */
 public interface Adapter {
 
+	
+	public void init() throws Exception;
+	
+	
 	/**
 	 * Call the service method, and notify all listeners
 	 * 
@@ -61,4 +65,5 @@ public interface Adapter {
 	 * @throws Exception
 	 */
 	public boolean event(Request req, Response res, SocketStatus status) throws Exception;
+	
 }

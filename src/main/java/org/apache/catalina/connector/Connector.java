@@ -24,13 +24,11 @@ package org.apache.catalina.connector;
 import java.lang.reflect.Method;
 import java.util.Set;
 
-import org.apache.catalina.ConnectorService;
 import org.apache.coyote.Adapter;
 import org.apache.coyote.ProtocolHandler;
 import org.apache.tomcat.util.IntrospectionUtils;
 import org.apache.tomcat.util.res.StringManager;
-import org.jboss.cluster.proxy.ConnectionManager;
-import org.jboss.cluster.proxy.NodeService;
+import org.jboss.cluster.proxy.container.MCMPaddapter;
 import org.jboss.logging.Logger;
 
 /**
@@ -40,12 +38,10 @@ import org.jboss.logging.Logger;
  * 
  * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
  */
-public final class Connector implements ConnectorService {
+public final class Connector {
 
 	private static Logger log = Logger.getLogger(Connector.class);
 	private ProtocolHandler protocolHandler;
-	private NodeService nodeService;
-	private ConnectionManager connectionManager;
 	private String protocol;
 	/**
 	 * Has this component been initialized yet?
@@ -177,18 +173,19 @@ public final class Connector implements ConnectorService {
 
 		this.initialized = true;
 
-		// Initializing adapter
+		if (this.protocolHandler.getClass().equals(
+				org.jboss.cluster.proxy.http11.Http11NioProtocol.class)) {
+			this.adapter = new MCMPaddapter(this);
+		}
 
+		// Initializing adapter
 		if (this.adapter == null) {
 			// By default we use the CoyoteAdapter
 			adapter = new CoyoteAdapter(this);
+			((CoyoteAdapter) adapter).init();
 		}
-		protocolHandler.setAdapter(adapter);
 
-		this.nodeService = new NodeService();
-		this.nodeService.init();
-		this.connectionManager = new ConnectionManager();
-		this.connectionManager.init();
+		protocolHandler.setAdapter(adapter);
 		IntrospectionUtils.setProperty(protocolHandler, "jkHome",
 				System.getProperty("catalina.base"));
 
@@ -617,64 +614,20 @@ public final class Connector implements ConnectorService {
 	}
 
 	/**
-	 * Getter for nodeService
+	 * Getter for the adapter
 	 * 
-	 * @return the nodeService
+	 * @return
 	 */
-	public NodeService getNodeService() {
-		return this.nodeService;
-	}
-
-	/**
-	 * Setter for the nodeService
-	 * 
-	 * @param nodeService
-	 *            the nodeService to set
-	 */
-	public void setNodeService(NodeService nodeService) {
-		this.nodeService = nodeService;
-	}
-
-	/**
-	 * Getter for connectionManager
-	 * 
-	 * @return the connectionManager
-	 */
-	public ConnectionManager getConnectionManager() {
-		return this.connectionManager;
-	}
-
-	/**
-	 * Setter for the connectionManager
-	 * 
-	 * @param connectionManager
-	 *            the connectionManager to set
-	 */
-	public void setConnectionManager(ConnectionManager connectionManager) {
-		this.connectionManager = connectionManager;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.apache.catalina.ConnectorService#getAdapter()
-	 */
-	@Override
 	public Adapter getAdapter() {
-		// TODO Auto-generated method stub
-		return null;
+		return this.adapter;
 	}
 
-	/*
-	 * (non-Javadoc)
+	/**
+	 * Setter for the Adapter
 	 * 
-	 * @see
-	 * org.apache.catalina.ConnectorService#setAdapter(org.apache.coyote.Adapter
-	 * )
+	 * @param adapter
 	 */
-	@Override
 	public void setAdapter(Adapter adapter) {
-		// TODO Auto-generated method stub
-
+		this.adapter = adapter;
 	}
 }

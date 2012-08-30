@@ -67,6 +67,7 @@ public class NodeService extends LifeCycleServiceAdapter {
 		logger.info("Initializing Node Service");
 		this.random = new Random();
 		this.nodes = new ArrayList<Node>();
+		
 		XmlNodes xmlNodes = XmlConfig.loadNodes();
 		logger.info("Adding new nodes : " + xmlNodes);
 		for (XmlNode n : xmlNodes.getNodes()) {

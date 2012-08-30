@@ -39,6 +39,7 @@ import org.apache.tomcat.util.net.SSLImplementation;
 import org.apache.tomcat.util.net.SocketStatus;
 import org.apache.tomcat.util.net.jsse.NioJSSEImplementation;
 import org.apache.tomcat.util.net.jsse.NioJSSESocketChannelFactory;
+import org.jboss.logging.Logger;
 
 /**
  * {@code Http11NioProtocol}
@@ -49,6 +50,7 @@ import org.apache.tomcat.util.net.jsse.NioJSSESocketChannelFactory;
  */
 public class Http11NioProtocol extends AbstractHttp11Protocol<NioChannel> {
 
+	private static Logger log = Logger.getLogger(Http11NioProtocol.class);
 	protected NioEndpoint endpoint = new NioEndpoint();
 	private Http11ConnectionHandler cHandler = new Http11ConnectionHandler(this);
 	protected NioJSSESocketChannelFactory socketFactory = null;
@@ -106,6 +108,36 @@ public class Http11NioProtocol extends AbstractHttp11Protocol<NioChannel> {
 				socketFactory.setAttribute(key, v);
 			}
 		}
+
+		int maxThreads = 0;
+		// Setting the max thread number
+		String property = System.getProperty(Constants.MAX_THREAD_NAME);
+		if (property != null) {
+			try {
+				maxThreads = Integer.valueOf(property);
+				log.info("Configure max thread number : " + maxThreads);
+			} catch (Exception e) {
+				log.warn("Invalid MAX-THREAD number, using the default value "
+						+ maxThreads);
+			}
+		}
+
+		this.endpoint.setMaxThreads(maxThreads);
+
+		// Setting the max connection number
+		int maxConnections = 2 * maxThreads;
+		property = System.getProperty(Constants.MAX_CONNECTIONS_NAME);
+		if (property != null) {
+			try {
+				maxConnections = Integer.valueOf(property);
+				log.info("Configure max connection number : " + maxConnections);
+			} catch (Exception e) {
+				log.warn("Invalid MAX-CONNECTION number, using the default value "
+						+ maxConnections);
+			}
+		}
+
+		this.endpoint.setMaxConnections(maxConnections);
 
 		try {
 			endpoint.setKeepAliveTimeout(this.timeout);
@@ -838,7 +870,7 @@ public class Http11NioProtocol extends AbstractHttp11Protocol<NioChannel> {
 			processor.setRestrictedUserAgents(proto.restrictedUserAgents);
 			processor.setMaxSavePostSize(proto.maxSavePostSize);
 			processor.setServer(proto.server);
-			//register(processor);
+			// register(processor);
 			return processor;
 		}
 

@@ -76,7 +76,7 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 		boolean secure = Boolean.valueOf(secureStr).booleanValue();
 
 		int nThreads = Constants.DEFAULT_MAX_THREADS;
-		String str = System.getProperty(Constants.MAX_NODE_THREAD_NAME);
+		String str = System.getProperty(Constants.MAX_THREAD_NAME);
 		if (str != null) {
 			try {
 				nThreads = Integer.valueOf(str);

@@ -49,7 +49,7 @@ import org.jboss.logging.Logger;
  */
 public abstract class AbstractHttp11Protocol<T> implements ProtocolHandler, MBeanRegistration {
 
-	protected static Logger log = Logger.getLogger(Http11NioProtocol.class);
+	private static Logger log = Logger.getLogger(AbstractHttp11Protocol.class);
 
 	/**
 	 * The string manager for this package.

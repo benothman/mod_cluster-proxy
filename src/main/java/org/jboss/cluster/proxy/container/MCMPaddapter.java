@@ -1,6 +1,5 @@
 package org.jboss.cluster.proxy.container;
 
-import org.apache.catalina.ConnectorService;
 import org.apache.catalina.connector.Connector;
 import org.apache.coyote.Adapter;
 import org.apache.coyote.Request;
@@ -51,20 +50,42 @@ public class MCMPaddapter implements Adapter {
 	private static final String MHOSTUI = "MEM: Can't update or insert host alias";
 	private static final String MCONTUI = "MEM: Can't update or insert context";
 
-	private ConnectorService connector;
+	private Connector connector;
 
 	/**
 	 * Create a new instance of {@code MCMPaddapter}
 	 * 
 	 * @param connector
 	 */
-	public MCMPaddapter(ConnectorService connector) {
+	public MCMPaddapter(Connector connector) {
 		this.connector = connector;
 	}
 
 	/*
 	 * (non-Javadoc)
-	 * @see org.apache.coyote.Adapter#service(org.apache.coyote.Request, org.apache.coyote.Response)
+	 * 
+	 * @see org.apache.coyote.Adapter#init()
+	 */
+	public void init() throws Exception {
+		// NOPE
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.apache.coyote.Adapter#event(org.apache.coyote.Request,
+	 * org.apache.coyote.Response, org.apache.tomcat.util.net.SocketStatus)
+	 */
+	public boolean event(Request req, Response res, SocketStatus status)
+			throws Exception {
+		return false;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.apache.coyote.Adapter#service(org.apache.coyote.Request,
+	 * org.apache.coyote.Response)
 	 */
 	public void service(Request req, Response res) throws Exception {
 		MessageBytes methodMB = req.method();
@@ -151,10 +172,5 @@ public class MCMPaddapter implements Adapter {
 		res.addHeader("Type", type);
 		res.addHeader("Mess", errstring);
 
-	}
-
-	public boolean event(Request req, Response res, SocketStatus status)
-			throws Exception {
-		return false;
 	}
 }

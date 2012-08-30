@@ -39,6 +39,16 @@ public final class Constants {
 	public static final int DEFAULT_SERVER_SOCKET_TIMEOUT = 0;
 	public static final boolean DEFAULT_TCP_NO_DELAY = true;
 
+    /**
+     * 
+     */
+    public static final String MAX_THREAD_NAME = "org.apache.tomcat.util.net.MAX_CLIENT_THREADS";
+	/**
+	 * 
+	 */
+	public static final String MAX_CONNECTIONS_NAME = "org.apache.tomcat.util.net.MAX_CONNECTIONS";
+	
+	
 	/**
 	 * CRLF.
 	 */

@@ -26,20 +26,22 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.CompletionHandler;
 
 import org.apache.catalina.http.HttpResponseParser;
-import org.apache.catalina.util.URLEncoder;
 import org.apache.coyote.Adapter;
 import org.apache.coyote.Request;
 import org.apache.coyote.Response;
+import org.apache.coyote.http11.AbstractHttp11Processor;
 import org.apache.coyote.http11.AbstractInternalInputBuffer;
 import org.apache.coyote.http11.AbstractInternalOutputBuffer;
-import org.apache.coyote.http11.AbstractHttp11Processor;
 import org.apache.coyote.http11.InternalNioOutputBuffer;
 import org.apache.tomcat.util.buf.ByteChunk;
 import org.apache.tomcat.util.buf.CharChunk;
 import org.apache.tomcat.util.buf.MessageBytes;
 import org.apache.tomcat.util.net.NioChannel;
 import org.apache.tomcat.util.net.SocketStatus;
+import org.jboss.cluster.proxy.ConnectionManager;
+import org.jboss.cluster.proxy.NodeService;
 import org.jboss.cluster.proxy.container.Node;
+import org.jboss.logging.Logger;
 
 /**
  * {@code CoyoteAdapter}
@@ -52,6 +54,8 @@ import org.jboss.cluster.proxy.container.Node;
  * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
  */
 public class CoyoteAdapter implements Adapter {
+
+	private static final Logger logger = Logger.getLogger(CoyoteAdapter.class);
 
 	/**
 	 * 
@@ -70,29 +74,14 @@ public class CoyoteAdapter implements Adapter {
 	 * The CoyoteConnector with which this processor is associated.
 	 */
 	private Connector connector = null;
+	private NodeService nodeService;
+	private ConnectionManager connectionManager;
 
 	/**
 	 * The string manager for this package.
 	 */
 	protected org.apache.tomcat.util.res.StringManager sm = org.apache.tomcat.util.res.StringManager
 			.getManager(Constants.Package);
-
-	/**
-	 * Encoder for the Location URL in HTTP redirects.
-	 */
-	protected static URLEncoder urlEncoder;
-
-	/**
-	 * The safe character set.
-	 */
-	static {
-		urlEncoder = new URLEncoder();
-		urlEncoder.addSafeCharacter('-');
-		urlEncoder.addSafeCharacter('_');
-		urlEncoder.addSafeCharacter('.');
-		urlEncoder.addSafeCharacter('*');
-		urlEncoder.addSafeCharacter('/');
-	}
 
 	/**
 	 * Create a new instance of {@code CoyoteAdapter}
@@ -105,6 +94,19 @@ public class CoyoteAdapter implements Adapter {
 	 */
 	public CoyoteAdapter(Connector connector) {
 		this.connector = connector;
+	}
+
+	/**
+	 * 
+	 * @throws Exception
+	 */
+	public void init() throws Exception {
+		logger.info("Initializing adapter service");
+		this.nodeService = new NodeService();
+		this.nodeService.init();
+		this.connectionManager = new ConnectionManager();
+		this.connectionManager.init();
+		logger.info("Adapter service Initialized successfully");
 	}
 
 	/**
@@ -263,7 +265,7 @@ public class CoyoteAdapter implements Adapter {
 											.getNote(Constants.NODE_NOTE);
 									NioChannel channel = (NioChannel) attachment
 											.getNote(Constants.NODE_CHANNEL_NOTE);
-									connector.getConnectionManager().recycle(
+									connectionManager.recycle(
 											node.getJvmRoute(), channel);
 								}
 							}
@@ -294,9 +296,8 @@ public class CoyoteAdapter implements Adapter {
 	private void prepare(final org.apache.coyote.Request request,
 			final org.apache.coyote.Response response) {
 
-		Node node = this.connector.getNodeService().getNode(request);
-		NioChannel nodeChannel = this.connector.getConnectionManager()
-				.getChannel(node);
+		Node node = this.nodeService.getNode(request);
+		NioChannel nodeChannel = this.connectionManager.getChannel(node);
 
 		// Client request
 		AbstractInternalInputBuffer inputBuffer = (AbstractInternalInputBuffer) request
@@ -330,13 +331,13 @@ public class CoyoteAdapter implements Adapter {
 		// Closing the current channel
 		NioChannel channel = (NioChannel) response
 				.getNote(Constants.NODE_CHANNEL_NOTE);
-		connector.getConnectionManager().close(channel);
+		connectionManager.close(channel);
 
 		// Try with another node
-		Node node = this.connector.getNodeService().getNode(
-				response.getRequest().requestURI().getString());
+		Node node = this.nodeService.getNode(response.getRequest().requestURI()
+				.getString());
 		response.setNote(Constants.NODE_NOTE, node);
-		channel = this.connector.getConnectionManager().getChannel(node);
+		channel = this.connectionManager.getChannel(node);
 		response.setNote(Constants.NODE_CHANNEL_NOTE, channel);
 	}
 

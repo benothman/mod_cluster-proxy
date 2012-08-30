@@ -26,9 +26,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 
-import org.apache.catalina.ConnectorService;
 import org.apache.catalina.connector.Connector;
-import org.jboss.cluster.proxy.container.NodeConnector;
 import org.jboss.logging.Logger;
 
 /**
@@ -40,7 +38,8 @@ import org.jboss.logging.Logger;
  */
 public class WebConnectorService {
 
-	private static final Logger logger = Logger.getLogger(WebConnectorService.class);
+	private static final Logger logger = Logger
+			.getLogger(WebConnectorService.class);
 	private volatile String protocol = "HTTP/1.1";
 	private volatile String scheme = "http";
 	private Boolean enableLookups = null;
@@ -53,7 +52,7 @@ public class WebConnectorService {
 	private Integer maxConnections = null;
 	private Executor executor;
 	private InetSocketAddress address;
-	private ConnectorService connector;
+	private Connector connector;
 
 	/**
 	 * Create a new instance of {@code WebConnectorService}
@@ -80,14 +79,7 @@ public class WebConnectorService {
 		logger.info("Starting Web Connector Service");
 		try {
 			// Create connector
-			ConnectorService connector = null;
-			
-			if(org.apache.coyote.http11.Http11NioProtocol.class.getName().equals(protocol)){
-				connector = new Connector(protocol);
-			} else if(org.jboss.cluster.proxy.http11.Http11NioProtocol.class.getName().equals(protocol)) {
-				connector = new NodeConnector(protocol);
-			}
-			
+			Connector connector = new Connector(protocol);
 			connector.setPort(address.getPort());
 			connector.setScheme(scheme);
 			if (enableLookups != null)
@@ -128,7 +120,7 @@ public class WebConnectorService {
 						.getMethod("setMaxThreads", Integer.TYPE);
 				m.invoke(connector.getProtocolHandler(), maxConnections);
 			}
-			
+
 			// Initialize the connector
 			connector.init();
 			// Start the connector
@@ -145,7 +137,7 @@ public class WebConnectorService {
 	 */
 	public synchronized void stop() {
 		logger.info("Stopping Web Connector Service");
-		final ConnectorService connector = this.connector;
+		final Connector connector = this.connector;
 		try {
 			connector.pause();
 		} catch (Exception e) {
@@ -355,7 +347,7 @@ public class WebConnectorService {
 	 * 
 	 * @return the connector
 	 */
-	public ConnectorService getConnector() {
+	public Connector getConnector() {
 		return this.connector;
 	}
 

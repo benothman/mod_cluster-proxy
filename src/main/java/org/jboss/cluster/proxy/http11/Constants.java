@@ -31,13 +31,20 @@ public final class Constants {
 	/**
 	 * Package name.
 	 */
-	public static final String Package = "org.apache.coyote.http11";
+	public static final String PACKAGE = "org.jboss.cluster.proxy.http11";
 
 	public static final int DEFAULT_CONNECTION_LINGER = -1;
 	public static final int DEFAULT_CONNECTION_TIMEOUT = 60000;
 	public static final int DEFAULT_CONNECTION_UPLOAD_TIMEOUT = 300000;
 	public static final int DEFAULT_SERVER_SOCKET_TIMEOUT = 0;
 	public static final boolean DEFAULT_TCP_NO_DELAY = true;
+
+	/**
+	 * 
+	 */
+	public static final String MAX_THREAD_NAME = "org.jboss.cluster.proxy.http11.MAX_THREADS";
+
+	public static final String MAX_CONNECTIONS_NAME = "org.jboss.cluster.proxy.http11.MAX_CONNECTIONS";
 
 	/**
 	 * CRLF.
@@ -191,7 +198,7 @@ public final class Constants {
 	 * POST.
 	 */
 	public static final String POST = "POST";
-	
+
 	public static final String CONFIG = "CONFIG";
 
 	public static final String ENABLE_APP = "ENABLE_APP";
