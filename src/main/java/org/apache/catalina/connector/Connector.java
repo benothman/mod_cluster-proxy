@@ -144,6 +144,16 @@ public final class Connector {
 	 */
 	private String protocolHandlerClassName = "org.apache.coyote.http11.Http11NioProtocol";
 
+	
+	protected static final boolean USE_BODY_ENCODING_FOR_QUERY_STRING = Boolean.valueOf(
+			System.getProperty("org.apache.catalina.connector.USE_BODY_ENCODING_FOR_QUERY_STRING",
+					"false")).booleanValue();
+
+	/**
+	 * URI encoding as body.
+	 */
+	protected boolean useBodyEncodingForURI = USE_BODY_ENCODING_FOR_QUERY_STRING;
+	
 	/**
 	 * Create a new instance of {@code Connector}
 	 * 
@@ -629,5 +639,19 @@ public final class Connector {
 	 */
 	public void setAdapter(Adapter adapter) {
 		this.adapter = adapter;
+	}
+
+	/**
+	 * @return the useBodyEncodingForURI
+	 */
+	public boolean getUseBodyEncodingForURI() {
+		return useBodyEncodingForURI;
+	}
+
+	/**
+	 * @param useBodyEncodingForURI the useBodyEncodingForURI to set
+	 */
+	public void setUseBodyEncodingForURI(boolean useBodyEncodingForURI) {
+		this.useBodyEncodingForURI = useBodyEncodingForURI;
 	}
 }

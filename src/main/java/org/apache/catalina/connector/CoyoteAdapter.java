@@ -126,6 +126,9 @@ public class CoyoteAdapter implements Adapter {
 	 */
 	public void service(final Request request, Response response)
 			throws Exception {
+		// Check if the request is POST
+		checkPostMethod(request);
+		
 		prepare(request, response);
 		// Send the request to the selected node
 		sendToNode(request, response);
@@ -341,6 +344,15 @@ public class CoyoteAdapter implements Adapter {
 		response.setNote(Constants.NODE_CHANNEL_NOTE, channel);
 	}
 
+	private void checkPostMethod(org.apache.coyote.Request request) {
+		
+		if(request.method().equals("POST")) {
+			
+		}
+		
+	}
+	
+	
 	/**
 	 * Character conversion of the a US-ASCII MessageBytes.
 	 */

@@ -299,6 +299,8 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 			rp.setStage(org.apache.coyote.Constants.STAGE_PREPARE);
 			try {
 				prepareRequest();
+				// Check if the request is a post
+				checkRequestPost();
 			} catch (Throwable t) {
 				if (log.isDebugEnabled()) {
 					log.debug(sm.getString("http11processor.request.prepare"),
@@ -870,7 +872,6 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 		} else {
 			// Unsupported protocol
 			http11 = false;
-			System.err.println("1) The error is here");
 			error = true;
 			// Send 505; Unsupported HTTP version
 			response.setStatus(505);
@@ -967,7 +968,6 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 						.toLowerCase(Locale.ENGLISH).trim();
 				if (!addInputFilter(inputFilters, encodingName)) {
 					// Unsupported transfer encoding
-					System.err.println("2) The error is here");
 					error = true;
 					// 501 - Unimplemented
 					response.setStatus(501);
@@ -979,7 +979,6 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 					.toLowerCase(Locale.ENGLISH).trim();
 			if (!addInputFilter(inputFilters, encodingName)) {
 				// Unsupported transfer encoding
-				System.err.println("3) The error is here");
 				error = true;
 				// 501 - Unimplemented
 				response.setStatus(501);
@@ -998,7 +997,6 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 
 		// Check host header
 		if (http11 && (valueMB == null)) {
-			System.err.println("4) The error is here");
 			error = true;
 			// 400 - Bad request
 			response.setStatus(400);
@@ -1086,6 +1084,19 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 
 	}
 
+	/**
+	 * @throws IOException 
+	 * 
+	 */
+	protected void checkRequestPost() throws IOException {
+		
+		if(request.method().equals(Constants.POST)) {
+			// TODO
+			inputBuffer.readPostParameters();
+		}
+	}
+	
+	
 	/*
 	 * (non-Javadoc)
 	 * 

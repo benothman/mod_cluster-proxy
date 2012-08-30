@@ -102,7 +102,7 @@ public class MCMPaddapter implements Adapter {
 	}
 
 	static MCMConfig conf;
-	
+
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -111,7 +111,6 @@ public class MCMPaddapter implements Adapter {
 	 */
 	public void service(Request req, Response res) throws Exception {
 		MessageBytes methodMB = req.method();
-		MessageBytes methodMB= req.method();
 		if (methodMB.equals(Constants.GET)) {
 			// In fact that is /mod_cluster_manager
 		} else if (methodMB.equals(Constants.CONFIG)) {
@@ -204,7 +203,7 @@ public class MCMPaddapter implements Adapter {
 					balancer.setStickySessionRemove(true);
 			} else if (name.equalsIgnoreCase("StickySessionForce")) {
 				if (value[0].equalsIgnoreCase("no"))
-						balancer.setStickySessionForce(false);
+					balancer.setStickySessionForce(false);
 			} else if (name.equalsIgnoreCase("WaitWorker")) {
 				balancer.setWaitWorker(Integer.valueOf(value[0]));
 			} else if (name.equalsIgnoreCase("Maxattempts")) {
@@ -225,7 +224,7 @@ public class MCMPaddapter implements Adapter {
 				if (value[0].equalsIgnoreCase("on"))
 					node.setFlushpackets(true);
 				if (value[0].equalsIgnoreCase("auto"))
-						node.setFlushpackets(true);	
+					node.setFlushpackets(true);
 			} else if (name.equalsIgnoreCase("flushwait")) {
 				node.setFlushwait(Integer.valueOf(value[0]));
 			} else if (name.equalsIgnoreCase("ping")) {
@@ -240,15 +239,14 @@ public class MCMPaddapter implements Adapter {
 				process_error(TYPESYNTAX, SBADFLD + name + SBADFLD1, res);
 				return;
 			}
-			
+
 			conf.insertuodate(balancer);
 			conf.insertuodate(node);
-			
+
 			res.setStatus(200);
-		
+
 		}
-		
-		
+
 	}
 
 	private void process_error(String type, String errstring, Response res) {

@@ -812,6 +812,28 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	}
 
 	/**
+	 * @throws IOException
+	 * 
+	 */
+	public void readPostParameters() throws IOException {
+		// TODO
+
+		int contentLength = request.getContentLength();
+		int position = pos;
+
+		log.info("Content-Length = " + contentLength + ", Last-Valid = "
+				+ lastValid);
+
+		while (lastValid < position + contentLength) {
+			fill();
+		}
+
+		log.info("Content-Length = " + contentLength + ", Last-Valid = "
+				+ lastValid);
+
+	}
+
+	/**
 	 * Fill the internal buffer using data from the undelying input stream.
 	 * 
 	 * @return false if at end of stream
