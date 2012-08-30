@@ -1090,9 +1090,9 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 	 */
 	protected void checkRequestPost() throws IOException {
 		
-		if(request.method().equals(Constants.POST)) {
+		if(request.getContentLength() > 0) {
 			// TODO
-			inputBuffer.readPostParameters();
+			inputBuffer.parseParameters();
 		}
 	}
 	

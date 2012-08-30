@@ -30,6 +30,7 @@ import org.apache.coyote.InputBuffer;
 import org.apache.coyote.Request;
 import org.apache.tomcat.util.buf.MessageBytes;
 import org.apache.tomcat.util.http.MimeHeaders;
+import org.apache.tomcat.util.http.Parameters;
 import org.apache.tomcat.util.res.StringManager;
 import org.jboss.logging.Logger;
 
@@ -815,10 +816,37 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	 * @throws IOException
 	 * 
 	 */
-	public void readPostParameters() throws IOException {
+	public void parseParameters() throws IOException {
 		// TODO
 
 		int contentLength = request.getContentLength();
+		if(contentLength <= 0) {
+			return;
+		}
+		
+		Parameters parameters = request.getParameters();
+		String enc = request.getCharacterEncoding();
+		if (enc != null) {
+			parameters.setEncoding(enc);
+			if (useBodyEncodingForURI) {
+				parameters.setQueryStringEncoding(enc);
+			}
+		} else {
+			parameters.setEncoding(org.apache.coyote.Constants.DEFAULT_CHARACTER_ENCODING);
+			if (useBodyEncodingForURI) {
+				parameters
+						.setQueryStringEncoding(org.apache.coyote.Constants.DEFAULT_CHARACTER_ENCODING);
+			}
+		}
+
+		parameters.handleQueryParameters();
+
+		
+		
+		
+		
+		
+		
 		int position = pos;
 
 		log.info("Content-Length = " + contentLength + ", Last-Valid = "
