@@ -84,7 +84,7 @@ public class WebConnectorService {
 			connector.setScheme(scheme);
 			if (enableLookups != null)
 				connector.setEnableLookups(enableLookups);
-			if (maxPostSize != null)
+			if (getMaxPostSize() != null)
 				connector.setMaxPostSize(maxPostSize);
 			if (maxSavePostSize != null)
 				connector.setMaxSavePostSize(maxSavePostSize);
@@ -291,6 +291,14 @@ public class WebConnectorService {
 	 * @return the maxPostSize
 	 */
 	public Integer getMaxPostSize() {
+		if (this.maxPostSize == null) {
+			String str = System
+					.getProperty("org.apache.coyote.http11.MAX_POST_SIZE");
+			if (str != null) {
+				this.maxPostSize = Integer.valueOf(str);
+			}
+		}
+
 		return this.maxPostSize;
 	}
 

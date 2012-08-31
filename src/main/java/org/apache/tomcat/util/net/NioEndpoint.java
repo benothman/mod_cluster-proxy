@@ -77,6 +77,12 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 	protected NioServerSocketChannelFactory serverSocketChannelFactory = null;
 
 	/**
+	 * Maximum size of a POST which will be automatically parsed by the
+	 * container. 2MB by default.
+	 */
+	private int maxPostSize = 2 * 1024 * 1024;
+
+	/**
 	 * SSL context.
 	 */
 	protected SSLContext sslContext;
@@ -149,7 +155,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 		if (initialized) {
 			return;
 		}
-		
 
 		if (this.soTimeout < 0) {
 			this.soTimeout = DEFAULT_SO_TIMEOUT;
@@ -358,13 +363,13 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 
 	/*
 	 * (non-Javadoc)
+	 * 
 	 * @see org.apache.tomcat.util.net.Endpoint#process(java.io.Closeable)
 	 */
 	public boolean process(NioChannel channel) {
 		return processChannel(channel, null);
 	}
-	
-	
+
 	/**
 	 * Process given channel for an event.
 	 * 
@@ -1036,6 +1041,21 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 				thread.setPriority(this.threadPriority);
 			return thread;
 		}
+	}
+
+	/**
+	 * @return the maxPostSize
+	 */
+	public int getMaxPostSize() {
+		return maxPostSize;
+	}
+
+	/**
+	 * @param maxPostSize
+	 *            the maxPostSize to set
+	 */
+	public void setMaxPostSize(int maxPostSize) {
+		this.maxPostSize = maxPostSize;
 	}
 
 }

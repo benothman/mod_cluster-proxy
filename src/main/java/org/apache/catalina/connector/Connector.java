@@ -97,12 +97,6 @@ public final class Connector {
 	private int redirectPort = 443;
 
 	/**
-	 * Maximum size of a POST which will be automatically parsed by the
-	 * container. 2MB by default.
-	 */
-	private int maxPostSize = 2 * 1024 * 1024;
-
-	/**
 	 * Maximum size of a POST which will be saved by the container during
 	 * authentication. 4kB by default
 	 */
@@ -144,16 +138,17 @@ public final class Connector {
 	 */
 	private String protocolHandlerClassName = "org.apache.coyote.http11.Http11NioProtocol";
 
-	
-	protected static final boolean USE_BODY_ENCODING_FOR_QUERY_STRING = Boolean.valueOf(
-			System.getProperty("org.apache.catalina.connector.USE_BODY_ENCODING_FOR_QUERY_STRING",
-					"false")).booleanValue();
+	protected static final boolean USE_BODY_ENCODING_FOR_QUERY_STRING = Boolean
+			.valueOf(
+					System.getProperty(
+							"org.apache.catalina.connector.USE_BODY_ENCODING_FOR_QUERY_STRING",
+							"false")).booleanValue();
 
 	/**
 	 * URI encoding as body.
 	 */
 	protected boolean useBodyEncodingForURI = USE_BODY_ENCODING_FOR_QUERY_STRING;
-	
+
 	/**
 	 * Create a new instance of {@code Connector}
 	 * 
@@ -198,7 +193,7 @@ public final class Connector {
 		protocolHandler.setAdapter(adapter);
 		IntrospectionUtils.setProperty(protocolHandler, "jkHome",
 				System.getProperty("catalina.base"));
-
+		
 		try {
 			log.info("Invoke Protocol Handler initialization");
 			protocolHandler.init();
@@ -548,22 +543,19 @@ public final class Connector {
 	}
 
 	/**
-	 * Getter for maxPostSize
-	 * 
-	 * @return the maxPostSize
-	 */
-	public int getMaxPostSize() {
-		return this.maxPostSize;
-	}
-
-	/**
 	 * Setter for the maxPostSize
 	 * 
 	 * @param maxPostSize
 	 *            the maxPostSize to set
 	 */
 	public void setMaxPostSize(int maxPostSize) {
-		this.maxPostSize = maxPostSize;
+		try {
+			Method m = this.protocolHandler.getClass().getMethod(
+					"setMaxPostSize", Integer.class);
+			m.invoke(this.protocolHandler, maxPostSize);
+		} catch (Throwable t) {
+			log.warn("The protocol handler does not support max post size", t);
+		}
 	}
 
 	/**
@@ -649,7 +641,8 @@ public final class Connector {
 	}
 
 	/**
-	 * @param useBodyEncodingForURI the useBodyEncodingForURI to set
+	 * @param useBodyEncodingForURI
+	 *            the useBodyEncodingForURI to set
 	 */
 	public void setUseBodyEncodingForURI(boolean useBodyEncodingForURI) {
 		this.useBodyEncodingForURI = useBodyEncodingForURI;

@@ -43,6 +43,12 @@ import org.jboss.logging.Logger;
  */
 public abstract class AbstractInternalInputBuffer implements InputBuffer {
 
+	protected static final boolean USE_BODY_ENCODING_FOR_QUERY_STRING = Boolean
+			.valueOf(
+					System.getProperty(
+							"org.apache.catalina.connector.USE_BODY_ENCODING_FOR_QUERY_STRING",
+							"false")).booleanValue();
+
 	/**
 	 * 
 	 */
@@ -80,6 +86,13 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	 */
 	protected byte[] buf;
 	protected byte[] buf2;
+
+	/**
+	 * 
+	 */
+	private int maxPostSize;
+
+	protected boolean useBodyEncodingForURI = USE_BODY_ENCODING_FOR_QUERY_STRING;
 
 	/**
 	 * Direct byte buffer used to perform actual reading.
@@ -819,11 +832,18 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	public void parseParameters() throws IOException {
 		// TODO
 
-		int contentLength = request.getContentLength();
-		if(contentLength <= 0) {
+		int len = request.getContentLength();
+		if (len <= 0) {
 			return;
 		}
-		
+
+		if (len > this.maxPostSize) {
+			log.warn("Parameters were not parsed because the size of the posted data was too big. "
+					+ "Use the maxPostSize attribute of the connector to resolve this if the "
+					+ "application should accept large POSTs.");
+			return;
+		}
+
 		Parameters parameters = request.getParameters();
 		String enc = request.getCharacterEncoding();
 		if (enc != null) {
@@ -832,7 +852,8 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 				parameters.setQueryStringEncoding(enc);
 			}
 		} else {
-			parameters.setEncoding(org.apache.coyote.Constants.DEFAULT_CHARACTER_ENCODING);
+			parameters
+					.setEncoding(org.apache.coyote.Constants.DEFAULT_CHARACTER_ENCODING);
 			if (useBodyEncodingForURI) {
 				parameters
 						.setQueryStringEncoding(org.apache.coyote.Constants.DEFAULT_CHARACTER_ENCODING);
@@ -840,24 +861,44 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 		}
 
 		parameters.handleQueryParameters();
+		
+		String contentType = request.getContentType();
+		if (contentType == null)
+			contentType = "";
+		int semicolon = contentType.indexOf(';');
+		if (semicolon >= 0) {
+			contentType = contentType.substring(0, semicolon).trim();
+		} else {
+			contentType = contentType.trim();
+		}
+		
+		// TODO
+		
+		
+		
+		
+		
+		
+		
+		// Read new bytes if needed
+		if (pos >= lastValid) {
+			if (!fill())
+				throw new EOFException(sm.getString("iib.eof.error"));
+		}
 
-		
-		
 		
 		
 		
 		
 		int position = pos;
 
-		log.info("Content-Length = " + contentLength + ", Last-Valid = "
-				+ lastValid);
+		log.info("Content-Length = " + len + ", Last-Valid = " + lastValid);
 
-		while (lastValid < position + contentLength) {
+		while (lastValid < position + len) {
 			fill();
 		}
 
-		log.info("Content-Length = " + contentLength + ", Last-Valid = "
-				+ lastValid);
+		log.info("Content-Length = " + len + ", Last-Valid = " + lastValid);
 
 	}
 
@@ -873,6 +914,21 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	 */
 	public ByteBuffer getByteBuffer() {
 		return this.bbuf;
+	}
+
+	/**
+	 * @return the maxPostSize
+	 */
+	public int getMaxPostSize() {
+		return maxPostSize;
+	}
+
+	/**
+	 * @param maxPostSize
+	 *            the maxPostSize to set
+	 */
+	public void setMaxPostSize(int maxPostSize) {
+		this.maxPostSize = maxPostSize;
 	}
 
 }

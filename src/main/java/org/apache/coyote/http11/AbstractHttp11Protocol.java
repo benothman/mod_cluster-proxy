@@ -47,14 +47,16 @@ import org.jboss.logging.Logger;
  * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
  * @param <T>
  */
-public abstract class AbstractHttp11Protocol<T> implements ProtocolHandler, MBeanRegistration {
+public abstract class AbstractHttp11Protocol<T> implements ProtocolHandler,
+		MBeanRegistration {
 
 	private static Logger log = Logger.getLogger(AbstractHttp11Protocol.class);
 
 	/**
 	 * The string manager for this package.
 	 */
-	protected static StringManager sm = StringManager.getManager(Constants.Package);
+	protected static StringManager sm = StringManager
+			.getManager(Constants.Package);
 
 	protected HashMap<String, Object> attributes = new HashMap<String, Object>();
 	// *
@@ -107,9 +109,11 @@ public abstract class AbstractHttp11Protocol<T> implements ProtocolHandler, MBea
 	 * Maximum number of requests which can be performed over a keepalive
 	 * connection. The default is the same as for Apache HTTP Server.
 	 */
-	protected int maxKeepAliveRequests = Integer.valueOf(
-			System.getProperty("org.apache.coyote.http11.Http11Protocol.MAX_KEEP_ALIVE_REQUESTS",
-					"100")).intValue();
+	protected int maxKeepAliveRequests = Integer
+			.valueOf(
+					System.getProperty(
+							"org.apache.coyote.http11.Http11Protocol.MAX_KEEP_ALIVE_REQUESTS",
+							"100")).intValue();
 
 	protected String domain;
 	protected ObjectName oname;
@@ -198,7 +202,8 @@ public abstract class AbstractHttp11Protocol<T> implements ProtocolHandler, MBea
 	 * , javax.management.ObjectName)
 	 */
 	@Override
-	public ObjectName preRegister(MBeanServer server, ObjectName name) throws Exception {
+	public ObjectName preRegister(MBeanServer server, ObjectName name)
+			throws Exception {
 		oname = name;
 		mserver = server;
 		domain = name.getDomain();
@@ -797,4 +802,5 @@ public abstract class AbstractHttp11Protocol<T> implements ProtocolHandler, MBea
 	public void setAdapter(Adapter adapter) {
 		this.adapter = adapter;
 	}
+
 }

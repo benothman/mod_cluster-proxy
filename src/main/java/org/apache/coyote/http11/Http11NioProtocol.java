@@ -542,6 +542,21 @@ public class Http11NioProtocol extends AbstractHttp11Protocol<NioChannel> {
 		}
 	}
 
+	/**
+	 * @return the maxPostSize
+	 */
+	public int getMaxPostSize() {
+		return this.endpoint.getMaxPostSize();
+	}
+
+	/**
+	 * @param maxPostSize
+	 *            the maxPostSize to set
+	 */
+	public void setMaxPostSize(int maxPostSize) {
+		this.endpoint.setMaxPostSize(maxPostSize);
+	}
+
 	// -------------------- Various implementation classes --------------------
 	// -------------------- SSL related properties --------------------
 	/**
