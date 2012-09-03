@@ -290,9 +290,11 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 				// Parsing headers
 				inputBuffer.parseHeaders();
 			} catch (IOException e) {
+				e.printStackTrace();
 				error = true;
 				break;
 			} catch (Throwable t) {
+				t.printStackTrace();
 				if (log.isDebugEnabled()) {
 					log.debug(sm.getString("http11processor.header.parse"), t);
 				}
@@ -304,6 +306,7 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 			rp.setStage(org.apache.coyote.Constants.STAGE_PREPARE);
 			try {
 				prepareRequest();
+				inputBuffer.parseParameters();
 			} catch (Throwable t) {
 				if (log.isDebugEnabled()) {
 					log.debug(sm.getString("http11processor.request.prepare"),
@@ -337,9 +340,7 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 					error = true;
 				} catch (Throwable t) {
 					t.printStackTrace();
-					log.error(
-							"**** 1 ****"
-									+ sm.getString("http11processor.request.process"),
+					log.error(sm.getString("http11processor.request.process"),
 							t);
 					// 500 - Internal Server Error
 					response.setStatus(500);

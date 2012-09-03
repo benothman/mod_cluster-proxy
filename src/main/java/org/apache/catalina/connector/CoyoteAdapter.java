@@ -128,7 +128,7 @@ public class CoyoteAdapter implements Adapter {
 			throws Exception {
 		// Check if the request is POST
 		checkPostMethod(request);
-		
+
 		prepare(request, response);
 		// Send the request to the selected node
 		sendToNode(request, response);
@@ -165,6 +165,26 @@ public class CoyoteAdapter implements Adapter {
 								NioChannel ch = (NioChannel) attachment
 										.getNote(Constants.NODE_CHANNEL_NOTE);
 								ch.write(buff, attachment, this);
+							} else if (attachment.getRequest()
+									.getContentLength() > 0) {
+
+								if (attachment.getRequest().getContentLength() <= connector
+										.getMaxPostSize()) {
+									// TODO Read again from client and forward
+									// to
+									// node.
+
+								} else {
+									logger.warn("Parameters were not parsed because the size of the posted data was too big. "
+											+ "Use the maxPostSize attribute of the connector to resolve this if the "
+											+ "application should accept large POSTs.");
+									try {
+										readFromNode(attachment.getRequest(),
+												attachment);
+									} catch (Exception exp) {
+										failed(exp, attachment);
+									}
+								}
 							} else {
 								// Read response from the node and forward it
 								// back
@@ -345,14 +365,13 @@ public class CoyoteAdapter implements Adapter {
 	}
 
 	private void checkPostMethod(org.apache.coyote.Request request) {
-		
-		if(request.method().equals("POST")) {
-			
+
+		if (request.method().equals("POST")) {
+
 		}
-		
+
 	}
-	
-	
+
 	/**
 	 * Character conversion of the a US-ASCII MessageBytes.
 	 */

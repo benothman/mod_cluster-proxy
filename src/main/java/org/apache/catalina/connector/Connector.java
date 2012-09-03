@@ -150,6 +150,11 @@ public final class Connector {
 	protected boolean useBodyEncodingForURI = USE_BODY_ENCODING_FOR_QUERY_STRING;
 
 	/**
+	 * 
+	 */
+	private int maxPostSize = 2 * 1024 * 1024;
+
+	/**
 	 * Create a new instance of {@code Connector}
 	 * 
 	 * @param protocol
@@ -193,7 +198,7 @@ public final class Connector {
 		protocolHandler.setAdapter(adapter);
 		IntrospectionUtils.setProperty(protocolHandler, "jkHome",
 				System.getProperty("catalina.base"));
-		
+
 		try {
 			log.info("Invoke Protocol Handler initialization");
 			protocolHandler.init();
@@ -549,6 +554,7 @@ public final class Connector {
 	 *            the maxPostSize to set
 	 */
 	public void setMaxPostSize(int maxPostSize) {
+		this.maxPostSize = maxPostSize;
 		try {
 			Method m = this.protocolHandler.getClass().getMethod(
 					"setMaxPostSize", Integer.class);
@@ -556,6 +562,13 @@ public final class Connector {
 		} catch (Throwable t) {
 			log.warn("The protocol handler does not support max post size", t);
 		}
+	}
+
+	/**
+	 * @return
+	 */
+	public int getMaxPostSize() {
+		return this.maxPostSize;
 	}
 
 	/**

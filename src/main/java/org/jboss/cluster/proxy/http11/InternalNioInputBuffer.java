@@ -21,6 +21,7 @@
  */
 package org.jboss.cluster.proxy.http11;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
@@ -32,6 +33,7 @@ import org.apache.coyote.InputBuffer;
 import org.apache.coyote.Request;
 import org.apache.coyote.http11.AbstractInternalInputBuffer;
 import org.apache.tomcat.util.buf.ByteChunk;
+import org.apache.tomcat.util.http.Parameters;
 import org.apache.tomcat.util.net.NioChannel;
 import org.apache.tomcat.util.net.NioEndpoint;
 import org.apache.tomcat.util.net.SocketStatus;
@@ -184,7 +186,6 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 		return result;
 	}
 
-	
 	/**
 	 * Available bytes (note that due to encoding, this may not correspond )
 	 */
@@ -249,6 +250,62 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 		}
 
 		return (nRead >= 0);
+	}
+
+	/**
+	 * @throws IOException
+	 * 
+	 */
+	public void parseParameters() throws IOException {
+		int len = request.getContentLength();
+		if (len <= 0) {
+			return;
+		}
+
+		if (len > this.maxPostSize) {
+			log.warn("Parameters were not parsed because the size of the posted data was too big. "
+					+ "Use the maxPostSize attribute of the connector to resolve this if the "
+					+ "application should accept large POSTs.");
+			return;
+		}
+
+		Parameters parameters = request.getParameters();
+		String enc = request.getCharacterEncoding();
+		parameters.setEncoding(enc != null ? enc
+				: org.apache.coyote.Constants.DEFAULT_CHARACTER_ENCODING);
+
+		if (useBodyEncodingForURI) {
+			parameters
+					.setQueryStringEncoding(org.apache.coyote.Constants.DEFAULT_CHARACTER_ENCODING);
+		}
+
+		parameters.handleQueryParameters();
+		String contentType = request.getContentType();
+		if (contentType == null)
+			contentType = "";
+		int semicolon = contentType.indexOf(';');
+		if (semicolon >= 0) {
+			contentType = contentType.substring(0, semicolon).trim();
+		} else {
+			contentType = contentType.trim();
+		}
+
+		/*
+		 * if ("application/x-www-form-urlencoded".equals(contentType) ||
+		 * "multipart/form-data".equals(contentType)) {
+		 * log.warn("The content type <" + contentType + "> is not supported");
+		 * return; }
+		 */
+
+		int total = pos + len;
+
+		while (lastValid < total) {
+			if (!fill()) {
+				throw new EOFException(sm.getString("iib.eof.error"));
+			}
+		}
+		// Processing parameters
+		parameters.processParameters(buf, pos, len);
 	}
 
 	/**

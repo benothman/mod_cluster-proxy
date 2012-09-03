@@ -90,7 +90,7 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	/**
 	 * 
 	 */
-	private int maxPostSize;
+	protected int maxPostSize;
 
 	protected boolean useBodyEncodingForURI = USE_BODY_ENCODING_FOR_QUERY_STRING;
 
@@ -674,7 +674,6 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	 * @throws IOException
 	 */
 	public void parseHeaders() throws IOException {
-
 		while (parseHeader()) {
 			// NOPE
 		}
@@ -830,7 +829,6 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	 * 
 	 */
 	public void parseParameters() throws IOException {
-		// TODO
 
 		int len = request.getContentLength();
 		if (len <= 0) {
@@ -873,19 +871,6 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 		}
 		
 		// TODO
-		
-		
-		
-		
-		
-		
-		
-		// Read new bytes if needed
-		if (pos >= lastValid) {
-			if (!fill())
-				throw new EOFException(sm.getString("iib.eof.error"));
-		}
-
 		
 		
 		

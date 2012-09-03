@@ -110,6 +110,18 @@ public class MCMPaddapter implements Adapter {
 	 * org.apache.coyote.Response)
 	 */
 	public void service(Request req, Response res) throws Exception {
+		System.out.println(getClass().getName()+"#service(...)");
+		
+		Parameters parameters = req.getParameters();
+		
+		Enumeration<String> names = parameters.getParameterNames();
+
+		while (names.hasMoreElements()) {
+			String name = names.nextElement();
+			System.out.println(name + "=" + parameters.getParameter(name));
+		}
+		
+		
 		MessageBytes methodMB = req.method();
 		if (methodMB.equals(Constants.GET)) {
 			// In fact that is /mod_cluster_manager
