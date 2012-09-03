@@ -111,23 +111,13 @@ public class MCMPaddapter implements Adapter {
 	 * org.apache.coyote.Response)
 	 */
 	public void service(Request req, Response res) throws Exception {
-		System.out.println(getClass().getName()+"#service(...)");
-		
-		Parameters parameters = req.getParameters();
-		
-		Enumeration<String> names = parameters.getParameterNames();
 
-		while (names.hasMoreElements()) {
-			String name = names.nextElement();
-			System.out.println(name + "=" + parameters.getParameter(name));
-		}		
-		
-		NioChannel channel = (NioChannel) req.getNote(org.jboss.cluster.proxy.http11.Constants.NODE_CHANNEL_NOTE);
-		
-		
-		
-		
+		NioChannel channel = (NioChannel) req
+				.getNote(org.jboss.cluster.proxy.http11.Constants.NODE_CHANNEL_NOTE);
 		MessageBytes methodMB = req.method();
+
+		System.out.println("method: " + req.method() + " channel: " + channel);
+
 		if (methodMB.equals(Constants.GET)) {
 			// In fact that is /mod_cluster_manager
 		} else if (methodMB.equals(Constants.CONFIG)) {
@@ -149,7 +139,6 @@ public class MCMPaddapter implements Adapter {
 		} else if (methodMB.equals(Constants.PING)) {
 			process_ping(req, res);
 		}
-
 	}
 
 	private void process_ping(Request req, Response res) {

@@ -262,13 +262,15 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 			return;
 		}
 
+		
 		if (len > this.maxPostSize) {
 			log.warn("Parameters were not parsed because the size of the posted data was too big. "
 					+ "Use the maxPostSize attribute of the connector to resolve this if the "
 					+ "application should accept large POSTs.");
 			return;
 		}
-
+		
+		
 		Parameters parameters = request.getParameters();
 		String enc = request.getCharacterEncoding();
 		parameters.setEncoding(enc != null ? enc
@@ -306,7 +308,6 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 		}
 		// Processing parameters
 		parameters.processParameters(buf, pos, len);
-		request.setNote(Constants.NODE_CHANNEL_NOTE, channel);
 	}
 
 	/**

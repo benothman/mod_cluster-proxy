@@ -193,6 +193,7 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 	 */
 	private void setChannel(NioChannel channel) {
 		// Setting up the channel
+		request.setNote(Constants.NODE_CHANNEL_NOTE, channel);
 		this.channel = channel;
 		this.inputBuffer.setChannel(channel);
 		this.outputBuffer.setChannel(channel);
@@ -415,6 +416,7 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 		outputBuffer.recycle();
 		this.channel = null;
 		super.recycle();
+		this.request.clearNotes();
 		this.http11Protocol.recycleProcessor(this);
 	}
 
