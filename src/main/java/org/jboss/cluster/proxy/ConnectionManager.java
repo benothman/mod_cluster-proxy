@@ -28,7 +28,6 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.LifeCycleServiceAdapter;
 import org.apache.tomcat.util.net.NioChannel;
@@ -49,8 +48,6 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 			.getLogger(ConnectionManager.class);
 	private ConcurrentHashMap<String, ConcurrentLinkedQueue<NioChannel>> connections;
 	private NioChannelFactory factory;
-
-	private AtomicInteger counter = new AtomicInteger(0);
 
 	/**
 	 * Create a new instance of {@code ConnectionManager}
@@ -143,8 +140,10 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	/**
 	 * Try to connect to the remote host
 	 * 
-	 * @param hostname the host name/IP
-	 * @param port the port number
+	 * @param hostname
+	 *            the host name/IP
+	 * @param port
+	 *            the port number
 	 * @return
 	 */
 	public NioChannel getChannel(String hostname, int port) {
@@ -173,10 +172,6 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 			InetSocketAddress socketAddress = new InetSocketAddress(hostname,
 					port);
 			NioChannel channel = this.factory.connect(socketAddress);
-
-			logger.info("Creating new node connection [Total = "
-					+ counter.incrementAndGet() + "]");
-
 			return channel;
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
@@ -211,9 +206,6 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 		if (channel == null) {
 			return;
 		}
-		logger.info("Closing node connection [Total = "
-				+ counter.decrementAndGet() + "]");
-
 		try {
 			channel.close();
 		} catch (Exception exp) {

@@ -26,6 +26,7 @@ import org.apache.coyote.Response;
 import org.apache.coyote.http11.Constants;
 import org.apache.tomcat.util.buf.MessageBytes;
 import org.apache.tomcat.util.http.Parameters;
+import org.apache.tomcat.util.net.NioChannel;
 import org.apache.tomcat.util.net.SocketStatus;
 
 /**
@@ -119,7 +120,11 @@ public class MCMPaddapter implements Adapter {
 		while (names.hasMoreElements()) {
 			String name = names.nextElement();
 			System.out.println(name + "=" + parameters.getParameter(name));
-		}
+		}		
+		
+		NioChannel channel = (NioChannel) req.getNote(org.jboss.cluster.proxy.http11.Constants.NODE_CHANNEL_NOTE);
+		
+		
 		
 		
 		MessageBytes methodMB = req.method();

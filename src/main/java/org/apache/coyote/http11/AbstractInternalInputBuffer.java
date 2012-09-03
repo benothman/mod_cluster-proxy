@@ -844,22 +844,15 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 
 		Parameters parameters = request.getParameters();
 		String enc = request.getCharacterEncoding();
-		if (enc != null) {
-			parameters.setEncoding(enc);
-			if (useBodyEncodingForURI) {
-				parameters.setQueryStringEncoding(enc);
-			}
-		} else {
+		parameters.setEncoding(enc != null ? enc
+				: org.apache.coyote.Constants.DEFAULT_CHARACTER_ENCODING);
+
+		if (useBodyEncodingForURI) {
 			parameters
-					.setEncoding(org.apache.coyote.Constants.DEFAULT_CHARACTER_ENCODING);
-			if (useBodyEncodingForURI) {
-				parameters
-						.setQueryStringEncoding(org.apache.coyote.Constants.DEFAULT_CHARACTER_ENCODING);
-			}
+					.setQueryStringEncoding(org.apache.coyote.Constants.DEFAULT_CHARACTER_ENCODING);
 		}
 
 		parameters.handleQueryParameters();
-		
 		String contentType = request.getContentType();
 		if (contentType == null)
 			contentType = "";
@@ -869,22 +862,23 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 		} else {
 			contentType = contentType.trim();
 		}
-		
-		// TODO
-		
-		
-		
-		
-		int position = pos;
 
-		log.info("Content-Length = " + len + ", Last-Valid = " + lastValid);
+		/*
+		 * if ("application/x-www-form-urlencoded".equals(contentType) ||
+		 * "multipart/form-data".equals(contentType)) {
+		 * log.warn("The content type <" + contentType + "> is not supported");
+		 * return; }
+		 */
 
-		while (lastValid < position + len) {
-			fill();
+		int total = pos + len;
+
+		while (lastValid < total) {
+			if (!fill()) {
+				throw new EOFException(sm.getString("iib.eof.error"));
+			}
 		}
-
-		log.info("Content-Length = " + len + ", Last-Valid = " + lastValid);
-
+		// Processing parameters
+		parameters.processParameters(buf, pos, len);
 	}
 
 	/**

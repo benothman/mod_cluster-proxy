@@ -306,6 +306,7 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 		}
 		// Processing parameters
 		parameters.processParameters(buf, pos, len);
+		request.setNote(Constants.NODE_CHANNEL_NOTE, channel);
 	}
 
 	/**

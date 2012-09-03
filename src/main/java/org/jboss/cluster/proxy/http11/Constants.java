@@ -47,6 +47,22 @@ public final class Constants {
 	public static final String MAX_CONNECTIONS_NAME = "org.jboss.cluster.proxy.http11.MAX_CONNECTIONS";
 
 	/**
+	 * 
+	 */
+	public static final int MAX_NOTES = 32;
+
+	/**
+	 * 
+	 */
+	public static final int NODE_NOTE = MAX_NOTES - 1;
+	/**
+	 * 
+	 */
+	public static final int NODE_CHANNEL_NOTE = MAX_NOTES - 2;
+
+	
+	
+	/**
 	 * CRLF.
 	 */
 	public static final String CRLF = "\r\n";
