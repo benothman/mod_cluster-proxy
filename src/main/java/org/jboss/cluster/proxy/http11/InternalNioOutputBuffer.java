@@ -114,6 +114,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 	 */
 	public void setChannel(NioChannel channel) {
 		this.channel = channel;
+		response.setNote(Constants.NODE_CHANNEL_NOTE, channel);
 	}
 
 	/**
