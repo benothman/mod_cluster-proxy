@@ -327,7 +327,6 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 */
 	public void flush() throws IOException {
 		if (!committed) {
-
 			// Send the connector a request for commit. The connector should
 			// then validate the headers, send them (using sendHeader) and
 			// set the filters accordingly.
@@ -547,11 +546,12 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 		// The response is now committed
 		committed = true;
 		response.setCommitted(true);
-
 		/*
-		 * if (pos > 0) { // Sending the response header buffer bbuf.put(buf, 0,
-		 * pos); }
-		 */
+		if (pos > 0) { 
+			// Sending the response header buffer
+			bbuf.put(buf, 0, pos);
+		}
+		*/
 	}
 
 	/**

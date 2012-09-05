@@ -208,11 +208,7 @@ public final class Response {
 	 */
 	public void action(ActionCode actionCode, Object param) {
 		if (hook != null) {
-			if (param == null) {
-				hook.action(actionCode, this);
-			} else {
-				hook.action(actionCode, param);
-			}
+			hook.action(actionCode, (param == null ? this : param));
 		}
 	}
 
@@ -552,7 +548,7 @@ public final class Response {
 	public boolean isChunked() {
 		return "chunked".equalsIgnoreCase(this.transferEncoding);
 	}
-	
+
 	/**
 	 * Getter for responseParser
 	 * 
@@ -607,10 +603,14 @@ public final class Response {
 			while (index < len && Character.isSpace(type.charAt(index))) {
 				index++;
 			}
-			if (index + 8 < len && type.charAt(index) == 'c' && type.charAt(index + 1) == 'h'
-					&& type.charAt(index + 2) == 'a' && type.charAt(index + 3) == 'r'
-					&& type.charAt(index + 4) == 's' && type.charAt(index + 5) == 'e'
-					&& type.charAt(index + 6) == 't' && type.charAt(index + 7) == '=') {
+			if (index + 8 < len && type.charAt(index) == 'c'
+					&& type.charAt(index + 1) == 'h'
+					&& type.charAt(index + 2) == 'a'
+					&& type.charAt(index + 3) == 'r'
+					&& type.charAt(index + 4) == 's'
+					&& type.charAt(index + 5) == 'e'
+					&& type.charAt(index + 6) == 't'
+					&& type.charAt(index + 7) == '=') {
 				hasCharset = true;
 				break;
 			}
@@ -739,7 +739,8 @@ public final class Response {
 	 * @param chunk
 	 * @throws IOException
 	 */
-	public void doWrite(ByteChunk chunk/* byte buffer[], int pos, int count */) throws IOException {
+	public void doWrite(ByteChunk chunk/* byte buffer[], int pos, int count */)
+			throws IOException {
 		outputBuffer.doWrite(chunk, this);
 		bytesWritten += chunk.getLength();
 	}
@@ -750,7 +751,7 @@ public final class Response {
 	 * 
 	 */
 	public void recycle() {
-		
+
 		contentType = null;
 		contentLanguage = null;
 		this.transferEncoding = null;
@@ -770,7 +771,9 @@ public final class Response {
 		// update counters
 		lastWrite = 1;
 		bytesWritten = 0;
-		this.responseParser.recycle();
+		if (this.responseParser != null) {
+			this.responseParser.recycle();
+		}
 	}
 
 	/**

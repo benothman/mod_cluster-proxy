@@ -22,7 +22,6 @@
 package org.jboss.cluster.proxy.http11;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.CompletionHandler;
 import java.util.concurrent.TimeUnit;
@@ -43,12 +42,6 @@ import org.apache.tomcat.util.net.NioEndpoint;
  */
 public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 
-	
-	/**
-	 * 
-	 */
-	private boolean writing = false;
-
 	/**
 	 * Underlying channel.
 	 */
@@ -62,7 +55,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 	/**
 	 * The completion handler used for asynchronous write operations
 	 */
-	private CompletionHandler<Integer, ByteBuffer> completionHandler;
+	private CompletionHandler<Integer, NioChannel> completionHandler;
 
 	/**
 	 * Create a new instance of {@code InternalNioOutputBuffer}
@@ -89,38 +82,27 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 		this.writeTimeout = (endpoint.getSoTimeout() > 0 ? endpoint
 				.getSoTimeout() : Integer.MAX_VALUE);
 
-		this.completionHandler = new CompletionHandler<Integer, ByteBuffer>() {
+		this.completionHandler = new CompletionHandler<Integer, NioChannel>() {
 
 			@Override
-			public void completed(Integer nBytes, ByteBuffer attachment) {
+			public void completed(Integer nBytes, NioChannel attachment) {
 				if (nBytes < 0) {
 					failed(new ClosedChannelException(), attachment);
 					return;
 				}
-				if (attachment.hasRemaining()) {
-					channel.write(attachment, writeTimeout,
-							TimeUnit.MILLISECONDS, attachment, this);
+
+				if (bbuf.hasRemaining()) {
+					attachment.write(bbuf, writeTimeout, TimeUnit.MILLISECONDS,
+							attachment, this);
 				} else {
-					if (!localPool.isEmpty()) {
-						ByteBuffer buffer = localPool.poll();
-						try {
-							channel.write(buffer, writeTimeout,
-									TimeUnit.MILLISECONDS, buffer, this);
-							//nonBlockingWrite(buffer, writeTimeout, TimeUnit.MILLISECONDS);
-						} catch (Throwable t) {
-							failed(t, attachment);
-						}
-					} else {
-						writing = false;
-					}
-					offer(attachment);
+					// Clear the buffer when all bytes are written
+					clearBuffer();
 				}
 			}
 
 			@Override
-			public void failed(Throwable exc, ByteBuffer attachment) {
-				exc.printStackTrace();
-				endpoint.close(channel);
+			public void failed(Throwable exc, NioChannel attachment) {
+
 			}
 		};
 	}
@@ -149,9 +131,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 	 */
 	public void recycle() {
 		super.recycle();
-		setChannel(null);
-		bufferPool.addAll(localPool);
-		localPool.clear();
+		channel = null;
 	}
 
 	/**
@@ -175,23 +155,17 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 	 * 
 	 * @return the number of bytes written, -1 in case of errors
 	 */
-	private int blockingWrite(ByteBuffer buffer, long timeout, TimeUnit unit) {
+	private int blockingWrite(long timeout, TimeUnit unit) {
 		int nw = 0;
 		try {
-			nw = this.channel.writeBytes(buffer, timeout, unit);
-			writing = false;
+			nw = this.channel.writeBytes(this.bbuf, timeout, unit);
 			if (nw < 0) {
 				close(channel);
-			} else {
-				tryWrite();
 			}
 		} catch (Throwable t) {
-			log.warn("Error occurs during blocking write", t);
 			if (log.isDebugEnabled()) {
 				log.debug(t.getMessage(), t);
 			}
-		} finally {
-			offer(buffer);
 		}
 
 		return nw;
@@ -207,30 +181,15 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 	 * @param unit
 	 *            The time unit
 	 */
-	private void nonBlockingWrite(final ByteBuffer buffer, final long timeout,
-			final TimeUnit unit) {
+	private void nonBlockingWrite(final long timeout, final TimeUnit unit) {
 		try {
 			// Perform the write operation
-			this.channel.write(buffer, timeout, unit, buffer,
+			this.channel.write(this.bbuf, timeout, unit, this.channel,
 					this.completionHandler);
 		} catch (Throwable t) {
-			log.error(t.getMessage(), t);
 			if (log.isDebugEnabled()) {
 				log.debug(t.getMessage(), t);
 			}
-		}
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.apache.coyote.http11.AbstractInternalOutputBuffer#tryWrite()
-	 */
-	protected void tryWrite() {
-		if (!writing && !this.localPool.isEmpty()) {
-			writing = true;
-			nonBlockingWrite(this.localPool.poll(), writeTimeout,
-					TimeUnit.MILLISECONDS);
 		}
 	}
 
@@ -244,11 +203,11 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 	@Override
 	protected int write(final long timeout, final TimeUnit unit) {
 		if (nonBlocking) {
-			nonBlockingWrite(bbuf, timeout, unit);
+			nonBlockingWrite(timeout, unit);
 			return 0;
 		}
 
-		return blockingWrite(bbuf, timeout, unit);
+		return blockingWrite(timeout, unit);
 	}
 
 	/**
@@ -266,95 +225,22 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 			}
 		}
 	}
-	
 
-	/**
+	/*
+	 * (non-Javadoc)
 	 * 
-	 * @param nodeChannel
+	 * @see org.apache.coyote.http11.AbstractInternalOutputBuffer#commit()
 	 */
-	public void configChunked(NioChannel nodeChannel) {
-		if (nodeChannel == this.channel) {
-			return;
+	public void commit() throws IOException {
+
+		// The response is now committed
+		committed = true;
+		response.setCommitted(true);
+
+		if (pos > 0) {
+			// Sending the response header buffer
+			bbuf.put(buf, 0, pos);
 		}
-
-		// From client to node
-		final NioChannel clientChannel = this.channel;
-		final ByteBuffer cBuff = poll();
-		final Tuple<NioChannel, NioChannel, ByteBuffer> cTuple = new Tuple<>(
-				clientChannel, nodeChannel, cBuff);
-
-		clientChannel
-				.transferTo(
-						nodeChannel,
-						cBuff,
-						cTuple,
-						new CompletionHandler<Integer, Tuple<NioChannel, NioChannel, ByteBuffer>>() {
-
-							@Override
-							public void completed(
-									Integer nBytes,
-									Tuple<NioChannel, NioChannel, ByteBuffer> attach) {
-								if (nBytes < 0) {
-									failed(null, attach);
-									return;
-								}
-								attach.last.clear();
-								attach.first.transferTo(attach.middle,
-										attach.last, attach, this);
-							}
-
-							@Override
-							public void failed(
-									Throwable exc,
-									Tuple<NioChannel, NioChannel, ByteBuffer> attachment) {
-								log.error("Client To Node");
-								offer(attachment.last);
-								// Closing client and node connection
-								close(attachment.first);
-								close(attachment.middle);
-							}
-						});
-
-		// From node to client
-		final ByteBuffer nBuff = poll();
-		final Tuple<NioChannel, NioChannel, ByteBuffer> nTuple = new Tuple<>(
-				nodeChannel, clientChannel, nBuff);
-
-		nodeChannel
-				.transferTo(
-						this.channel,
-						nBuff,
-						nTuple,
-						new CompletionHandler<Integer, Tuple<NioChannel, NioChannel, ByteBuffer>>() {
-
-							@Override
-							public void completed(
-									Integer nBytes,
-									Tuple<NioChannel, NioChannel, ByteBuffer> attachment) {
-								if (nBytes < 0) {
-									failed(null, attachment);
-									return;
-								}
-
-								attachment.last.clear();
-								attachment.first.transferTo(attachment.middle,
-										attachment.last, attachment, this);
-							}
-
-							@Override
-							public void failed(
-									Throwable exc,
-									Tuple<NioChannel, NioChannel, ByteBuffer> attachment) {
-								log.error("Node To Client");
-								if (attachment.first.isOpen()) {
-									close(attachment.first);
-								}
-								if (attachment.middle.isOpen()) {
-									close(attachment.middle);
-								}
-								offer(attachment.last);
-							}
-						});
 	}
 
 	/*
@@ -414,8 +300,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 					// Update the offset of the leftover ByteChunck
 					leftover.setOffset(off + n);
 					while (bbuf.hasRemaining()) {
-						res = blockingWrite(bbuf, writeTimeout,
-								TimeUnit.MILLISECONDS);
+						res = blockingWrite(writeTimeout, TimeUnit.MILLISECONDS);
 						if (res < 0) {
 							break;
 						}
@@ -437,11 +322,10 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 			if (nonBlocking) {
 				// Perform non blocking writes until all data is written, or the
 				// result of the write is 0
-				nonBlockingWrite(this.bbuf, writeTimeout, TimeUnit.MILLISECONDS);
+				nonBlockingWrite(writeTimeout, TimeUnit.MILLISECONDS);
 			} else {
 				while (bbuf.hasRemaining()) {
-					res = blockingWrite(bbuf, writeTimeout,
-							TimeUnit.MILLISECONDS);
+					res = blockingWrite(writeTimeout, TimeUnit.MILLISECONDS);
 					if (res <= 0) {
 						break;
 					}
@@ -512,35 +396,15 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 		return true;
 	}
 
-	
-	/**
-	 * {@code Tuple}
+	/*
+	 * (non-Javadoc)
 	 * 
-	 * 
-	 * @param <A>
-	 * @param <B>
-	 * @param <C>
-	 *            Created on Jul 4, 2012 at 11:36:43 AM
-	 * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
+	 * @see org.apache.coyote.http11.AbstractInternalOutputBuffer#tryWrite()
 	 */
-	private static class Tuple<A, B, C> {
+	@Override
+	protected void tryWrite() {
+		// TODO Auto-generated method stub
 
-		A first;
-		B middle;
-		C last;
-
-		/**
-		 * Create a new instance of {@code Tuple}
-		 * 
-		 * @param first
-		 * @param middle
-		 * @param last
-		 */
-		public Tuple(A first, B middle, C last) {
-			this.first = first;
-			this.middle = middle;
-			this.last = last;
-		}
 	}
 
 }

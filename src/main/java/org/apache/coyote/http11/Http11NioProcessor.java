@@ -49,6 +49,7 @@ import org.apache.tomcat.util.net.NioEndpoint;
 import org.apache.tomcat.util.net.NioEndpoint.Handler.SocketState;
 import org.apache.tomcat.util.net.SSLSupport;
 import org.apache.tomcat.util.net.SocketStatus;
+import org.jboss.logging.Logger;
 
 /**
  * {@code Http11NioProcessor}
@@ -62,6 +63,9 @@ import org.apache.tomcat.util.net.SocketStatus;
  */
 public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 
+	
+	protected static Logger log = Logger.getLogger(Http11NioProcessor.class);
+	
 	/**
 	 * Input.
 	 */
@@ -93,18 +97,18 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 	public Http11NioProcessor(int headerBufferSize, NioEndpoint endpoint) {
 		this.endpoint = endpoint;
 		this.request = new Request();
-		this.inputBuffer = new InternalNioInputBuffer(this.request, headerBufferSize,
-				endpoint);
+		this.inputBuffer = new InternalNioInputBuffer(this.request,
+				headerBufferSize, endpoint);
 
 		this.inputBuffer.setMaxPostSize(this.endpoint.getMaxPostSize());
-		
+
 		this.request.setInputBuffer(this.inputBuffer);
 
 		this.response = new Response();
 		this.response.setResponseParser(new HttpResponseParser());
 		this.response.setHook(this);
-		this.outputBuffer = new InternalNioOutputBuffer(this.response, headerBufferSize,
-				endpoint);
+		this.outputBuffer = new InternalNioOutputBuffer(this.response,
+				headerBufferSize, endpoint);
 		response.setOutputBuffer(outputBuffer);
 		request.setResponse(response);
 		sslEnabled = endpoint.getSSLEnabled();
@@ -202,7 +206,7 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 	 * 
 	 * @see org.apache.coyote.http11.Http11AbstractProcessor#awaitForNext()
 	 */
-	public void awaitForNext() {
+	public void awaitNext() {
 		final NioChannel ch = this.channel;
 		// Asynchronous wait for next request.
 		ch.awaitRead(endpoint.getKeepAliveTimeout(), TimeUnit.MILLISECONDS, ch,
@@ -237,8 +241,8 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 	 * .util.net.SocketStatus)
 	 */
 	public SocketState event(SocketStatus status) throws IOException {
-		throw new UnsupportedOperationException(
-				"The event operation is not supported for the mod_cluster proxy");
+		// The event mode is not supported
+		return SocketState.CLOSED;
 	}
 
 	/**
@@ -321,8 +325,6 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 			if (!error) {
 				try {
 					rp.setStage(org.apache.coyote.Constants.STAGE_SERVICE);
-
-					// TODO
 					adapter.service(request, response);
 					// Handle when the response was committed before a serious
 					// error occurred. Throwing a ServletException should both
@@ -334,12 +336,11 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 								|| statusDropsConnection(response.getStatus());
 					}
 				} catch (InterruptedIOException e) {
+					log.error(e.getMessage());
 					error = true;
 				} catch (Throwable t) {
-					t.printStackTrace();
-					log.error(
-							"**** 1 ****"
-									+ sm.getString("http11processor.request.process"),
+					log.error(t.getMessage());
+					log.error(sm.getString("http11processor.request.process"),
 							t);
 					// 500 - Internal Server Error
 					response.setStatus(500);
@@ -353,7 +354,6 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 		}
 
 		if (error) {
-			log.warn("An error occurs during request parsing!");
 			rp.setStage(org.apache.coyote.Constants.STAGE_ENDED);
 			endRequest();
 			nextRequest();
@@ -1088,18 +1088,32 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 	}
 
 	/**
-	 * @throws IOException 
+	 * @throws IOException
 	 * 
 	 */
 	protected void checkRequestPost() throws IOException {
-		
-		if(request.getContentLength() > 0) {
-			// TODO
-			inputBuffer.parseParameters();
+		int len = request.getContentLength();
+		if (len > 0) {
+			if (len <= endpoint.getMaxPostSize()) {
+				if (request.method().equalsIgnoreCase("POST")) {
+					return;
+				}
+
+				// TODO
+
+			} else {
+				error = true;
+				log.warn("Parameters were not parsed because the size of the posted data was too big. "
+						+ "Use the maxPostSize attribute of the connector to resolve this if the "
+						+ "application should accept large POSTs.");
+
+				response.setStatus(400);
+				response.setMessage("Post size too large");
+
+			}
 		}
 	}
-	
-	
+
 	/*
 	 * (non-Javadoc)
 	 * 

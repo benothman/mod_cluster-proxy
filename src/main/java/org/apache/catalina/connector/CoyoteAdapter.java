@@ -21,6 +21,7 @@
  */
 package org.apache.catalina.connector;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.CompletionHandler;
@@ -32,6 +33,7 @@ import org.apache.coyote.Response;
 import org.apache.coyote.http11.AbstractHttp11Processor;
 import org.apache.coyote.http11.AbstractInternalInputBuffer;
 import org.apache.coyote.http11.AbstractInternalOutputBuffer;
+import org.apache.coyote.http11.InternalNioInputBuffer;
 import org.apache.coyote.http11.InternalNioOutputBuffer;
 import org.apache.tomcat.util.buf.ByteChunk;
 import org.apache.tomcat.util.buf.CharChunk;
@@ -68,7 +70,7 @@ public class CoyoteAdapter implements Adapter {
 
 	protected static final String X_POWERED_BY = System.getProperty(
 			"org.apache.catalina.connector.CoyoteAdapter.X_POWERED_BY",
-			"Servlet/3.0; JBossWeb-3");
+			"Servlet/3.0; JBoss Proxy-1");
 
 	/**
 	 * The CoyoteConnector with which this processor is associated.
@@ -126,12 +128,13 @@ public class CoyoteAdapter implements Adapter {
 	 */
 	public void service(final Request request, Response response)
 			throws Exception {
-		// Check if the request is POST
-		checkPostMethod(request);
 
-		prepare(request, response);
-		// Send the request to the selected node
-		sendToNode(request, response);
+		if (prepare(request, response)) {
+			// Send the request to the selected node
+			sendToNode(request, response);
+		} else {
+			// TODO complete implementation
+		}
 	}
 
 	/**
@@ -165,34 +168,16 @@ public class CoyoteAdapter implements Adapter {
 								NioChannel ch = (NioChannel) attachment
 										.getNote(Constants.NODE_CHANNEL_NOTE);
 								ch.write(buff, attachment, this);
-							} else if (attachment.getRequest()
-									.getContentLength() > 0) {
-
-								if (attachment.getRequest().getContentLength() <= connector
-										.getMaxPostSize()) {
-									// TODO Read again from client and forward
-									// to
-									// node.
-
-								} else {
-									logger.warn("Parameters were not parsed because the size of the posted data was too big. "
-											+ "Use the maxPostSize attribute of the connector to resolve this if the "
-											+ "application should accept large POSTs.");
-									try {
-										readFromNode(attachment.getRequest(),
-												attachment);
-									} catch (Exception exp) {
-										failed(exp, attachment);
-									}
-								}
 							} else {
 								// Read response from the node and forward it
-								// back
-								// to
-								// client
+								// back to client
 								try {
-									readFromNode(attachment.getRequest(),
-											attachment);
+									if (!checkPostMethod(
+											attachment.getRequest(), attachment)) {
+
+										readFromNode(attachment.getRequest(),
+												attachment);
+									}
 								} catch (Exception exp) {
 									failed(exp, attachment);
 								}
@@ -280,7 +265,7 @@ public class CoyoteAdapter implements Adapter {
 											.configChunked(nodeChannel);
 								} else {
 									if (processor.isKeepAlive()) {
-										processor.awaitForNext();
+										processor.awaitNext();
 									} else {
 										processor.closeSocket();
 									}
@@ -315,12 +300,31 @@ public class CoyoteAdapter implements Adapter {
 	 * 
 	 * @param request
 	 * @param response
+	 * @throws IOException
 	 */
-	private void prepare(final org.apache.coyote.Request request,
-			final org.apache.coyote.Response response) {
+	private boolean prepare(final org.apache.coyote.Request request,
+			final org.apache.coyote.Response response) throws IOException {
 
 		Node node = this.nodeService.getNode(request);
-		NioChannel nodeChannel = this.connectionManager.getChannel(node);
+
+		NioChannel nodeChannel = null;
+		int tries = 0;
+
+		while (nodeChannel == null && tries < Constants.MAX_TRIES) {
+			nodeChannel = this.connectionManager.getChannel(node);
+			tries++;
+		}
+
+		if (nodeChannel == null) {
+			// This means that we are not able to get a connection to a node
+			response.setStatus(503);
+			response.setMessage("Service Unavailable");
+			if (connector.getXpoweredBy()) {
+				response.addHeader("X-Powered-By", X_POWERED_BY);
+			}
+
+			throw new IOException("Unable to connect to node");
+		}
 
 		// Client request
 		AbstractInternalInputBuffer inputBuffer = (AbstractInternalInputBuffer) request
@@ -339,11 +343,17 @@ public class CoyoteAdapter implements Adapter {
 		inBuffer.put(inputBuffer.getBuffer(), 0, inputBuffer.getLastValid())
 				.flip();
 
+		NioChannel clientChannel = ((InternalNioInputBuffer) inputBuffer)
+				.getChannel();
+
 		// Put relevant elements in the map attachment
 		response.setNote(Constants.NODE_CHANNEL_NOTE, nodeChannel);
 		response.setNote(Constants.NODE_NOTE, node);
 		response.setNote(Constants.IN_BUFFER_NOTE, inBuffer);
 		response.setNote(Constants.OUT_BUFFER_NOTE, outBuffer);
+		response.setNote(Constants.CLIENT_CHANNEL_NOTE, clientChannel);
+
+		return true;
 	}
 
 	/**
@@ -364,12 +374,73 @@ public class CoyoteAdapter implements Adapter {
 		response.setNote(Constants.NODE_CHANNEL_NOTE, channel);
 	}
 
-	private void checkPostMethod(org.apache.coyote.Request request) {
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws IOException
+	 */
+	private boolean checkPostMethod(final org.apache.coyote.Request request,
+			final org.apache.coyote.Response response) throws IOException {
 
-		if (request.method().equals("POST")) {
+		logger.info(getClass().getName()+"#checkPostMethod(...)");
+		
+		if (request.getContentLength() > 0) {
+			if (request.getContentLength() <= connector.getMaxPostSize()) {
+				// Client request
+				final AbstractInternalInputBuffer inputBuffer = (AbstractInternalInputBuffer) request
+						.getInputBuffer();
+				final NioChannel nodeChannel = (NioChannel) response
+						.getNote(Constants.NODE_CHANNEL_NOTE);
 
+				if (inputBuffer.fill()) {
+					final ByteBuffer buffer = inputBuffer.getByteBuffer();
+					buffer.flip();
+					nodeChannel.write(buffer, null,
+							new CompletionHandler<Integer, Void>() {
+
+								@Override
+								public void completed(Integer result,
+										Void attachment) {
+									if (result < 0) {
+										failed(new ClosedChannelException(), attachment);
+									}
+
+									if (buffer.hasRemaining()) {
+										nodeChannel.write(buffer, null, this);
+									} else {
+										try {
+											if (inputBuffer.needMoreData()
+													&& inputBuffer.fill()) {
+												buffer.flip();
+												nodeChannel.write(buffer, null,
+														this);
+											} else {
+												readFromNode(request, response);
+											}
+										} catch (Exception e) {
+											failed(e, attachment);
+										}
+									}
+								}
+
+								@Override
+								public void failed(Throwable exc,
+										Void attachment) {
+									exc.printStackTrace();
+								}
+							});
+				}
+
+				return true;
+			} else {
+				logger.warn("Parameters were not parsed because the size of the posted data was too big. "
+						+ "Use the maxPostSize attribute of the connector to resolve this if the "
+						+ "application should accept large POSTs.");
+			}
 		}
-
+		return false;
 	}
 
 	/**
@@ -584,4 +655,22 @@ public class CoyoteAdapter implements Adapter {
 		}
 	}
 
+	/**
+	 * {@code Pair}
+	 * 
+	 * @param <A>
+	 * @param <B>
+	 * 
+	 *            Created on Sep 4, 2012 at 11:41:47 AM
+	 * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
+	 */
+	private static class Pair<A, B> {
+		A first;
+		B last;
+
+		public Pair(A a, B b) {
+			this.first = a;
+			this.last = b;
+		}
+	}
 }

@@ -882,11 +882,18 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	}
 
 	/**
+	 * @return
+	 */
+	public boolean needMoreData() {
+		return lastValid < (pos + request.getContentLength());
+	}
+	
+	/**
 	 * Fill the internal buffer using data from the undelying input stream.
 	 * 
 	 * @return false if at end of stream
 	 */
-	protected abstract boolean fill() throws IOException;
+	public abstract boolean fill() throws IOException;
 
 	/**
 	 * @return the byte buffer

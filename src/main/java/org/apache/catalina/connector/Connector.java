@@ -28,7 +28,7 @@ import org.apache.coyote.Adapter;
 import org.apache.coyote.ProtocolHandler;
 import org.apache.tomcat.util.IntrospectionUtils;
 import org.apache.tomcat.util.res.StringManager;
-import org.jboss.cluster.proxy.container.MCMPaddapter;
+import org.jboss.cluster.proxy.container.MCMPAdapter;
 import org.jboss.logging.Logger;
 
 /**
@@ -41,6 +41,11 @@ import org.jboss.logging.Logger;
 public final class Connector {
 
 	private static Logger log = Logger.getLogger(Connector.class);
+
+	protected static final boolean X_POWERED_BY = Boolean.valueOf(
+			System.getProperty("org.apache.catalina.connector.X_POWERED_BY",
+					"false")).booleanValue();
+
 	private ProtocolHandler protocolHandler;
 	private String protocol;
 	/**
@@ -150,6 +155,11 @@ public final class Connector {
 	protected boolean useBodyEncodingForURI = USE_BODY_ENCODING_FOR_QUERY_STRING;
 
 	/**
+	 * Is generation of X-Powered-By response header enabled/disabled?
+	 */
+	protected boolean xpoweredBy = X_POWERED_BY;
+
+	/**
 	 * 
 	 */
 	private int maxPostSize = 2 * 1024 * 1024;
@@ -185,7 +195,7 @@ public final class Connector {
 
 		if (this.protocolHandler.getClass().equals(
 				org.jboss.cluster.proxy.http11.Http11NioProtocol.class)) {
-			this.adapter = new MCMPaddapter(this);
+			this.adapter = new MCMPAdapter(this);
 		}
 
 		// Initializing adapter
@@ -626,6 +636,31 @@ public final class Connector {
 	 */
 	public void setAllowedHosts(Set<String> allowedHosts) {
 		this.allowedHosts = allowedHosts;
+	}
+
+	/**
+	 * Indicates whether the generation of an X-Powered-By response header for
+	 * servlet-generated responses is enabled or disabled for this Connector.
+	 * 
+	 * @return true if generation of X-Powered-By response header is enabled,
+	 *         false otherwise
+	 */
+	public boolean getXpoweredBy() {
+		return xpoweredBy;
+	}
+
+	/**
+	 * Enables or disables the generation of an X-Powered-By header (with value
+	 * Servlet/2.4) for all servlet-generated responses returned by this
+	 * Connector.
+	 * 
+	 * @param xpoweredBy
+	 *            true if generation of X-Powered-By response header is to be
+	 *            enabled, false otherwise
+	 */
+	public void setXpoweredBy(boolean xpoweredBy) {
+		this.xpoweredBy = xpoweredBy;
+		// setProperty("xpoweredBy", String.valueOf(xpoweredBy));
 	}
 
 	/**

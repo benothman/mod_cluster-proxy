@@ -142,7 +142,7 @@ public final class Constants {
 	public static final String CHUNKED = "chunked";
 	public static final byte[] ACK_BYTES = ByteChunk
 			.convertToBytes("HTTP/1.1 100 Continue" + CRLF + CRLF);
-	public static final String TRANSFERENCODING = "Transfer-Encoding";
+	public static final String TRANSFER_ENCODING = "Transfer-Encoding";
 	public static final byte[] _200_BYTES = ByteChunk.convertToBytes("200");
 	public static final byte[] _400_BYTES = ByteChunk.convertToBytes("400");
 	public static final byte[] _404_BYTES = ByteChunk.convertToBytes("404");

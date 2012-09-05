@@ -44,10 +44,9 @@ public class ProxyMain {
 	private static final String DEFAULT_PROTOCOL = "org.apache.coyote.http11.Http11NioProtocol";
 	private static final String DEFAULT_NODE_PROTOCOL = "org.jboss.cluster.proxy.http11.Http11NioProtocol";
 	private static final String DEFAULT_SCHEME = "http";
-	private static boolean running = true;
 	private static final List<Thread> threads = new ArrayList<>();
 	private static final List<WebConnectorService> services = new ArrayList<>();
-	
+
 	private static final Logger logger = Logger.getLogger(ProxyMain.class);
 	private static final String CONFIG_PATH = "conf" + File.separatorChar
 			+ "config.properties";
@@ -81,7 +80,8 @@ public class ProxyMain {
 					DEFAULT_PROTOCOL);
 			String scheme = System.getProperty("scheme", DEFAULT_SCHEME);
 			// Creating the web connector service
-			WebConnectorService service = new WebConnectorService(protocol, scheme);
+			WebConnectorService service = new WebConnectorService(protocol,
+					scheme);
 			// configure the web connector service
 
 			// Setting the address (host:port)
@@ -98,14 +98,15 @@ public class ProxyMain {
 			// Starting the web connector service
 			service.start();
 			services.add(service);
-			
+
 			// Adding node web connector service
-			
+
 			protocol = System.getProperty("http-protocol",
 					DEFAULT_NODE_PROTOCOL);
 			scheme = System.getProperty("scheme", DEFAULT_SCHEME);
 			// Creating the web connector service
-			WebConnectorService nodeService = new WebConnectorService(protocol, scheme);
+			WebConnectorService nodeService = new WebConnectorService(protocol,
+					scheme);
 			// configure the web connector service
 
 			// Setting the address (host:port)
@@ -122,35 +123,12 @@ public class ProxyMain {
 			// Starting the web connector service
 			nodeService.start();
 			services.add(nodeService);
-			
+
 		} catch (Throwable e) {
 			logger.error("creating protocol handler error", e);
 			e.printStackTrace();
 			System.exit(-1);
 		}
-
-		threads.add(new Thread(new Runnable() {
-
-			@Override
-			public void run() {
-				while (running) {
-					try {
-						Thread.sleep(1000);
-					} catch (InterruptedException e) {
-						// NOPE
-					}
-				}
-			}
-		}) {
-			public void interrupt() {
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					// NOPE
-				}
-				super.interrupt();
-			}
-		});
 
 		threads.add(new Thread(new Runnable() {
 
@@ -167,7 +145,6 @@ public class ProxyMain {
 						if (line.equalsIgnoreCase("stop")
 								|| line.equalsIgnoreCase("quit")) {
 							logger.info("Processing command '" + line + "'");
-							running = false;
 							break;
 						} else {
 							logger.error("Unknow command : " + line);
@@ -187,7 +164,6 @@ public class ProxyMain {
 		// Start all threads
 		startThreads();
 	}
-	
 
 	/**
 	 * Add shutdown hook
@@ -199,11 +175,10 @@ public class ProxyMain {
 				try {
 					long time = System.currentTimeMillis();
 					logger.info("Stopping JBoss Mod Cluster Proxy....");
-					running = false;
-					for(WebConnectorService service: services) {
+					for (WebConnectorService service : services) {
 						service.stop();
 					}
-					
+
 					interruptThreads();
 					logger.info("JBoss Mod Cluster Proxy stopped in "
 							+ (System.currentTimeMillis() - time) + "ms");

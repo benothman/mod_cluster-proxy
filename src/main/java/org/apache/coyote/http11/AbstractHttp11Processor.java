@@ -237,7 +237,7 @@ public abstract class AbstractHttp11Processor<E> implements ActionHook {
 	/**
 	 * 
 	 */
-	public abstract void awaitForNext();
+	public abstract void awaitNext();
 	
 	/**
 	 * 

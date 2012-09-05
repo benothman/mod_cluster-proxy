@@ -183,7 +183,6 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 		return result;
 	}
 
-	
 	/**
 	 * Available bytes (note that due to encoding, this may not correspond )
 	 */
@@ -218,29 +217,20 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 	 * 
 	 * @see org.apache.coyote.http11.AbstractInternalInputBuffer#fill()
 	 */
-	protected boolean fill() throws IOException {
-		int nRead = 0;
+	public boolean fill() throws IOException {
 		// Prepare the internal input buffer for reading
 		this.prepare();
-		// Reading from client
-
-		try {
-			nRead = this.channel.readBytes(bbuf, readTimeout, TIME_UNIT);
-			if (nRead < 0) {
-				close(channel);
-			}
-		} catch (Exception e) {
-			if (log.isDebugEnabled()) {
-				log.debug("An error occurs when trying a blocking read "
-						+ e.getMessage());
-			}
-		}
+		// Read from client
+		int nRead = this.blockingRead(); 
 
 		if (nRead > 0) {
 			bbuf.flip();
 			bbuf.get(buf, pos, nRead);
 			System.arraycopy(buf, pos, buf2, pos, nRead);
 			lastValid = pos + nRead;
+			
+			System.out.println(new String (buf, pos, nRead));
+			
 		} else if (nRead == NioChannel.OP_STATUS_CLOSED) {
 			throw new IOException(sm.getString("iib.failedread"));
 		} else if (nRead == NioChannel.OP_STATUS_READ_TIMEOUT) {
@@ -324,10 +314,10 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 			if (nr < 0) {
 				close(channel);
 			}
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			if (log.isDebugEnabled()) {
 				log.debug("An error occurs when trying a blocking read "
-						+ e.getMessage());
+						+ e.getMessage(), e);
 			}
 		}
 		return nr;

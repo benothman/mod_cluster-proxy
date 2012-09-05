@@ -276,6 +276,7 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 	 */
 	@Override
 	public void destroy() throws Exception {
+		
 		if (running) {
 			stop();
 		}

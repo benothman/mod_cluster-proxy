@@ -33,7 +33,6 @@ import org.apache.coyote.InputBuffer;
 import org.apache.coyote.Request;
 import org.apache.coyote.http11.AbstractInternalInputBuffer;
 import org.apache.tomcat.util.buf.ByteChunk;
-import org.apache.tomcat.util.http.Parameters;
 import org.apache.tomcat.util.net.NioChannel;
 import org.apache.tomcat.util.net.NioEndpoint;
 import org.apache.tomcat.util.net.SocketStatus;
@@ -90,10 +89,8 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 		this.init();
 	}
 
-	/*
-	 * (non-Javadoc)
+	/**
 	 * 
-	 * @see org.apache.coyote.http11.AbstractInternalInputBuffer#init()
 	 */
 	public void init() {
 		this.inputBuffer = new InputBufferImpl();
@@ -187,6 +184,182 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 	}
 
 	/**
+	 * Read the request line. This function is meant to be used during the HTTP
+	 * request header parsing. Do NOT attempt to read the request body using it.
+	 * 
+	 * @param useAvailableData
+	 * 
+	 * @throws IOException
+	 *             If an exception occurs during the underlying socket read
+	 *             operations, or if the given buffer is not big enough to
+	 *             accommodate the whole line.
+	 * @return true if data is properly fed; false if no data is available
+	 *         immediately and thread should be freed
+	 */
+	public boolean parseRequestLine(boolean useAvailableData)
+			throws IOException {
+
+		int start = 0;
+		// Skipping blank lines
+
+		byte chr = 0;
+		do {
+			// Read new bytes if needed
+			if (pos >= lastValid) {
+				if (useAvailableData) {
+					return false;
+				}
+				if (!fill()) {
+					throw new EOFException(sm.getString("iib.eof.error"));
+				}
+			}
+
+			chr = buf[pos++];
+		} while ((chr == Constants.CR) || (chr == Constants.LF));
+
+		pos--;
+
+		// Mark the current buffer position
+		start = pos;
+
+		if (pos >= lastValid) {
+			if (useAvailableData) {
+				return false;
+			}
+			if (!fill()) {
+				throw new EOFException(sm.getString("iib.eof.error"));
+			}
+		}
+
+		// Reading the method name
+		// Method name is always US-ASCII
+
+		boolean space = false;
+
+		while (!space) {
+
+			// Read new bytes if needed
+			if (pos >= lastValid) {
+				if (!fill()) {
+					throw new EOFException(sm.getString("iib.eof.error"));
+				}
+			}
+
+			// Spec says single SP but it also says be tolerant of HT
+			if (buf[pos] == Constants.SP || buf[pos] == Constants.HT) {
+				space = true;
+				request.method().setBytes(buf, start, pos - start);
+			}
+
+			pos++;
+		}
+
+		// Spec says single SP but also says be tolerant of multiple and/or HT
+		while (space) {
+			// Read new bytes if needed
+			if (pos >= lastValid) {
+				if (!fill()) {
+					throw new EOFException(sm.getString("iib.eof.error"));
+				}
+			}
+			if (buf[pos] == Constants.SP || buf[pos] == Constants.HT) {
+				pos++;
+			} else {
+				space = false;
+			}
+		}
+
+		// Mark the current buffer position
+		start = pos;
+		int end = 0;
+		int questionPos = -1;
+
+		// Reading the URI
+		boolean eol = false;
+
+		while (!space) {
+			// Read new bytes if needed
+			if (pos >= lastValid) {
+				if (!fill())
+					throw new EOFException(sm.getString("iib.eof.error"));
+			}
+
+			// Spec says single SP but it also says be tolerant of HT
+			if (buf[pos] == Constants.SP || buf[pos] == Constants.HT) {
+				space = true;
+				end = pos;
+			} else if ((buf[pos] == Constants.CR) || (buf[pos] == Constants.LF)) {
+				// HTTP/0.9 style request
+				eol = true;
+				space = true;
+				end = pos;
+			} else if ((buf[pos] == Constants.QUESTION) && (questionPos == -1)) {
+				questionPos = pos;
+			}
+
+			pos++;
+		}
+
+		request.unparsedURI().setBytes(buf, start, end - start);
+		if (questionPos >= 0) {
+			request.queryString().setBytes(buf, questionPos + 1,
+					end - questionPos - 1);
+			request.requestURI().setBytes(buf, start, questionPos - start);
+		} else {
+			request.requestURI().setBytes(buf, start, end - start);
+		}
+
+		// Spec says single SP but also says be tolerant of multiple and/or HT
+		while (space) {
+			// Read new bytes if needed
+			if (pos >= lastValid) {
+				if (!fill())
+					throw new EOFException(sm.getString("iib.eof.error"));
+			}
+			if (buf[pos] == Constants.SP || buf[pos] == Constants.HT) {
+				pos++;
+			} else {
+				space = false;
+			}
+		}
+
+		// Mark the current buffer position
+		start = pos;
+		end = 0;
+
+		//
+		// Reading the protocol
+		// Protocol is always US-ASCII
+		//
+		while (!eol) {
+			// Read new bytes if needed
+			if (pos >= lastValid) {
+				if (!fill()) {
+					throw new EOFException(sm.getString("iib.eof.error"));
+				}
+			}
+
+			if (buf[pos] == Constants.CR) {
+				end = pos;
+			} else if (buf[pos] == Constants.LF) {
+				if (end == 0)
+					end = pos;
+				eol = true;
+			}
+
+			pos++;
+		}
+
+		if ((end - start) > 0) {
+			request.protocol().setBytes(buf, start, end - start);
+		} else {
+			request.protocol().setString("");
+		}
+
+		return true;
+	}
+
+	/**
 	 * Available bytes (note that due to encoding, this may not correspond )
 	 */
 	public void useAvailable() {
@@ -220,94 +393,27 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 	 * 
 	 * @see org.apache.coyote.http11.AbstractInternalInputBuffer#fill()
 	 */
-	protected boolean fill() throws IOException {
+	public boolean fill() throws IOException {
 		int nRead = 0;
 		// Prepare the internal input buffer for reading
 		this.prepare();
 		// Reading from client
-
-		try {
-			nRead = this.channel.readBytes(bbuf, readTimeout, TIME_UNIT);
-			if (nRead < 0) {
-				close(channel);
+		if (nonBlocking) {
+			nonBlockingRead(bbuf, readTimeout, TIME_UNIT);
+		} else {
+			nRead = blockingRead(bbuf, readTimeout, TIME_UNIT);
+			if (nRead > 0) {
+				bbuf.flip();
+				bbuf.get(buf, pos, nRead);
+				lastValid = pos + nRead;
+			} else if (nRead == NioChannel.OP_STATUS_CLOSED) {
+				throw new IOException(sm.getString("iib.failedread"));
+			} else if (nRead == NioChannel.OP_STATUS_READ_TIMEOUT) {
+				throw new SocketTimeoutException(sm.getString("iib.failedread"));
 			}
-		} catch (Exception e) {
-			if (log.isDebugEnabled()) {
-				log.debug("An error occurs when trying a blocking read "
-						+ e.getMessage());
-			}
-		}
-
-		if (nRead > 0) {
-			bbuf.flip();
-			bbuf.get(buf, pos, nRead);
-			System.arraycopy(buf, pos, buf2, pos, nRead);
-			lastValid = pos + nRead;
-		} else if (nRead == NioChannel.OP_STATUS_CLOSED) {
-			throw new IOException(sm.getString("iib.failedread"));
-		} else if (nRead == NioChannel.OP_STATUS_READ_TIMEOUT) {
-			throw new SocketTimeoutException(sm.getString("iib.failedread"));
 		}
 
 		return (nRead >= 0);
-	}
-
-	/**
-	 * @throws IOException
-	 * 
-	 */
-	public void parseParameters() throws IOException {
-		int len = request.getContentLength();
-		if (len <= 0) {
-			return;
-		}
-
-		
-		if (len > this.maxPostSize) {
-			log.warn("Parameters were not parsed because the size of the posted data was too big. "
-					+ "Use the maxPostSize attribute of the connector to resolve this if the "
-					+ "application should accept large POSTs.");
-			return;
-		}
-		
-		
-		Parameters parameters = request.getParameters();
-		String enc = request.getCharacterEncoding();
-		parameters.setEncoding(enc != null ? enc
-				: org.apache.coyote.Constants.DEFAULT_CHARACTER_ENCODING);
-
-		if (useBodyEncodingForURI) {
-			parameters
-					.setQueryStringEncoding(org.apache.coyote.Constants.DEFAULT_CHARACTER_ENCODING);
-		}
-
-		parameters.handleQueryParameters();
-		String contentType = request.getContentType();
-		if (contentType == null)
-			contentType = "";
-		int semicolon = contentType.indexOf(';');
-		if (semicolon >= 0) {
-			contentType = contentType.substring(0, semicolon).trim();
-		} else {
-			contentType = contentType.trim();
-		}
-
-		/*
-		 * if ("application/x-www-form-urlencoded".equals(contentType) ||
-		 * "multipart/form-data".equals(contentType)) {
-		 * log.warn("The content type <" + contentType + "> is not supported");
-		 * return; }
-		 */
-
-		int total = pos + len;
-
-		while (lastValid < total) {
-			if (!fill()) {
-				throw new EOFException(sm.getString("iib.eof.error"));
-			}
-		}
-		// Processing parameters
-		parameters.processParameters(buf, pos, len);
 	}
 
 	/**
@@ -377,10 +483,11 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 	 * @return the number of bytes read or -1 if the end of the stream was
 	 *         reached
 	 */
-	protected int blockingRead() {
+	private int blockingRead(ByteBuffer bb, long timeout, TimeUnit unit) {
 		int nr = 0;
 		try {
-			nr = this.channel.readBytes(this.bbuf, readTimeout, TIME_UNIT);
+			long readTimeout = timeout > 0 ? timeout : Integer.MAX_VALUE;
+			nr = this.channel.readBytes(bb, readTimeout, unit);
 			if (nr < 0) {
 				close(channel);
 			}
