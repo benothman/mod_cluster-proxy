@@ -28,6 +28,7 @@ import org.apache.coyote.http11.Constants;
 import org.apache.tomcat.util.buf.ByteChunk;
 import org.apache.tomcat.util.buf.MessageBytes;
 import org.apache.tomcat.util.http.Parameters;
+import org.apache.tomcat.util.net.NioChannel;
 import org.apache.tomcat.util.net.SocketStatus;
 
 /**
@@ -114,6 +115,10 @@ public class MCMPAdapter implements Adapter {
 	public void service(Request req, Response res) throws Exception {
 		MessageBytes methodMB = req.method();
 
+		NioChannel channel = (NioChannel) res.getNote(org.jboss.cluster.proxy.http11.Constants.NODE_CHANNEL_NOTE);
+		System.out.println("channel -> " + channel);
+		
+		
 		if (methodMB.equals(Constants.GET)) {
 			// In fact that is /mod_cluster_manager
 		} else if (methodMB.equals(Constants.CONFIG)) {
