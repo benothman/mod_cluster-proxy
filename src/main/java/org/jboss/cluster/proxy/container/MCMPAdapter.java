@@ -17,6 +17,9 @@
 
 package org.jboss.cluster.proxy.container;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Enumeration;
 
 import org.apache.catalina.connector.Connector;
@@ -72,6 +75,8 @@ public class MCMPAdapter implements Adapter {
 	private static final String MHOSTRD = "MEM: Can't read host alias";
 	private static final String MHOSTUI = "MEM: Can't update or insert host alias";
 	private static final String MCONTUI = "MEM: Can't update or insert context";
+	
+	static final byte[] CRLF = "\r\n".getBytes();
 
 	private Connector connector;
 
@@ -104,7 +109,7 @@ public class MCMPAdapter implements Adapter {
 		return false;
 	}
 
-	static MCMConfig conf;
+	static MCMConfig conf = new MCMConfig();
 
 	/*
 	 * (non-Javadoc)
@@ -113,6 +118,21 @@ public class MCMPAdapter implements Adapter {
 	 * org.apache.coyote.Response)
 	 */
 	public void service(Request req, Response res) throws Exception {
+
+		NioChannel channel = (NioChannel) res
+				.getNote(org.jboss.cluster.proxy.http11.Constants.NODE_CHANNEL_NOTE);
+		System.out.println("channel: " + channel);
+
+
+       	Parameters parameters = req.getParameters();
+		
+		Enumeration<String> names = parameters.getParameterNames();
+
+		while (names.hasMoreElements()) {
+			String name = names.nextElement();
+			System.out.println(name + "=" + parameters.getParameter(name));
+		}		
+		
 		MessageBytes methodMB = req.method();
 
 		NioChannel channel = (NioChannel) res.getNote(org.jboss.cluster.proxy.http11.Constants.NODE_CHANNEL_NOTE);
@@ -122,85 +142,221 @@ public class MCMPAdapter implements Adapter {
 		if (methodMB.equals(Constants.GET)) {
 			// In fact that is /mod_cluster_manager
 		} else if (methodMB.equals(Constants.CONFIG)) {
-			process_config(req, res);
+			process_config(req, channel);
 		} else if (methodMB.equals(Constants.ENABLE_APP)) {
-			process_enable(req, res);
+			try {
+				process_enable(req, channel);
+			} catch(Exception Ex) {
+				Ex.printStackTrace(System.out);
+			}
 		} else if (methodMB.equals(Constants.DISABLE_APP)) {
-			process_disable(req, res);
+			process_disable(req, channel);
 		} else if (methodMB.equals(Constants.STOP_APP)) {
-			process_stop(req, res);
+			process_stop(req, channel);
 		} else if (methodMB.equals(Constants.REMOVE_APP)) {
-			process_remove(req, res);
+			process_remove(req, channel);
 		} else if (methodMB.equals(Constants.STATUS)) {
-			process_status(req, res);
+			process_status(req, channel);
 		} else if (methodMB.equals(Constants.DUMP)) {
-			process_dump(req, res);
+			process_dump(req, channel);
 		} else if (methodMB.equals(Constants.INFO)) {
-			process_info(req, res);
+			try {
+			process_info(req, channel);
+			} catch(Exception Ex) {
+				Ex.printStackTrace(System.out);
+			}
 		} else if (methodMB.equals(Constants.PING)) {
-			process_ping(req, res);
+			process_ping(req, channel);
+		}
+        channel.close();
+ 	}
+
+	private void process_ping(Request req, NioChannel channel) {
+		// TODO Auto-generated method stub
+
+	}
+
+	/* Something like:
+
+Node: [1],Name: 368e2e5c-d3f7-3812-9fc6-f96d124dcf79,Balancer: cluster-prod-01,LBGroup: ,Host: 127.0.0.1,Port: 8443,Type: https,Flushpackets: Off,Flushwait: 10,Ping: 10,Smax: 21,Ttl: 60,Elected: 0,Read: 0,Transfered: 0,Connected: 0,Load: 1
+Vhost: [1:1:1], Alias: default-host
+Vhost: [1:1:2], Alias: localhost
+Vhost: [1:1:3], Alias: example.com
+Context: [1:1:1], Context: /myapp, Status: ENABLED
+
+     */
+
+	private void process_info(Request req, NioChannel channel) throws Exception {
+
+		String data = "";
+		int i = 1;
+		
+		for (Node node : conf.getNodes()) {
+			String nod = "Node: [" + i + "],Name: " + node.getJvmRoute() + ",Balancer: " + node.getBalancer() +
+					",LBGroup: " + node.getDomain() + ",Host: " + node.getHostname() + ",Port: " + node.getPort() +
+					",Type: " + node.getType() + ",Flushpackets: " + (node.isFlushpackets()?"On":"Off") +
+					",Flushwait: " + node.getFlushwait() + ",Ping: " + node.getPing() + ",Smax: " + node.getSmax() +
+					",Ttl: " + node.getTtl() + ",Elected: " + node.getElected() + ",Read: " + node.getRead() +
+					",Transfered: " + node.getTransfered() + ",Connected: " + node.getConnected() + ",Load: " + node.getLoad() + "\r\n";
+			data = data.concat(nod);
+			i++;	
 		}
 		
-		/*
-		ByteChunk chunk = new ByteChunk();
-		byte bytes[] = "Hello world!".getBytes();
-		chunk.append(bytes, 0, bytes.length);
-		res.setContentLength(bytes.length);
-		// Write chunk
-		res.doWrite(chunk);
-		*/
+		for (VHost host : conf.getHosts()) {
+			int j = 1;
+			long node = conf.getNodeId(host.getJVMRoute());
+			for (String alias : host.getAliases()) {
+				String hos = "Vhost: [" + node + ":" + host.getId() + ":" + j + "], Alias: " + alias + "\r\n";
+				data = data.concat(hos);
+				j++;
+			}
+		}
 		
-		// Send response headers and commit
-		res.sendHeaders();
-		res.action(ActionCode.ACTION_CLIENT_FLUSH, null);
+		i = 1;
+		for (Context context : conf.getContexts()) {
+			String cont = "Context: [" + conf.getNodeId(context.getJVMRoute()) + ":" + context.getHostId() + ":" + i + "], Context: " + context.getPath() +
+					", Status: " + context.getStatus() + "\r\n";
+			data = data.concat(cont);
+		}
+		
+		ByteBuffer src = ByteBuffer.allocate(1024);
+		src.put("HTTP/1.1 200 OK".getBytes());
+		src.put(CRLF);
+		addHeader(src, "Content-Type", "text/plain");
+		addHeader(src, "Server", "Mod_CLuster/0.0.0");
+		if (data.length()>0) {
+			addHeader(src, "Content-Length", Integer.toString(data.length()));
+			src.put(CRLF);
+			src.put(data.getBytes());
+		}
+		src.put(CRLF);
+        src.flip();
+        channel.writeBytes(src);
 	}
 
-	private void process_ping(Request req, Response res) {
-		// TODO Auto-generated method stub
+	/*
+	 *  something like:
+
+balancer: [1] Name: cluster-prod-01 Sticky: 1 [JSESSIONID]/[jsessionid] remove: 0 force: 0 Timeout: 0 maxAttempts: 1
+node: [1:1],Balancer: cluster-prod-01,JVMRoute: 368e2e5c-d3f7-3812-9fc6-f96d124dcf79,LBGroup: [],Host: 127.0.0.1,Port: 8443,Type: https,flushpackets: 0,flushwait: 10,ping: 10,smax: 21,ttl: 60,timeout: 0
+host: 1 [default-host] vhost: 1 node: 1
+host: 2 [localhost] vhost: 1 node: 1
+host: 3 [example.com] vhost: 1 node: 1
+context: 1 [/myapp] vhost: 1 node: 1 status: 1
+
+	 */
+	private void process_dump(Request req, NioChannel channel) {
+		String data = "";
+		int i = 1;
+		for (Balancer balancer : conf.getBalancers()) {
+			String bal = "balancer: [" + i + "] Name: " + balancer.getName() + " Sticky: " + (balancer.isStickySession()?"1":"0") +
+					" [" + balancer.getStickySessionCookie() + "]/[" + balancer.getStickySessionPath() +
+					"] remove: " + (balancer.isStickySessionRemove()?"1":"0") + " force: " + (balancer.isStickySessionForce()?"1":"0") +
+					" Timeout: " + balancer.getWaitWorker() + " maxAttempts: " + balancer.getMaxattempts() + "\r\n";
+			data = data.concat(bal);
+			i++;
+		}
+		// TODO Add more...
 
 	}
 
-	private void process_info(Request req, Response res) {
-		// TODO Auto-generated method stub
-		res.setStatus(200);
-		res.setMessage("OK");
-
-	}
-
-	private void process_dump(Request req, Response res) {
-		// TODO Auto-generated method stub
-
-	}
-
-	private void process_status(Request req, Response res) {
-		// TODO Auto-generated method stub
-
-	}
-
-	private void process_remove(Request req, Response res) {
-		// TODO Auto-generated method stub
-
-	}
-
-	private void process_stop(Request req, Response res) {
-		// TODO Auto-generated method stub
-
-	}
-
-	private void process_disable(Request req, Response res) {
-		// TODO Auto-generated method stub
-
-	}
-
-	private void process_enable(Request req, Response res) {
-		// TODO Auto-generated method stub
-
-	}
-
-	private void process_config(Request req, Response res) {
+	private void process_status(Request req, NioChannel channel) throws Exception {
 		Parameters params = req.getParameters();
 		if (params == null) {
-			process_error(TYPESYNTAX, SMESPAR, res);
+			process_error(TYPESYNTAX, SMESPAR, channel);
+			return;
+		}
+		String jvmRoute = null;
+		String load = null;
+		Enumeration<String> names = params.getParameterNames();
+		while (names.hasMoreElements()) {
+			String name = (String) names.nextElement();
+			String[] value = params.getParameterValues(name);
+			if (name.equalsIgnoreCase("JVMRoute")) {
+				jvmRoute= value[0];
+			} else if (name.equalsIgnoreCase("Load")) {
+				load = value[0];
+			} else {
+				process_error(TYPESYNTAX, SBADFLD + value[0] + SBADFLD1, channel);
+				return;
+			}
+		}
+		if (load == null || jvmRoute == null) {
+			process_error(TYPESYNTAX, SMISFLD, channel);
+			return;
+		}
+		
+		Node node = conf.getNode(jvmRoute);
+		if (node == null) {
+			process_error(TYPEMEM, MNODERD, channel);
+			return;
+		}
+		node.setLoad(Integer.parseInt(load));
+		/* TODO we need to check the node here */
+		node.setStatus(Node.NodeStatus.NODE_UP);
+		process_OK(channel);
+	}
+
+	private void process_remove(Request req, NioChannel channel) {
+		// TODO Auto-generated method stub
+
+	}
+
+	private void process_stop(Request req, NioChannel channel) {
+		// TODO Auto-generated method stub
+
+	}
+
+	private void process_disable(Request req, NioChannel channel) {
+		// TODO Auto-generated method stub
+
+	}
+
+	private void process_enable(Request req, NioChannel channel) throws Exception {
+		Parameters params = req.getParameters();
+		if (params == null) {
+			process_error(TYPESYNTAX, SMESPAR, channel);
+			return;
+		}
+
+		Context context = new Context();
+		VHost host = new VHost();
+		Enumeration<String> names = params.getParameterNames();
+		while (names.hasMoreElements()) {
+			String name = (String) names.nextElement();
+			String[] value = params.getParameterValues(name);
+			if (name.equalsIgnoreCase("JVMRoute")) {
+				if (conf.getNodeId(value[0]) == -1) {
+					process_error(TYPEMEM, MNODERD, channel);
+					return;
+				}
+				host.setJVMRoute(value[0]);
+				context.setJVMRoute(value[0]);
+			} else if (name.equalsIgnoreCase("Alias")) {
+				// Alias is something like =default-host,localhost,example.com
+				String aliases[] = value[0].split(",");
+				host.setAliases(Arrays.asList(aliases));
+			} else if (name.equalsIgnoreCase("Context")) {
+				context.setPath(value[0]);
+			}
+
+		}
+		if (context.getJVMRoute() == null) {
+			process_error(TYPESYNTAX, SROUBAD, channel);
+			return;
+		}
+		context.setStatus(Context.Status.ENABLED);
+		long id = conf.insertupdate(host);
+		context.setHostid(id);
+		conf.insertupdate(context);
+		process_OK(channel);
+
+	}
+
+	private void process_config(Request req, NioChannel channel) throws Exception {
+		Parameters params = req.getParameters();
+		if (params == null) {
+			process_error(TYPESYNTAX, SMESPAR, channel);
 			return;
 		}
 
@@ -258,23 +414,44 @@ public class MCMPAdapter implements Adapter {
 			} else if (name.equalsIgnoreCase("Timeout")) {
 				node.setTimeout(Integer.valueOf(value[0]));
 			} else {
-				process_error(TYPESYNTAX, SBADFLD + name + SBADFLD1, res);
+				process_error(TYPESYNTAX, SBADFLD + name + SBADFLD1, channel);
 				return;
 			}
-
-			conf.insertuodate(balancer);
-			conf.insertuodate(node);
-
-			res.setStatus(200);
 		}
+		
+		conf.insertupdate(balancer);
+		conf.insertupdate(node);
+
+		process_OK(channel);
+	}
+
+	private void process_OK(NioChannel channel) throws Exception {
+        ByteBuffer src = ByteBuffer.allocate(1024);
+        src.put("HTTP/1.1 200 OK".getBytes());
+        src.put(CRLF);
+        addHeader(src, "Content-type", "plain/text");
+        src.put(CRLF);
+        src.flip();
+        channel.writeBytes(src);
+	}
+	private void process_error(String type, String errstring, NioChannel channel) throws Exception {
+		System.out.println("process_error: " + type + " : " + errstring);
+        ByteBuffer src = ByteBuffer.allocate(1024);
+        src.put("HTTP/1.1 500 ERROR".getBytes());
+        src.put(CRLF);
+		addHeader(src, "Version", VERSION_PROTOCOL);
+		addHeader(src, "Type", type);
+		addHeader(src, "Mess", errstring);
+		src.put(CRLF);
+        src.flip();
+        channel.writeBytes(src);	
 
 	}
 
-	private void process_error(String type, String errstring, Response res) {
-		res.setStatus(500);
-		res.addHeader("Version", VERSION_PROTOCOL);
-		res.addHeader("Type", type);
-		res.addHeader("Mess", errstring);
-
+	private void addHeader(ByteBuffer src, String string, String errstring) {
+		String buf = string;
+		buf = string.concat(": " + errstring);
+		src.put(buf.getBytes());
+		src.put(CRLF);
 	}
 }
