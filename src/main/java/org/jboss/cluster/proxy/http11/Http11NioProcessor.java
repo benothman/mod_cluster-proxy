@@ -1173,8 +1173,8 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 				outputBuffer
 						.addActiveFilter(outputFilters[Constants.CHUNKED_FILTER]);
 				contentDelimitation = true;
-				headers.addValue(Constants.TRANSFER_ENCODING).setString(
-						Constants.CHUNKED);
+				//headers.addValue(Constants.TRANSFER_ENCODING).setString(
+				//		Constants.CHUNKED);
 			} else {
 				outputBuffer
 						.addActiveFilter(outputFilters[Constants.IDENTITY_FILTER]);

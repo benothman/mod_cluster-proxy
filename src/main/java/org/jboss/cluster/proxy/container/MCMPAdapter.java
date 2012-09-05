@@ -136,14 +136,15 @@ public class MCMPAdapter implements Adapter {
 			process_ping(req, res);
 		}
 		
+		/*
 		ByteChunk chunk = new ByteChunk();
-		
 		byte bytes[] = "Hello world!".getBytes();
 		chunk.append(bytes, 0, bytes.length);
 		res.setContentLength(bytes.length);
-
 		// Write chunk
 		res.doWrite(chunk);
+		*/
+		
 		// Send response headers and commit
 		res.sendHeaders();
 		res.action(ActionCode.ACTION_CLIENT_FLUSH, null);
