@@ -30,37 +30,126 @@ import java.util.List;
 public class MCMConfig {
 	
 	private List<Node> nodes = new ArrayList<Node>();
-	private List<Balancer> balancers  = new ArrayList<Balancer>();;
+	private List<Balancer> balancers  = new ArrayList<Balancer>();
+	private List<VHost> hosts = new ArrayList<VHost>();
+	private List<Context> contexts = new ArrayList<Context>();
 	
-	public void insertuodate(Node node) {
-		if (nodes.isEmpty()) {
-			nodes.add(node);
+	public void insertupdate(Node node) {
+		if (getNodes().isEmpty()) {
+			getNodes().add(node);
 		} else {
-			for (Node nod : nodes) {
+			for (Node nod : getNodes()) {
 				if (nod.getJvmRoute().equals(node.getJvmRoute())) {
 					// replace it.
 					// TODO that is more tricky see mod_cluster C code.
-					nodes.remove(nod);
-					nodes.add(node);
+					getNodes().remove(nod);
+					getNodes().add(node);
 					break; // Done
 				}
 			}
 		}
 	}
-	public void insertuodate(Balancer balancer) {
-		if (balancers.isEmpty()) {
-			balancers.add(balancer);
+	public void insertupdate(Balancer balancer) {
+		if (getBalancers().isEmpty()) {
+			getBalancers().add(balancer);
 		} else {
-			for (Balancer bal : balancers) {
+			for (Balancer bal : getBalancers()) {
 				if (bal.getName().equals(balancer.getName())) {
 					// replace it.
 					// TODO that is more tricky see mod_cluster C code.
-					balancers.remove(bal);
-					balancers.add(balancer);
+					getBalancers().remove(bal);
+					getBalancers().add(balancer);
 					break; // Done
 				}
 			}			
 		}		
+	}
+	public List<Node> getNodes() {
+		return nodes;
+	}
+	public void setNodes(List<Node> nodes) {
+		this.nodes = nodes;
+	}
+	public List<VHost> getHosts() {
+		return hosts;
+	}
+	public void setHosts(List<VHost> hosts) {
+		this.hosts = hosts;
+	}
+	public long getNodeId(String jvmRoute) {
+		for (Node nod : getNodes()) {
+			if (nod.getJvmRoute().equals(jvmRoute)) {
+				return nod.getId();
+			}
+		}
+		return -1;
+	}
+	public List<Context> getContexts() {
+		return contexts;
+	}
+	public void setContexts(List<Context> contexts) {
+		this.contexts = contexts;
+	}
+	public List<Balancer> getBalancers() {
+		return balancers;
+	}
+	public void setBalancers(List<Balancer> balancers) {
+		this.balancers = balancers;
+	}
+	public Node getNode(String jvmRoute) {
+		for (Node nod : getNodes()) {
+			if (nod.getJvmRoute().equals(jvmRoute)) {
+				return nod;
+			}
+		}
+		return null;
+	}
+	public long insertupdate(VHost host) {
+		int i = 1;
+		if (getHosts().isEmpty()) {
+			host.setId(i);
+			getHosts().add(host);
+			return 1;
+		} else {
+			for (VHost hos : getHosts()) {
+				if (hos.getJVMRoute().equals(host.getJVMRoute()) &&
+						isSame(host.getAliases(), hos.getAliases())) {
+					break;
+				}
+				i++;
+			}
+		}
+		getHosts().add(host);
+		return i;
+	}
+	private boolean isSame(String[] aliases, String[] aliases2) {
+		if (aliases.length != aliases2.length)
+			return false;
+		for (String host :  aliases)
+			if (isNotIn(host, aliases))
+				return false;
+		return true;
+	}
+	private boolean isNotIn(String host, String[] aliases) {
+		for (String hos :  aliases)
+			if (!host.equals(hos))
+				return false;
+		return true;
+	}
+	public void insertupdate(Context context) {
+		if (getContexts().isEmpty()) {		
+			getContexts().add(context);
+			return;
+		} else {
+			for (Context con : getContexts()) {
+				if (context.getJVMRoute().equals(con.getJVMRoute()) &&
+						context.getHostid() == con.getHostid()	) {
+					// update the status.
+					con.setStatus(context.getStatus());
+					break; // Done
+				}
+			}			
+		}
 	}
 	
 }

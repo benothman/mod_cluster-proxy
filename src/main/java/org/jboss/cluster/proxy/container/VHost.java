@@ -43,6 +43,8 @@ public class VHost implements Serializable {
 	private static final long serialVersionUID = 7136466678635260031L;
 
 	private String name;
+	private String JVMRoute;
+	private long id;
 
 	/**
 	 * The list of aliases
@@ -53,7 +55,7 @@ public class VHost implements Serializable {
 	 * Create a new instance of {@code VirtualHost}
 	 */
 	public VHost() {
-		this.aliases = new ArrayList<>();
+		this.aliases = new ArrayList<String>();
 	}
 
 	/**
@@ -142,4 +144,21 @@ public class VHost implements Serializable {
 	public void setName(String name) {
 		this.name = name;
 	}
+
+	public String getJVMRoute() {
+		return JVMRoute;
+	}
+
+	public void setJVMRoute(String jVMRoute) {
+		JVMRoute = jVMRoute;
+	}
+
+	public long getId() {
+		return id;
+	}
+
+	public void setId(long id) {
+		this.id = id;
+	}
+
 }

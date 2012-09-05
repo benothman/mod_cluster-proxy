@@ -142,7 +142,7 @@ public final class Constants {
 	public static final String CHUNKED = "chunked";
 	public static final byte[] ACK_BYTES = ByteChunk
 			.convertToBytes("HTTP/1.1 100 Continue" + CRLF + CRLF);
-	public static final String TRANSFER_ENCODING = "Transfer-Encoding";
+	public static final String TRANSFERENCODING = "Transfer-Encoding";
 	public static final byte[] _200_BYTES = ByteChunk.convertToBytes("200");
 	public static final byte[] _400_BYTES = ByteChunk.convertToBytes("400");
 	public static final byte[] _404_BYTES = ByteChunk.convertToBytes("404");
@@ -204,13 +204,13 @@ public final class Constants {
 
 	public static final String CONFIG = "CONFIG";
 
-	public static final String ENABLE_APP = "ENABLE_APP";
+	public static final String ENABLE_APP = "ENABLE-APP";
 
-	public static final String DISABLE_APP = "DISABLE_APP";
+	public static final String DISABLE_APP = "DISABLE-APP";
 
-	public static final String STOP_APP = "STOP_APP";
+	public static final String STOP_APP = "STOP-APP";
 
-	public static final String REMOVE_APP = "REMOVE_APP";
+	public static final String REMOVE_APP = "REMOVE-APP";
 
 	public static final String STATUS = "STATUS";
 
