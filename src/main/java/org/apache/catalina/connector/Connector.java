@@ -28,6 +28,8 @@ import org.apache.coyote.Adapter;
 import org.apache.coyote.ProtocolHandler;
 import org.apache.tomcat.util.IntrospectionUtils;
 import org.apache.tomcat.util.res.StringManager;
+import org.jboss.cluster.proxy.ConnectionManager;
+import org.jboss.cluster.proxy.NodeService;
 import org.jboss.cluster.proxy.container.MCMPAdapter;
 import org.jboss.logging.Logger;
 
@@ -164,6 +166,11 @@ public final class Connector {
 	 */
 	private int maxPostSize = 2 * 1024 * 1024;
 
+	private NodeService nodeService;
+	
+	private ConnectionManager connectionManager;
+	
+	
 	/**
 	 * Create a new instance of {@code Connector}
 	 * 
@@ -193,6 +200,9 @@ public final class Connector {
 
 		this.initialized = true;
 
+		this.nodeService.init();
+		this.connectionManager.init();
+		
 		if (this.protocolHandler.getClass().equals(
 				org.jboss.cluster.proxy.http11.Http11NioProtocol.class)) {
 			this.adapter = new MCMPAdapter(this);
@@ -202,13 +212,14 @@ public final class Connector {
 		if (this.adapter == null) {
 			// By default we use the CoyoteAdapter
 			adapter = new CoyoteAdapter(this);
-			((CoyoteAdapter) adapter).init();
 		}
 
 		protocolHandler.setAdapter(adapter);
 		IntrospectionUtils.setProperty(protocolHandler, "jkHome",
 				System.getProperty("catalina.base"));
-
+		
+		adapter.init();
+		
 		try {
 			log.info("Invoke Protocol Handler initialization");
 			protocolHandler.init();
@@ -694,5 +705,33 @@ public final class Connector {
 	 */
 	public void setUseBodyEncodingForURI(boolean useBodyEncodingForURI) {
 		this.useBodyEncodingForURI = useBodyEncodingForURI;
+	}
+
+	/**
+	 * @return the nodeService
+	 */
+	public NodeService getNodeService() {
+		return nodeService;
+	}
+
+	/**
+	 * @param nodeService the nodeService to set
+	 */
+	public void setNodeService(NodeService nodeService) {
+		this.nodeService = nodeService;
+	}
+
+	/**
+	 * @return the connectionManager
+	 */
+	public ConnectionManager getConnectionManager() {
+		return connectionManager;
+	}
+
+	/**
+	 * @param connectionManager the connectionManager to set
+	 */
+	public void setConnectionManager(ConnectionManager connectionManager) {
+		this.connectionManager = connectionManager;
 	}
 }

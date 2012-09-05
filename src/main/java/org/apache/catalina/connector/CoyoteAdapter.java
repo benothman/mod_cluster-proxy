@@ -40,8 +40,6 @@ import org.apache.tomcat.util.buf.CharChunk;
 import org.apache.tomcat.util.buf.MessageBytes;
 import org.apache.tomcat.util.net.NioChannel;
 import org.apache.tomcat.util.net.SocketStatus;
-import org.jboss.cluster.proxy.ConnectionManager;
-import org.jboss.cluster.proxy.NodeService;
 import org.jboss.cluster.proxy.container.Node;
 import org.jboss.logging.Logger;
 
@@ -76,8 +74,7 @@ public class CoyoteAdapter implements Adapter {
 	 * The CoyoteConnector with which this processor is associated.
 	 */
 	private Connector connector = null;
-	private NodeService nodeService;
-	private ConnectionManager connectionManager;
+	
 
 	/**
 	 * The string manager for this package.
@@ -104,10 +101,7 @@ public class CoyoteAdapter implements Adapter {
 	 */
 	public void init() throws Exception {
 		logger.info("Initializing adapter service");
-		this.nodeService = new NodeService();
-		this.nodeService.init();
-		this.connectionManager = new ConnectionManager();
-		this.connectionManager.init();
+		
 		logger.info("Adapter service Initialized successfully");
 	}
 
@@ -273,7 +267,7 @@ public class CoyoteAdapter implements Adapter {
 											.getNote(Constants.NODE_NOTE);
 									NioChannel channel = (NioChannel) attachment
 											.getNote(Constants.NODE_CHANNEL_NOTE);
-									connectionManager.recycle(
+									connector.getConnectionManager().recycle(
 											node.getJvmRoute(), channel);
 								}
 							}
@@ -305,13 +299,13 @@ public class CoyoteAdapter implements Adapter {
 	private boolean prepare(final org.apache.coyote.Request request,
 			final org.apache.coyote.Response response) throws IOException {
 
-		Node node = this.nodeService.getNode(request);
+		Node node = this.connector.getNodeService().getNode(request);
 
 		NioChannel nodeChannel = null;
 		int tries = 0;
 
 		while (nodeChannel == null && tries < Constants.MAX_TRIES) {
-			nodeChannel = this.connectionManager.getChannel(node);
+			nodeChannel = this.connector.getConnectionManager().getChannel(node);
 			tries++;
 		}
 
@@ -364,13 +358,13 @@ public class CoyoteAdapter implements Adapter {
 		// Closing the current channel
 		NioChannel channel = (NioChannel) response
 				.getNote(Constants.NODE_CHANNEL_NOTE);
-		connectionManager.close(channel);
+		this.connector.getConnectionManager().close(channel);
 
 		// Try with another node
-		Node node = this.nodeService.getNode(response.getRequest().requestURI()
+		Node node = this.connector.getNodeService().getNode(response.getRequest().requestURI()
 				.getString());
 		response.setNote(Constants.NODE_NOTE, node);
-		channel = this.connectionManager.getChannel(node);
+		channel = this.connector.getConnectionManager().getChannel(node);
 		response.setNote(Constants.NODE_CHANNEL_NOTE, channel);
 	}
 

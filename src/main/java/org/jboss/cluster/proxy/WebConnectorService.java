@@ -80,6 +80,8 @@ public class WebConnectorService {
 		try {
 			// Create connector
 			Connector connector = new Connector(protocol);
+			connector.setNodeService(ProxyMain.NODE_SERVICE);
+			connector.setConnectionManager(ProxyMain.CONNECTION_MANAGER);
 			connector.setPort(address.getPort());
 			connector.setScheme(scheme);
 			if (enableLookups != null)

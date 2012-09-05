@@ -46,7 +46,10 @@ public class ProxyMain {
 	private static final String DEFAULT_SCHEME = "http";
 	private static final List<Thread> threads = new ArrayList<>();
 	private static final List<WebConnectorService> services = new ArrayList<>();
-
+	protected static final NodeService NODE_SERVICE = new NodeService(); 
+	protected static final ConnectionManager CONNECTION_MANAGER = new ConnectionManager(); 
+	
+	
 	private static final Logger logger = Logger.getLogger(ProxyMain.class);
 	private static final String CONFIG_PATH = "conf" + File.separatorChar
 			+ "config.properties";
