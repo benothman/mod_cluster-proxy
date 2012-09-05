@@ -31,6 +31,7 @@ import org.apache.coyote.http11.Constants;
 import org.apache.tomcat.util.buf.ByteChunk;
 import org.apache.tomcat.util.buf.MessageBytes;
 import org.apache.tomcat.util.http.Parameters;
+import org.apache.tomcat.util.net.NioChannel;
 import org.apache.tomcat.util.net.SocketStatus;
 
 /**
@@ -118,7 +119,7 @@ public class MCMPAdapter implements Adapter {
 	 */
 	public void service(Request req, Response res) throws Exception {
 
-		NioChannel channel = (NioChannel) req
+		NioChannel channel = (NioChannel) res
 				.getNote(org.jboss.cluster.proxy.http11.Constants.NODE_CHANNEL_NOTE);
 
 
@@ -154,38 +155,14 @@ public class MCMPAdapter implements Adapter {
 		} else if (methodMB.equals(Constants.PING)) {
 			process_ping(req, channel);
 		}
-<<<<<<< HEAD:src/main/java/org/jboss/cluster/proxy/container/MCMPAdapter.java
-		
-		/*
-		ByteChunk chunk = new ByteChunk();
-		byte bytes[] = "Hello world!".getBytes();
-		chunk.append(bytes, 0, bytes.length);
-		res.setContentLength(bytes.length);
-		// Write chunk
-		res.doWrite(chunk);
-		*/
-		
-		// Send response headers and commit
-		res.sendHeaders();
-		res.action(ActionCode.ACTION_CLIENT_FLUSH, null);
-	}
-=======
         channel.close();
  	}
->>>>>>> Add traces...:src/main/java/org/jboss/cluster/proxy/container/MCMPaddapter.java
 
 	private void process_ping(Request req, NioChannel channel) {
 		// TODO Auto-generated method stub
 
 	}
 
-<<<<<<< HEAD:src/main/java/org/jboss/cluster/proxy/container/MCMPAdapter.java
-	private void process_info(Request req, Response res) {
-		// TODO Auto-generated method stub
-		res.setStatus(200);
-		res.setMessage("OK");
-
-=======
 	/* Something like:
 
 Node: [1],Name: 368e2e5c-d3f7-3812-9fc6-f96d124dcf79,Balancer: cluster-prod-01,LBGroup: ,Host: 127.0.0.1,Port: 8443,Type: https,Flushpackets: Off,Flushwait: 10,Ping: 10,Smax: 21,Ttl: 60,Elected: 0,Read: 0,Transfered: 0,Connected: 0,Load: 1
@@ -215,7 +192,7 @@ Context: [1:1:1], Context: /myapp, Status: ENABLED
 		
 		for (VHost host : conf.getHosts()) {
 			int j = 1;
-			long node = conf.getNodeId(host.getNode());
+			long node = conf.getNodeId(host.getJVMRoute());
 			for (String alias : host.getAliases()) {
 				String hos = "Vhost: [" + node + ":" + host.getId() + ":" + j + ", Alias: " + alias + "\r\n";
 				data = data.concat(hos);
@@ -225,7 +202,7 @@ Context: [1:1:1], Context: /myapp, Status: ENABLED
 		
 		i = 1;
 		for (Context context : conf.getContexts()) {
-			String cont = "Context: [" + conf.getNodeId(context.getJvmRoute()) + ":" + context.getHost() + ":" + i + "], Context: " + context.getPath() +
+			String cont = "Context: [" + conf.getNodeId(context.getJVMRoute()) + ":" + context.getHostId() + ":" + i + "], Context: " + context.getPath() +
 					", Status: " + context.getStatus() + "\r\n";
 			data = data.concat(cont);
 		}
@@ -243,7 +220,6 @@ Context: [1:1:1], Context: /myapp, Status: ENABLED
 		src.put(CRLF);
         src.flip();
         channel.writeBytes(src);
->>>>>>> Add traces...:src/main/java/org/jboss/cluster/proxy/container/MCMPaddapter.java
 	}
 
 	/*
@@ -342,8 +318,8 @@ context: 1 [/myapp] vhost: 1 node: 1 status: 1
 					process_error(TYPEMEM, MNODERD, channel);
 					return;
 				}
-				host.setNode(value[0]);
-				context.setJvmRoute(value[0]);
+				host.setJVMRoute(value[0]);
+				context.setJVMRoute(value[0]);
 			} else if (name.equalsIgnoreCase("Alias")) {
 				// Alias is something like =default-host,localhost,example.com
 				String aliases[] = value[0].split(",");
@@ -353,7 +329,7 @@ context: 1 [/myapp] vhost: 1 node: 1 status: 1
 			}
 
 		}
-		if (context.getJvmRoute() == null) {
+		if (context.getJVMRoute() == null) {
 			process_error(TYPESYNTAX, SROUBAD, channel);
 			return;
 		}
@@ -428,14 +404,6 @@ context: 1 [/myapp] vhost: 1 node: 1 status: 1
 				process_error(TYPESYNTAX, SBADFLD + name + SBADFLD1, channel);
 				return;
 			}
-<<<<<<< HEAD:src/main/java/org/jboss/cluster/proxy/container/MCMPAdapter.java
-
-			conf.insertuodate(balancer);
-			conf.insertuodate(node);
-
-			res.setStatus(200);
-=======
->>>>>>> Add traces...:src/main/java/org/jboss/cluster/proxy/container/MCMPaddapter.java
 		}
 		
 		conf.insertupdate(balancer);
