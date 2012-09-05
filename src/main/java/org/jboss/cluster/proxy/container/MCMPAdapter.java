@@ -121,9 +121,10 @@ public class MCMPAdapter implements Adapter {
 
 		NioChannel channel = (NioChannel) res
 				.getNote(org.jboss.cluster.proxy.http11.Constants.NODE_CHANNEL_NOTE);
+		System.out.println("channel: " + channel);
 
 
-       		Parameters parameters = req.getParameters();
+       	Parameters parameters = req.getParameters();
 		
 		Enumeration<String> names = parameters.getParameterNames();
 
@@ -151,7 +152,11 @@ public class MCMPAdapter implements Adapter {
 		} else if (methodMB.equals(Constants.DUMP)) {
 			process_dump(req, channel);
 		} else if (methodMB.equals(Constants.INFO)) {
+			try {
 			process_info(req, channel);
+			} catch(Exception Ex) {
+				Ex.printStackTrace(System.out);
+			}
 		} else if (methodMB.equals(Constants.PING)) {
 			process_ping(req, channel);
 		}
@@ -178,7 +183,6 @@ Context: [1:1:1], Context: /myapp, Status: ENABLED
 		String data = "";
 		int i = 1;
 		
-		System.out.println("process_info: " + conf.getNodes());
 		for (Node node : conf.getNodes()) {
 			String nod = "Node: [" + i + "],Name: " + node.getJvmRoute() + ",Balancer: " + node.getBalancer() +
 					",LBGroup: " + node.getDomain() + ",Host: " + node.getHostname() + ",Port: " + node.getPort() +
@@ -334,7 +338,8 @@ context: 1 [/myapp] vhost: 1 node: 1 status: 1
 			return;
 		}
 		context.setStatus(Context.Status.ENABLED);
-		conf.insertupdate(host);
+		long id = conf.insertupdate(host);
+		context.setHostid(id);
 		conf.insertupdate(context);
 		process_OK(channel);
 

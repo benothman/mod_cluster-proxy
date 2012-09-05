@@ -72,6 +72,16 @@ public class Context implements Serializable {
 	 * The context path
 	 */
 	private String path;
+	
+	/*
+	 * The corresponding node identification.
+	 */
+	private String JVMRoute;
+	
+	/*
+	 * The virtualhost id.
+	 */
+	private long hostid;
 
 	/**
 	 * Create a new instance of {@code Context}
@@ -165,5 +175,25 @@ public class Context implements Serializable {
 	 */
 	public void setPath(String path) {
 		this.path = path;
+	}
+
+	public String getJVMRoute() {
+		return JVMRoute;
+	}
+
+	public void setJVMRoute(String jVMRoute) {
+		JVMRoute = jVMRoute;
+	}
+
+	public long getHostId() {
+		return getHostid();
+	}
+
+	public long getHostid() {
+		return hostid;
+	}
+
+	public void setHostid(long hostid) {
+		this.hostid = hostid;
 	}
 }
