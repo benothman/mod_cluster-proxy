@@ -15,7 +15,6 @@
  * the License.
  */
 
-
 package org.jboss.cluster.proxy.container;
 
 import java.util.ArrayList;
@@ -25,15 +24,15 @@ import java.util.List;
  * Configuration of the cluster received via the MCM elements.
  * 
  * @author Jean-Frederic Clere
- *
+ * 
  */
 public class MCMConfig {
-	
+
 	private List<Node> nodes = new ArrayList<Node>();
-	private List<Balancer> balancers  = new ArrayList<Balancer>();
+	private List<Balancer> balancers = new ArrayList<Balancer>();
 	private List<VHost> hosts = new ArrayList<VHost>();
 	private List<Context> contexts = new ArrayList<Context>();
-	
+
 	public void insertupdate(Node node) {
 		if (getNodes().isEmpty()) {
 			getNodes().add(node);
@@ -49,6 +48,7 @@ public class MCMConfig {
 			}
 		}
 	}
+
 	public void insertupdate(Balancer balancer) {
 		if (getBalancers().isEmpty()) {
 			getBalancers().add(balancer);
@@ -61,21 +61,26 @@ public class MCMConfig {
 					getBalancers().add(balancer);
 					break; // Done
 				}
-			}			
-		}		
+			}
+		}
 	}
+
 	public List<Node> getNodes() {
 		return nodes;
 	}
+
 	public void setNodes(List<Node> nodes) {
 		this.nodes = nodes;
 	}
+
 	public List<VHost> getHosts() {
 		return hosts;
 	}
+
 	public void setHosts(List<VHost> hosts) {
 		this.hosts = hosts;
 	}
+
 	public long getNodeId(String jvmRoute) {
 		for (Node nod : getNodes()) {
 			if (nod.getJvmRoute().equals(jvmRoute)) {
@@ -84,18 +89,23 @@ public class MCMConfig {
 		}
 		return -1;
 	}
+
 	public List<Context> getContexts() {
 		return contexts;
 	}
+
 	public void setContexts(List<Context> contexts) {
 		this.contexts = contexts;
 	}
+
 	public List<Balancer> getBalancers() {
 		return balancers;
 	}
+
 	public void setBalancers(List<Balancer> balancers) {
 		this.balancers = balancers;
 	}
+
 	public Node getNode(String jvmRoute) {
 		for (Node nod : getNodes()) {
 			if (nod.getJvmRoute().equals(jvmRoute)) {
@@ -104,6 +114,7 @@ public class MCMConfig {
 		}
 		return null;
 	}
+
 	public long insertupdate(VHost host) {
 		int i = 1;
 		if (getHosts().isEmpty()) {
@@ -112,8 +123,8 @@ public class MCMConfig {
 			return 1;
 		} else {
 			for (VHost hos : getHosts()) {
-				if (hos.getJVMRoute().equals(host.getJVMRoute()) &&
-						isSame(host.getAliases(), hos.getAliases())) {
+				if (hos.getJVMRoute().equals(host.getJVMRoute())
+						&& isSame(host.getAliases(), hos.getAliases())) {
 					break;
 				}
 				i++;
@@ -122,34 +133,37 @@ public class MCMConfig {
 		getHosts().add(host);
 		return i;
 	}
+
 	private boolean isSame(String[] aliases, String[] aliases2) {
 		if (aliases.length != aliases2.length)
 			return false;
-		for (String host :  aliases)
+		for (String host : aliases)
 			if (isNotIn(host, aliases))
 				return false;
 		return true;
 	}
+
 	private boolean isNotIn(String host, String[] aliases) {
-		for (String hos :  aliases)
+		for (String hos : aliases)
 			if (!host.equals(hos))
 				return false;
 		return true;
 	}
+
 	public void insertupdate(Context context) {
-		if (getContexts().isEmpty()) {		
+		if (getContexts().isEmpty()) {
 			getContexts().add(context);
 			return;
 		} else {
 			for (Context con : getContexts()) {
-				if (context.getJVMRoute().equals(con.getJVMRoute()) &&
-						context.getHostid() == con.getHostid()	) {
+				if (context.getJVMRoute().equals(con.getJVMRoute())
+						&& context.getHostid() == con.getHostid()) {
 					// update the status.
 					con.setStatus(context.getStatus());
 					break; // Done
 				}
-			}			
+			}
 		}
 	}
-	
+
 }
