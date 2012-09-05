@@ -140,7 +140,11 @@ public class MCMPAdapter implements Adapter {
 		} else if (methodMB.equals(Constants.CONFIG)) {
 			process_config(req, channel);
 		} else if (methodMB.equals(Constants.ENABLE_APP)) {
-			process_enable(req, channel);
+			try {
+				process_enable(req, channel);
+			} catch(Exception Ex) {
+				Ex.printStackTrace(System.out);
+			}
 		} else if (methodMB.equals(Constants.DISABLE_APP)) {
 			process_disable(req, channel);
 		} else if (methodMB.equals(Constants.STOP_APP)) {
@@ -198,7 +202,7 @@ Context: [1:1:1], Context: /myapp, Status: ENABLED
 			int j = 1;
 			long node = conf.getNodeId(host.getJVMRoute());
 			for (String alias : host.getAliases()) {
-				String hos = "Vhost: [" + node + ":" + host.getId() + ":" + j + ", Alias: " + alias + "\r\n";
+				String hos = "Vhost: [" + node + ":" + host.getId() + ":" + j + "], Alias: " + alias + "\r\n";
 				data = data.concat(hos);
 				j++;
 			}
