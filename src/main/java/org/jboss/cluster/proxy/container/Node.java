@@ -108,6 +108,7 @@ public class Node implements Serializable {
 	 * Number of time the worker was chosen by the balancer logic
 	 */
 	private int elected;
+	private int oldelected;
 	/**
 	 * Number of bytes read from the back-end
 	 */
