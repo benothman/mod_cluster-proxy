@@ -27,6 +27,7 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 
 import org.apache.catalina.connector.Connector;
+import org.jboss.cluster.proxy.container.MCMNodeService;
 import org.jboss.logging.Logger;
 
 /**
@@ -80,7 +81,8 @@ public class WebConnectorService {
 		try {
 			// Create connector
 			Connector connector = new Connector(protocol);
-			connector.setNodeService(ProxyMain.NODE_SERVICE);
+			//connector.setNodeService(ProxyMain.NODE_SERVICE);
+			connector.setNodeService(new MCMNodeService());
 			connector.setConnectionManager(ProxyMain.CONNECTION_MANAGER);
 			connector.setPort(address.getPort());
 			connector.setScheme(scheme);

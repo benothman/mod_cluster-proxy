@@ -165,5 +165,23 @@ public class MCMConfig {
 			}
 		}
 	}
+	
+	/* get the least loaded node according to the tabel values */
+
+	public Node getNode() {
+		Node node = null;
+		for (Node nod : getNodes()) {
+			if (node != null) {
+				int status = ((node.getElected() - node.getElected()) * 1000) / node.getLoad();
+				int status1 = ((nod.getElected() - nod.getElected()) * 1000) / nod.getLoad();
+				if (status1 > status)
+					node = nod;
+			} else
+				node = nod;
+		}
+		if (node != null)
+			node.setElected(node.getElected()+1);
+		return node;
+	}
 
 }
