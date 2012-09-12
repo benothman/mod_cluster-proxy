@@ -32,6 +32,37 @@ public class MCMConfig {
 	private List<Balancer> balancers = new ArrayList<Balancer>();
 	private List<VHost> hosts = new ArrayList<VHost>();
 	private List<Context> contexts = new ArrayList<Context>();
+	private int lbstatus_recalc_time = 5;
+	
+	protected Thread thread = null;
+	
+	public MCMConfig() {
+		// Create the thread to keep the configure up to date.
+		if (thread == null) {
+			thread = new Thread(new MCMConfigBackgroundProcessor(), "MCMConfigBackgroundProcessor");
+            thread.setDaemon(true);
+		    thread.start();
+
+		}
+		
+	}
+	
+	 protected class MCMConfigBackgroundProcessor implements Runnable {
+
+		@Override
+		public void run() {
+            while (true) {
+                try {
+                    Thread.sleep(lbstatus_recalc_time *1000);
+                } catch (InterruptedException e) {
+                    ;
+                }
+                // check if the value have changed otherwise the node may be broken.
+                checkHealthNode();
+            }
+		}
+		 
+	 }
 
 	public void insertupdate(Node node) {
 		if (getNodes().isEmpty()) {
@@ -125,7 +156,7 @@ public class MCMConfig {
 			for (VHost hos : getHosts()) {
 				if (hos.getJVMRoute().equals(host.getJVMRoute())
 						&& isSame(host.getAliases(), hos.getAliases())) {
-					break;
+					return hos.getId();
 				}
 				i++;
 			}
@@ -145,7 +176,7 @@ public class MCMConfig {
 
 	private boolean isNotIn(String host, String[] aliases) {
 		for (String hos : aliases)
-			if (!host.equals(hos))
+			if (host.equals(hos))
 				return false;
 		return true;
 	}
@@ -172,8 +203,8 @@ public class MCMConfig {
 		Node node = null;
 		for (Node nod : getNodes()) {
 			if (node != null) {
-				int status = ((node.getElected() - node.getElected()) * 1000) / node.getLoad();
-				int status1 = ((nod.getElected() - nod.getElected()) * 1000) / nod.getLoad();
+				int status = ((node.getElected() - node.getOldelected()) * 1000) / node.getLoad();
+				int status1 = ((nod.getElected() - nod.getOldelected()) * 1000) / nod.getLoad();
 				if (status1 > status)
 					node = nod;
 			} else
@@ -184,4 +215,81 @@ public class MCMConfig {
 		return node;
 	}
 
+	public void checkHealthNode() {
+		for (Node nod : getNodes()) {
+			if (nod.getElected() == nod.getOldelected()) {
+				// nothing change bad
+				// TODO and the CPING/CPONG
+			} else {
+				nod.setOldelected(nod.getElected());
+			}
+		}
+	}
+	
+	/*
+	 * remove the context and the corresponding host if that is last context of the host.
+	 */
+
+	public void remove(Context context, VHost host) {
+		for (Context con : getContexts()) {
+			if (context.getJVMRoute().equals(con.getJVMRoute())
+					&& isSame(getHostById(con.getHostid()).getAliases(), host.getAliases())
+					&& context.getPath().equals(con.getPath())) {
+				getContexts().remove(con);
+				removeEmptyHost(con.getHostid());
+				return;
+			}
+		
+		}
+	}
+
+	private void removeEmptyHost(long hostid) {
+		boolean remove = true;
+		for (Context con : getContexts()) {
+			if (con.getHostid() == hostid) {
+				remove = false;
+				break;
+			}
+		}
+		if (remove)
+			getHosts().remove(getHostById(hostid));
+	}
+
+	private VHost getHostById(long hostid) {
+		for (VHost hos : getHosts()) {
+			if (hos.getId() == hostid)
+				return hos;
+		}
+		return null;
+	}
+
+	/*
+	 * Remove the node, host, context corresponding to jvmRoute.
+	 */
+	public void removeNode(String jvmRoute) {
+		List<Context> remcons = new ArrayList<Context>();
+		for (Context con : getContexts()) {
+			if (con.getJVMRoute().equals(jvmRoute))
+				remcons.add(con);
+		}
+		for (Context con : remcons )
+			getContexts().remove(con);
+				
+		List<VHost> remhosts = new ArrayList<VHost>();
+		for (VHost hos : getHosts()) {
+			if (hos.getJVMRoute().equals(jvmRoute))
+				remhosts.add(hos);
+		}
+		for (VHost hos : remhosts)
+			getHosts().remove(hos);
+				
+		List<Node> remnodes = new ArrayList<Node>();
+		for (Node nod : getNodes()) {
+			if (nod.getJvmRoute().equals(jvmRoute))
+				remnodes.add(nod);
+		}
+		for (Node nod : remnodes)
+			getNodes().remove(nod);
+	}
+	
 }

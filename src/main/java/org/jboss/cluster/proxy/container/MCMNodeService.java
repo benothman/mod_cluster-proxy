@@ -15,7 +15,7 @@ public class MCMNodeService extends NodeService {
 	public Node getNode(Request request) {
 		System.out.println("MCMNodeService: getNode");
         Cookies cookies = request.getCookies();
-        Balancer ba = null;
+         Balancer ba = null;
         String value = null;
         for (int i=0; i < cookies.getCookieCount(); i++) {
         	ServerCookie co = cookies.getCookie(i);
@@ -30,18 +30,20 @@ public class MCMNodeService extends NodeService {
         	if (ba != null)
         		break;
         }
-        	
-        if (ba != null) {
+        
+        
+        Node node = null;
+		if (ba != null) {
         	// we have a balancer and a cookie
         	int index = value.lastIndexOf('.');
         	if (index != -1)
-        		return conf.getNode(value.substring(index+1));
+        		node = conf.getNode(value.substring(index+1));
+        } else {
+        	// TODO complete code here
+        	node = conf.getNode();
         }
-		// TODO complete code here
-        Node node = conf.getNode();
         System.out.println("getNode returns: " + node);
         return node;
-		// return conf.getNode();
 	}
 
 }
