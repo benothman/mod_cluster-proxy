@@ -20,6 +20,8 @@ package org.jboss.cluster.proxy.container;
 import java.util.Arrays;
 import java.util.Enumeration;
 
+import javax.security.auth.login.Configuration;
+
 import org.apache.catalina.connector.Connector;
 import org.apache.coyote.ActionCode;
 import org.apache.coyote.Adapter;
@@ -30,6 +32,7 @@ import org.apache.tomcat.util.buf.ByteChunk;
 import org.apache.tomcat.util.buf.MessageBytes;
 import org.apache.tomcat.util.http.Parameters;
 import org.apache.tomcat.util.net.SocketStatus;
+import org.jboss.cluster.proxy.container.Context.Status;
 
 /**
  * Adapter. This represents the entry point in a coyote-based servlet container.
@@ -117,7 +120,6 @@ public class MCMPAdapter implements Adapter {
 	public void service(Request req, Response res) throws Exception {
 		
 		MessageBytes methodMB = req.method();
-
 		if (methodMB.equals(Constants.GET)) {
 			// In fact that is /mod_cluster_manager
 		} else if (methodMB.equals(Constants.CONFIG)) {
@@ -133,7 +135,11 @@ public class MCMPAdapter implements Adapter {
 		} else if (methodMB.equals(Constants.STOP_APP)) {
 			process_stop(req, res);
 		} else if (methodMB.equals(Constants.REMOVE_APP)) {
+			try {
 			process_remove(req, res);
+			} catch (Exception Ex) {
+				Ex.printStackTrace(System.out);
+			}
 		} else if (methodMB.equals(Constants.STATUS)) {
 			process_status(req, res);
 		} else if (methodMB.equals(Constants.DUMP)) {
@@ -187,7 +193,21 @@ public class MCMPAdapter implements Adapter {
 	 * @throws Exception
 	 */
 	private void process_info(Request req, Response res) throws Exception {
+		
+		String data = process_info_string();
+		process_OK(res);
+		res.addHeader("Content-Type", "text/plain");
+		res.addHeader("Server", "Mod_CLuster/0.0.0");
+		if (data.length() > 0) {
+			res.setContentLength(data.length());
+		}
 
+		ByteChunk chunk = new ByteChunk();
+		chunk.append(data.getBytes(), 0, data.length());
+		res.doWrite(chunk);
+	}
+		
+	private String process_info_string() {
 		String data = "";
 		int i = 1;
 
@@ -227,18 +247,9 @@ public class MCMPAdapter implements Adapter {
 					+ "\r\n";
 			data = data.concat(cont);
 		}
-
-		process_OK(res);
-		res.addHeader("Content-Type", "text/plain");
-		res.addHeader("Server", "Mod_CLuster/0.0.0");
-		if (data.length() > 0) {
-			res.setContentLength(data.length());
-		}
-
-		ByteChunk chunk = new ByteChunk();
-		chunk.append(data.getBytes(), 0, data.length());
-		res.doWrite(chunk);
+		return data;
 	}
+
 
 	/*
 	 * something like:
@@ -327,10 +338,52 @@ public class MCMPAdapter implements Adapter {
 	 * 
 	 * @param req
 	 * @param res
+	 * @throws Exception 
 	 */
-	private void process_remove(Request req, Response res) {
-		// TODO Auto-generated method stub
+	private void process_remove(Request req, Response res) throws Exception {
+		Parameters params = req.getParameters();
+		if (params == null) {
+			process_error(TYPESYNTAX, SMESPAR, res);
+			return;
+		}
+		
+		boolean global = false;
+		if (req.unparsedURI().toString().equals("*") ||
+				req.unparsedURI().toString().endsWith("/*")) {
+			global = true;
+		}
+		Context context = new Context();
+		VHost host = new VHost();
+		Enumeration<String> names = params.getParameterNames();
+		while (names.hasMoreElements()) {
+			String name = (String) names.nextElement();
+			String[] value = params.getParameterValues(name);
+			if (name.equalsIgnoreCase("JVMRoute")) {
+				if (conf.getNodeId(value[0]) == -1) {
+					process_error(TYPEMEM, MNODERD, res);
+					return;
+				}
+				host.setJVMRoute(value[0]);
+				context.setJVMRoute(value[0]);
+			} else if (name.equalsIgnoreCase("Alias")) {
+				// Alias is something like =default-host,localhost,example.com
+				String aliases[] = value[0].split(",");
+				host.setAliases(Arrays.asList(aliases));
+			} else if (name.equalsIgnoreCase("Context")) {
+				context.setPath(value[0]);
+			}
 
+		}
+		if (context.getJVMRoute() == null) {
+			process_error(TYPESYNTAX, SROUBAD, res);
+			return;
+		}
+
+		if (global)
+			conf.removeNode(context.getJVMRoute());
+		else
+			conf.remove(context, host);
+		process_OK(res);
 	}
 
 	/**
@@ -338,10 +391,10 @@ public class MCMPAdapter implements Adapter {
 	 * 
 	 * @param req
 	 * @param res
+	 * @throws Exception 
 	 */
-	private void process_stop(Request req, Response res) {
-		// TODO Auto-generated method stub
-
+	private void process_stop(Request req, Response res) throws Exception {
+		process_cmd(req, res, Context.Status.STOPPED);
 	}
 
 	/**
@@ -349,10 +402,10 @@ public class MCMPAdapter implements Adapter {
 	 * 
 	 * @param req
 	 * @param res
+	 * @throws Exception 
 	 */
-	private void process_disable(Request req, Response res) {
-		// TODO Auto-generated method stub
-
+	private void process_disable(Request req, Response res) throws Exception {
+		process_cmd(req, res, Context.Status.DISABLED);
 	}
 
 	/**
@@ -363,9 +416,18 @@ public class MCMPAdapter implements Adapter {
 	 * @throws Exception
 	 */
 	private void process_enable(Request req, Response res) throws Exception {
+		process_cmd(req, res, Context.Status.ENABLED);
+	}
+	private void process_cmd(Request req, Response res, Context.Status status) throws Exception {
 		Parameters params = req.getParameters();
 		if (params == null) {
 			process_error(TYPESYNTAX, SMESPAR, res);
+			return;
+		}
+		
+		if (req.unparsedURI().toString().equals("*") ||
+				req.unparsedURI().toString().endsWith("/*")) {
+			process_node_cmd(req, res, status);
 			return;
 		}
 
@@ -395,11 +457,15 @@ public class MCMPAdapter implements Adapter {
 			process_error(TYPESYNTAX, SROUBAD, res);
 			return;
 		}
-		context.setStatus(Context.Status.ENABLED);
+		context.setStatus(status);
 		long id = conf.insertupdate(host);
 		context.setHostid(id);
 		conf.insertupdate(context);
 		process_OK(res);
+	}
+
+	private void process_node_cmd(Request req, Response res, Status enabled) {
+		System.out.println("process_node_cmd:" + process_info_string());
 	}
 
 	/**
@@ -425,6 +491,7 @@ public class MCMPAdapter implements Adapter {
 			String[] value = params.getParameterValues(name);
 			if (name.equalsIgnoreCase("Balancer")) {
 				balancer.setName(value[0]);
+				node.setBalancer(value[0]);
 			} else if (name.equalsIgnoreCase("StickySession")) {
 				if (value[0].equalsIgnoreCase("No"))
 					balancer.setStickySession(false);
