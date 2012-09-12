@@ -63,18 +63,16 @@ public class Node implements Serializable {
 	private static final AtomicInteger counter = new AtomicInteger(0);
 	private long id;
 	private NodeStatus status;
-	private String balancer;
-	private String jvmRoute = "Mandatory";
+	private String balancer = "mycluster";
+	private String jvmRoute;
 	private String domain = "";
 	private String hostname = "localhost";
-	
-	//private int port = 8009;
-	private int port = 8080;
+	private int port = 8009;
 	
 	/**
 	 * Protocol using by the connector (AJP/http/https).
 	 */
-	private String type = "http";
+	private String type = "AJP";
 	/**
 	 * Tell how to flush the packets. On: Send immediately, Auto wait for
 	 * flushwait time before sending, Off don't flush. Default: "Off"
@@ -88,7 +86,7 @@ public class Node implements Serializable {
 	 * Time to wait for a pong answer to a ping. 0 means we don't try to ping
 	 * before sending. Value in seconds Default: 10 (10_000 in milliseconds)
 	 */
-	private int ping = 10_000;
+	private int ping = 10000;
 	/**
 	 * soft max inactive connection over that limit after ttl are closed.
 	 * Default depends on the mpm configuration (See below for more information)
@@ -98,7 +96,7 @@ public class Node implements Serializable {
 	 * max time in seconds to life for connection above smax. Default 60 seconds
 	 * (60_000 in milliseconds).
 	 */
-	private int ttl = 60_000;
+	private int ttl = 60000;
 	/**
 	 * Max time the proxy will wait for the backend connection. Default 0 no
 	 * timeout value in seconds.
@@ -501,5 +499,13 @@ public class Node implements Serializable {
 				.append(this.ping).append(", smax: ").append(this.smax).append(", TTL: ")
 				.append(this.ttl).append(", Timeout: ").append(this.timeout);
 		return sb.toString();
+	}
+
+	public int getOldelected() {
+		return oldelected;
+	}
+
+	public void setOldelected(int oldelected) {
+		this.oldelected = oldelected;
 	}
 }
