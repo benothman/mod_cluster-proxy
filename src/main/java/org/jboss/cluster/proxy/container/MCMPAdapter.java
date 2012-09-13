@@ -234,6 +234,7 @@ non-Javadoc)
 	 */
 	public void service(Request req, Response res) throws Exception {
 		
+		System.out.println("service...");
 		MessageBytes methodMB = req.method();
 		if (methodMB.equals(Constants.GET)) {
 			// In fact that is /mod_cluster_manager

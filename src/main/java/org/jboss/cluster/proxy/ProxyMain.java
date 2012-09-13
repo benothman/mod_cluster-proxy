@@ -30,6 +30,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jboss.cluster.proxy.container.MCMNodeService;
 import org.jboss.logging.Logger;
 
 /**
@@ -82,7 +83,8 @@ public class ProxyMain {
 			String protocol = System.getProperty("http-protocol", DEFAULT_PROTOCOL);
 			String scheme = System.getProperty("org.apache.coyote.http11.SCHEME", DEFAULT_SCHEME);
 			// Creating the web connector service
-			WebConnectorService service = new WebConnectorService(protocol, scheme);
+			// use the static NodeService if configured.
+			WebConnectorService service = new WebConnectorService(protocol, scheme, new MCMNodeService());
 			// configure the web connector service
 
 			// Setting the address (host:port)
@@ -114,12 +116,13 @@ public class ProxyMain {
 			service.start();
 			services.add(service);
 
+			// Add the static node somewhere and otherwise add the MCM one.
 			// Adding node web connector service
 
 			protocol = System.getProperty("http-protocol", DEFAULT_MCM_PROTOCOL);
 			scheme = System.getProperty("org.jboss.cluster.proxy.http11.SCHEME", DEFAULT_SCHEME);
 			// Creating the web connector service
-			WebConnectorService nodeService = new WebConnectorService(protocol, scheme);
+			WebConnectorService nodeService = new WebConnectorService(protocol, scheme, null);
 			// configure the web connector service
 
 			// Setting the address (host:port)
