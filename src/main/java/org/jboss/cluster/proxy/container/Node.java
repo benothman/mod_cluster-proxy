@@ -128,7 +128,7 @@ public class Node implements Serializable {
 	 * Create a new instance of {@code Node}
 	 */
 	public Node() {
-		this.id = counter.getAndIncrement();
+		this.setId(counter.getAndIncrement());
 	}
 
 	/**
@@ -507,5 +507,9 @@ public class Node implements Serializable {
 
 	public void setOldelected(int oldelected) {
 		this.oldelected = oldelected;
+	}
+
+	public void setId(long id) {
+		this.id = id;
 	}
 }

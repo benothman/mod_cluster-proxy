@@ -53,20 +53,25 @@ public class WebConnectorService {
 	private Executor executor;
 	private InetSocketAddress address;
 	private Connector connector;
+	private NodeService service = null;
 
 	/**
 	 * Create a new instance of {@code WebConnectorService}
 	 * 
 	 * @param protocol
 	 * @param scheme
+	 * @param object 
 	 */
-	public WebConnectorService(String protocol, String scheme) {
+	public WebConnectorService(String protocol, String scheme, NodeService  service) {
 		if (protocol != null) {
 			this.protocol = protocol;
 		}
 		if (scheme != null) {
 			this.scheme = scheme;
 		}
+		
+		if (service != null)
+			this.service  = service;
 	}
 
 	/**
@@ -80,12 +85,8 @@ public class WebConnectorService {
 		try {
 			// Create connector
 			Connector connector = new Connector(protocol);
-			if ("org.jboss.cluster.proxy.http11.Http11NioProtocol".equals(protocol)) {
-				connector.setNodeService(new MCMNodeService());
-			} else {
-				connector.setNodeService(ProxyMain.NODE_SERVICE);
-			}
-
+			connector.setNodeService(service);
+	
 			connector.setConnectionManager(ProxyMain.CONNECTION_MANAGER);
 			connector.setPort(address.getPort());
 			connector.setScheme(scheme);
