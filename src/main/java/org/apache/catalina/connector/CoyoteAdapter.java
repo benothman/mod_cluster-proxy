@@ -121,7 +121,17 @@ public class CoyoteAdapter implements Adapter {
 			sendToNode(request, response);
 		} else {
 			// TODO complete implementation
+			sendError(request, response);
 		}
+	}
+
+	/**
+	 * @param request
+	 * @param response
+	 */
+	private void sendError(Request request, Response response) {
+		
+		
 	}
 
 	/**
@@ -259,7 +269,7 @@ public class CoyoteAdapter implements Adapter {
 
 						try {
 							// try again with node
-							tryWithNode(attachment);
+							tryWithNode(attachment.getRequest(), attachment);
 							sendToNode(attachment.getRequest(), attachment);
 						} catch (Throwable e) {
 							e.printStackTrace();
@@ -294,10 +304,14 @@ public class CoyoteAdapter implements Adapter {
 			// This means that we are not able to get a connection to a node
 			response.setStatus(503);
 			response.setMessage("Service Unavailable");
+			response.addHeader("Server", "Apache-Coyote/1.1");
+			
 			if (connector.getXpoweredBy()) {
 				response.addHeader("X-Powered-By", X_POWERED_BY);
 			}
-
+			
+			
+			
 			throw new IOException("Unable to connect to node");
 		}
 
@@ -332,14 +346,13 @@ public class CoyoteAdapter implements Adapter {
 	 * 
 	 * @param response
 	 */
-	private void tryWithNode(org.apache.coyote.Response response) {
+	private void tryWithNode(org.apache.coyote.Request request, org.apache.coyote.Response response) {
 		// Closing the current channel
 		NioChannel channel = (NioChannel) response.getNote(Constants.NODE_CHANNEL_NOTE);
 		this.connector.getConnectionManager().close(channel);
 
 		// Try with another node
-		Node node = this.connector.getNodeService().getNode(
-				response.getRequest().requestURI().getString());
+		Node node = this.connector.getNodeService().getNode(request);
 		response.setNote(Constants.NODE_NOTE, node);
 		channel = this.connector.getConnectionManager().getChannel(node);
 		response.setNote(Constants.NODE_CHANNEL_NOTE, channel);
