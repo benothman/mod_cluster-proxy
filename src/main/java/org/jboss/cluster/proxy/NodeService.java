@@ -48,7 +48,8 @@ public class NodeService extends LifeCycleServiceAdapter {
 	private static final Logger logger = Logger.getLogger(NodeService.class);
 	private List<Node> nodes;
 	private Random random;
-	//private MCMConfig config = MCMPAdapter.conf;
+
+	// private MCMConfig config = MCMPAdapter.conf;
 
 	/**
 	 * Create a new instance of {@code NodeService}
@@ -87,7 +88,7 @@ public class NodeService extends LifeCycleServiceAdapter {
 	/**
 	 * @return a node
 	 */
-	public Node getNode() {
+	private Node getNode() {
 		int index = random.nextInt(this.nodes.size());
 		return this.nodes.get(index);
 	}
@@ -108,10 +109,30 @@ public class NodeService extends LifeCycleServiceAdapter {
 	}
 
 	/**
+	 * Select a new node for the specified request and mark the failed node as
+	 * unreachable
+	 * 
+	 * @param request
+	 * @param failedNode
+	 * @return
+	 */
+	public Node getNode(Request request, Node failedNode) {
+
+		if (failedNode == null) {
+			return getNode(request);
+		}
+
+		// TODO mark the failed node as unreachable and try to get new node
+		
+		
+		return getNode();
+	}
+
+	/**
 	 * @param contextPath
 	 * @return a node hosting the specified context path
 	 */
-	public Node getNode(String contextPath) {
+	private Node getNode(String contextPath) {
 		// TODO
 		return getNode();
 	}

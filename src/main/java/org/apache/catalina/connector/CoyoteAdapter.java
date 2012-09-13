@@ -310,8 +310,6 @@ public class CoyoteAdapter implements Adapter {
 				response.addHeader("X-Powered-By", X_POWERED_BY);
 			}
 			
-			
-			
 			throw new IOException("Unable to connect to node");
 		}
 
