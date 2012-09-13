@@ -170,8 +170,7 @@ public class MCMPAdapter implements Adapter {
 	 * @param res
 	 */
 	private void process_ping(Request req, Response res) {
-		// TODO Auto-generated method stub
-
+		System.out.println("process_ping");
 	}
 
 	/*
