@@ -87,10 +87,7 @@ public class ProxyMain {
 			// configure the web connector service
 
 			// Setting the address (host:port)
-			int port = Integer.valueOf(System
-					.getProperty("org.apache.tomcat.util.net.PORT", "8081"));
-
-			port = DEFAULT_HTTP_PORT;
+			int port = DEFAULT_HTTP_PORT;
 			String portStr = System.getProperty("org.apache.tomcat.util.net.PORT");
 
 			if (portStr != null) {
