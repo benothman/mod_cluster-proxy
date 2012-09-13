@@ -46,13 +46,14 @@ public class ProxyMain {
 	private static final String DEFAULT_SCHEME = "http";
 	private static final List<Thread> threads = new ArrayList<>();
 	private static final List<WebConnectorService> services = new ArrayList<>();
-	protected static final NodeService NODE_SERVICE = new NodeService(); 
-	protected static final ConnectionManager CONNECTION_MANAGER = new ConnectionManager(); 
-	
-	
+	protected static final NodeService NODE_SERVICE = new NodeService();
+	protected static final ConnectionManager CONNECTION_MANAGER = new ConnectionManager();
+
+	public static final int DEFAULT_MCM_PORT = 6666;
+	public static final int DEFAULT_HTTP_PORT = 8080;
+
 	private static final Logger logger = Logger.getLogger(ProxyMain.class);
-	private static final String CONFIG_PATH = "conf" + File.separatorChar
-			+ "config.properties";
+	private static final String CONFIG_PATH = "conf" + File.separatorChar + "config.properties";
 
 	/**
 	 * Create a new instance of {@code ProxyMain}
@@ -79,22 +80,37 @@ public class ProxyMain {
 		}
 
 		try {
-			String protocol = System.getProperty("http-protocol",
-					DEFAULT_PROTOCOL);
+			String protocol = System.getProperty("http-protocol", DEFAULT_PROTOCOL);
 			String scheme = System.getProperty("scheme", DEFAULT_SCHEME);
 			// Creating the web connector service
-			WebConnectorService service = new WebConnectorService(protocol,
-					scheme);
+			WebConnectorService service = new WebConnectorService(protocol, scheme);
 			// configure the web connector service
 
 			// Setting the address (host:port)
-			int port = Integer.valueOf(System.getProperty(
-					"org.apache.tomcat.util.net.PORT", "8081"));
-			String hostname = System.getProperty(
-					"org.apache.tomcat.util.net.ADDRESS", "0.0.0.0");
-			InetSocketAddress address = (hostname == null) ? new InetSocketAddress(
-					port) : new InetSocketAddress(hostname, port);
-			service.setAddress(address);
+			int port = Integer.valueOf(System
+					.getProperty("org.apache.tomcat.util.net.PORT", "8081"));
+
+			port = DEFAULT_HTTP_PORT;
+			String portStr = System.getProperty("org.apache.tomcat.util.net.PORT");
+
+			if (portStr != null) {
+				try {
+					port = Integer.valueOf(portStr);
+				} catch (Throwable t) {
+					logger.error(t.getMessage(), t);
+					System.setProperty("org.apache.tomcat.util.net.PORT", "" + DEFAULT_HTTP_PORT);
+				}
+			} else {
+				System.setProperty("org.apache.tomcat.util.net.PORT", "" + DEFAULT_HTTP_PORT);
+			}
+
+			String hostname = System.getProperty("org.apache.tomcat.util.net.ADDRESS");
+			if (hostname == null) {
+				hostname = "0.0.0.0";
+				System.setProperty("org.apache.tomcat.util.net.ADDRESS", hostname);
+			}
+			// Setting the address
+			service.setAddress(new InetSocketAddress(hostname, port));
 
 			// TODO finish configuration setup
 
@@ -104,22 +120,34 @@ public class ProxyMain {
 
 			// Adding node web connector service
 
-			protocol = System.getProperty("http-protocol",
-					DEFAULT_NODE_PROTOCOL);
+			protocol = System.getProperty("http-protocol", DEFAULT_NODE_PROTOCOL);
 			scheme = System.getProperty("scheme", DEFAULT_SCHEME);
 			// Creating the web connector service
-			WebConnectorService nodeService = new WebConnectorService(protocol,
-					scheme);
+			WebConnectorService nodeService = new WebConnectorService(protocol, scheme);
 			// configure the web connector service
 
 			// Setting the address (host:port)
-			int nodePort = Integer.valueOf(System.getProperty(
-					"org.jboss.cluster.proxy.net.PORT", "6666"));
-			String nodeHostname = System.getProperty(
-					"org.jboss.cluster.proxy.net.ADDRESS", "0.0.0.0");
-			InetSocketAddress nodeAddress = (nodeHostname == null) ? new InetSocketAddress(
-					nodePort) : new InetSocketAddress(nodeHostname, nodePort);
-			nodeService.setAddress(nodeAddress);
+			int nodePort = DEFAULT_MCM_PORT;
+			String nodePortStr = System.getProperty("org.jboss.cluster.proxy.net.PORT");
+			if (nodePortStr != null) {
+				try {
+					nodePort = Integer.valueOf(nodePortStr);
+				} catch (Throwable t) {
+					logger.error(t.getMessage(), t);
+					System.setProperty("org.jboss.cluster.proxy.net.PORT", "" + DEFAULT_MCM_PORT);
+				}
+			} else {
+				System.setProperty("org.jboss.cluster.proxy.net.PORT", "" + DEFAULT_MCM_PORT);
+			}
+
+			// Retrieve the MCMP hostname
+			String nodeHostname = System.getProperty("org.jboss.cluster.proxy.net.ADDRESS");
+			if (nodeHostname == null) {
+				nodeHostname = "0.0.0.0";
+				System.setProperty("org.jboss.cluster.proxy.net.ADDRESS", nodeHostname);
+			}
+
+			nodeService.setAddress(new InetSocketAddress(nodeHostname, nodePort));
 
 			// TODO finish configuration setup
 
@@ -137,16 +165,14 @@ public class ProxyMain {
 
 			@Override
 			public void run() {
-				try (BufferedReader br = new BufferedReader(
-						new InputStreamReader(System.in))) {
+				try (BufferedReader br = new BufferedReader(new InputStreamReader(System.in))) {
 					String line = null;
 					while ((line = br.readLine()) != null) {
 						line = line.trim();
 						if (line.isEmpty()) {
 							continue;
 						}
-						if (line.equalsIgnoreCase("stop")
-								|| line.equalsIgnoreCase("quit")) {
+						if (line.equalsIgnoreCase("stop") || line.equalsIgnoreCase("quit")) {
 							logger.info("Processing command '" + line + "'");
 							break;
 						} else {

@@ -22,7 +22,6 @@
 package org.jboss.cluster.proxy;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
@@ -162,17 +161,17 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	}
 
 	/**
+	 * Try to connect to the remote host specified by the host name and the port
+	 * number
 	 * 
 	 * @param hostname
 	 * @param port
-	 * @return
+	 * @return a new {@link NioChannel} representing the connection to the
+	 *         remote host
 	 */
 	private NioChannel connect(String hostname, int port) {
 		try {
-			InetSocketAddress socketAddress = new InetSocketAddress(hostname,
-					port);
-			NioChannel channel = this.factory.connect(socketAddress);
-			return channel;
+			return this.factory.connect(hostname, port);
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 		}
@@ -212,6 +211,26 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 			// NOPE
 			exp.printStackTrace();
 		}
+	}
+
+	/**
+	 * Check whether the specified JVMRoute is present in the table
+	 * 
+	 * @param jvmRoute
+	 *            the JVMRoute to check
+	 * @return
+	 */
+	public boolean jvmRouteExist(String jvmRoute) {
+		return this.connections.containsKey(jvmRoute);
+	}
+
+	/**
+	 * Remove the JVMRoute from the list of registered JVMRoutes
+	 * 
+	 * @param jvmRoute
+	 */
+	public void removeJvmRoute(String jvmRoute) {
+		this.connections.remove(jvmRoute);
 	}
 
 	/**

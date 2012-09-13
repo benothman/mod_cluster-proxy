@@ -42,7 +42,6 @@ public class MCMConfig {
 			thread = new Thread(new MCMConfigBackgroundProcessor(), "MCMConfigBackgroundProcessor");
             thread.setDaemon(true);
 		    thread.start();
-
 		}
 		
 	}
@@ -60,8 +59,7 @@ public class MCMConfig {
                 // check if the value have changed otherwise the node may be broken.
                 checkHealthNode();
             }
-		}
-		 
+		}		 
 	 }
 
 	public void insertupdate(Node node) {

@@ -22,6 +22,7 @@
 package org.apache.coyote;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -31,18 +32,65 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * 
  * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
  */
-public class BufferPool {
+public final class BufferPool {
 
-	private static final ConcurrentLinkedQueue<ByteBuffer> POOL = new ConcurrentLinkedQueue<ByteBuffer>();
-
-	private static final int BUFFER_SIZE = Integer.valueOf(System.getProperty(
+	public static final int DEFAULT_BUFFER_SIZE = Integer.valueOf(System.getProperty(
 			"org.apache.coyote.BUFFER_SIZE", "" + (8 * 1024)));
+
+	private int capacity;
+	private ConcurrentLinkedQueue<ByteBuffer> pool;
 
 	/**
 	 * Create a new instance of {@code BufferPool}
 	 */
 	private BufferPool() {
-		super();
+		this(DEFAULT_BUFFER_SIZE);
+	}
+
+	/**
+	 * Create a new instance of {@code BufferPool}
+	 * 
+	 * @param capacity
+	 */
+	private BufferPool(int capacity) {
+		if (capacity <= 0) {
+			throw new IllegalArgumentException("Negative or zero capacity value : " + capacity);
+		}
+
+		this.capacity = capacity;
+		this.pool = new ConcurrentLinkedQueue<ByteBuffer>();
+	}
+
+	/**
+	 * @return a new instance of {@code BufferPool} with default capacity
+	 */
+	public static BufferPool newInstance() {
+		return new BufferPool();
+	}
+
+	/**
+	 * @param capacity
+	 * @return a new instance of {@code BufferPool} with the specified capacity
+	 */
+	public static BufferPool newInstance(int capacity) {
+		return new BufferPool(capacity);
+	}
+
+	/**
+	 * Destroy the buffer pool
+	 */
+	public void destroy() {
+		this.pool.clear();
+		this.pool = null;
+	}
+
+	/**
+	 * Returns {@code true} if this queue contains no elements.
+	 * 
+	 * @return {@code true} if this queue contains no elements
+	 */
+	public boolean isEmpty() {
+		return this.pool.isEmpty();
 	}
 
 	/**
@@ -50,10 +98,10 @@ public class BufferPool {
 	 * 
 	 * @return an instance of {@code ByteBuffer}
 	 */
-	public static ByteBuffer poll() {
-		ByteBuffer buffer = POOL.poll();
+	public ByteBuffer poll() {
+		ByteBuffer buffer = this.pool.poll();
 		if (buffer == null) {
-			buffer = ByteBuffer.allocateDirect(BUFFER_SIZE);
+			buffer = ByteBuffer.allocateDirect(this.capacity);
 		}
 
 		return buffer;
@@ -64,9 +112,31 @@ public class BufferPool {
 	 * 
 	 * @param buffer
 	 */
-	public static void offer(ByteBuffer buffer) {
+	public void offer(ByteBuffer buffer) {
 		buffer.clear();
-		POOL.offer(buffer);
+		this.pool.offer(buffer);
 	}
 
+	/**
+	 * 
+	 * @param buffer
+	 */
+	public void offer(Collection<ByteBuffer> buffer) {
+		this.pool.addAll(buffer);
+	}
+
+	/**
+	 * 
+	 * @param buffer
+	 */
+	public void offer(BufferPool bufferPool) {
+		this.pool.addAll(bufferPool.pool);
+	}
+
+	/**
+	 * Remove all existing byte buffer in the pool
+	 */
+	public void clear() {
+		this.pool.clear();
+	}
 }

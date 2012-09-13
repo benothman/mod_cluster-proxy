@@ -43,23 +43,19 @@ import org.jboss.logging.Logger;
  */
 public abstract class AbstractInternalInputBuffer implements InputBuffer {
 
-	protected static final boolean USE_BODY_ENCODING_FOR_QUERY_STRING = Boolean
-			.valueOf(
-					System.getProperty(
-							"org.apache.catalina.connector.USE_BODY_ENCODING_FOR_QUERY_STRING",
-							"false")).booleanValue();
+	protected static final boolean USE_BODY_ENCODING_FOR_QUERY_STRING = Boolean.valueOf(
+			System.getProperty("org.apache.catalina.connector.USE_BODY_ENCODING_FOR_QUERY_STRING",
+					"false")).booleanValue();
 
 	/**
 	 * 
 	 */
-	protected static final Logger log = Logger
-			.getLogger(AbstractInternalInputBuffer.class);
+	protected static final Logger log = Logger.getLogger(AbstractInternalInputBuffer.class);
 
 	/**
 	 * The string manager for this package.
 	 */
-	protected static StringManager sm = StringManager
-			.getManager(Constants.Package);
+	protected static StringManager sm = StringManager.getManager(Constants.Package);
 
 	/**
 	 * Associated Coyote request.
@@ -182,6 +178,23 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	public abstract void init();
 
 	/**
+	 * Available bytes in the buffer ? (these may not translate to application
+	 * readable data)
+	 * 
+	 * @return the number of available bytes in the buffer
+	 */
+	public boolean available() {
+		return (lastValid - pos > 0);
+	}
+
+	/**
+	 * @return the number of bytes available
+	 */
+	public int getAvailable() {
+		return this.lastValid - this.pos;
+	}
+
+	/**
 	 * @return the byte array
 	 */
 	public byte[] getBuffer() {
@@ -193,6 +206,13 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	 */
 	public int getLastValid() {
 		return this.lastValid;
+	}
+
+	/**
+	 * @return the current position of the buffer pointer
+	 */
+	public int getPosition() {
+		return this.pos;
 	}
 
 	/**
@@ -267,8 +287,8 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	 */
 	public void recycle() {
 		// Recycle Request object
-		request.recycle();
-		lastValid = 0;
+		this.request.recycle();
+		this.lastValid = 0;
 		reset();
 	}
 
@@ -276,10 +296,11 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	 * 
 	 */
 	protected void reset() {
-		pos = 0;
-		lastActiveFilter = -1;
-		parsingHeader = true;
-		swallowInput = true;
+		this.pos = 0;
+		this.lastActiveFilter = -1;
+		this.parsingHeader = true;
+		this.swallowInput = true;
+		this.end = 0;
 	}
 
 	/**
@@ -436,8 +457,7 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 
 		request.unparsedURI().setBytes(buf, start, end - start);
 		if (questionPos >= 0) {
-			request.queryString().setBytes(buf, questionPos + 1,
-					end - questionPos - 1);
+			request.queryString().setBytes(buf, questionPos + 1, end - questionPos - 1);
 			request.requestURI().setBytes(buf, start, questionPos - start);
 		} else {
 			request.requestURI().setBytes(buf, start, end - start);
@@ -505,8 +525,7 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	 * @return true if data is properly fed; false if no data is available
 	 *         immediately and thread should be freed
 	 */
-	public boolean parseRequestLine(boolean useAvailableData)
-			throws IOException {
+	public boolean parseRequestLine(boolean useAvailableData) throws IOException {
 
 		int start = 0;
 		// Skipping blank lines
@@ -611,8 +630,7 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 
 		request.unparsedURI().setBytes(buf, start, end - start);
 		if (questionPos >= 0) {
-			request.queryString().setBytes(buf, questionPos + 1,
-					end - questionPos - 1);
+			request.queryString().setBytes(buf, questionPos + 1, end - questionPos - 1);
 			request.requestURI().setBytes(buf, start, questionPos - start);
 		} else {
 			request.requestURI().setBytes(buf, start, end - start);
@@ -870,7 +888,7 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 		 * return; }
 		 */
 
-		int total = pos + len;
+		int total = end + len;
 
 		while (lastValid < total) {
 			if (!fill()) {
@@ -882,13 +900,6 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	}
 
 	/**
-	 * @return
-	 */
-	public boolean needMoreData() {
-		return lastValid < (pos + request.getContentLength());
-	}
-	
-	/**
 	 * Fill the internal buffer using data from the undelying input stream.
 	 * 
 	 * @return false if at end of stream
@@ -896,10 +907,37 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	public abstract boolean fill() throws IOException;
 
 	/**
+	 * 
+	 * @param dst
+	 * @param timeout
+	 * @param unit
+	 * @return
+	 * @throws Exception
+	 */
+	public abstract int readBytes(ByteBuffer dst, long timeout, TimeUnit unit) throws Exception;
+
+	/**
+	 * 
+	 * @param dst
+	 * @return
+	 * @throws Exception
+	 */
+	public int readBytes(ByteBuffer dst) throws Exception {
+		return readBytes(dst, readTimeout, TIME_UNIT);
+	}
+
+	/**
 	 * @return the byte buffer
 	 */
 	public ByteBuffer getByteBuffer() {
 		return this.bbuf;
+	}
+
+	/**
+	 * @return
+	 */
+	public int getEnd() {
+		return this.end;
 	}
 
 	/**

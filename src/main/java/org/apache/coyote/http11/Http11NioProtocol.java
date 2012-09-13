@@ -55,7 +55,7 @@ public class Http11NioProtocol extends AbstractHttp11Protocol<NioChannel> {
 	private Http11ConnectionHandler cHandler = new Http11ConnectionHandler(this);
 	protected NioJSSESocketChannelFactory socketFactory = null;
 
-	/**
+	/** 
 	 * Create a new instance of {@code Http11NioProtocol}
 	 */
 	public Http11NioProtocol() {

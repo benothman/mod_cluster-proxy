@@ -123,6 +123,13 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 	}
 
 	/**
+	 * Available bytes (note that due to encoding, this may not correspond )
+	 */
+	public void useAvailable() {
+		available = true;
+	}
+
+	/**
 	 * Set the underlying channel.
 	 * 
 	 * @param channel
@@ -183,23 +190,6 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 		return result;
 	}
 
-	/**
-	 * Available bytes (note that due to encoding, this may not correspond )
-	 */
-	public void useAvailable() {
-		available = true;
-	}
-
-	/**
-	 * Available bytes in the buffer ? (these may not translate to application
-	 * readable data)
-	 * 
-	 * @return the number of available bytes in the buffer
-	 */
-	public boolean available() {
-		return (lastValid - pos > 0);
-	}
-
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -221,16 +211,13 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 		// Prepare the internal input buffer for reading
 		this.prepare();
 		// Read from client
-		int nRead = this.blockingRead(); 
+		int nRead = this.blockingRead();
 
 		if (nRead > 0) {
 			bbuf.flip();
 			bbuf.get(buf, pos, nRead);
 			System.arraycopy(buf, pos, buf2, pos, nRead);
 			lastValid = pos + nRead;
-			
-			System.out.println(new String (buf, pos, nRead));
-			
 		} else if (nRead == NioChannel.OP_STATUS_CLOSED) {
 			throw new IOException(sm.getString("iib.failedread"));
 		} else if (nRead == NioChannel.OP_STATUS_READ_TIMEOUT) {
@@ -294,6 +281,7 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 
 	/**
 	 * 
+	 * @throws IOException
 	 */
 	protected void readAsync() throws IOException {
 		this.prepare();
@@ -316,11 +304,29 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 			}
 		} catch (Throwable e) {
 			if (log.isDebugEnabled()) {
-				log.debug("An error occurs when trying a blocking read "
-						+ e.getMessage(), e);
+				log.debug(
+						"An error occurs when trying a blocking read "
+								+ e.getMessage(), e);
 			}
 		}
 		return nr;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * org.apache.coyote.http11.AbstractInternalInputBuffer#readBytes(java.nio
+	 * .ByteBuffer, long, java.util.concurrent.TimeUnit)
+	 */
+	public int readBytes(ByteBuffer dst, long timeout, TimeUnit unit)
+			throws Exception {
+		
+		int n = this.channel.readBytes(dst, timeout, unit);
+		if(n > 0) {
+			lastValid += n;
+		}
+		return n;
 	}
 
 	/**

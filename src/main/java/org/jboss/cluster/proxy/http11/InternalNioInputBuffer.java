@@ -82,8 +82,7 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 	 * @param headerBufferSize
 	 * @param endpoint
 	 */
-	public InternalNioInputBuffer(Request request, int headerBufferSize,
-			NioEndpoint endpoint) {
+	public InternalNioInputBuffer(Request request, int headerBufferSize, NioEndpoint endpoint) {
 		super(request, headerBufferSize);
 		this.endpoint = endpoint;
 		this.init();
@@ -94,8 +93,8 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 	 */
 	public void init() {
 		this.inputBuffer = new InputBufferImpl();
-		this.readTimeout = (endpoint.getSoTimeout() > 0 ? endpoint
-				.getSoTimeout() : Integer.MAX_VALUE);
+		this.readTimeout = (endpoint.getSoTimeout() > 0 ? endpoint.getSoTimeout()
+				: Integer.MAX_VALUE);
 
 		// Initialize the completion handler
 		this.completionHandler = new CompletionHandler<Integer, NioChannel>() {
@@ -196,8 +195,7 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 	 * @return true if data is properly fed; false if no data is available
 	 *         immediately and thread should be freed
 	 */
-	public boolean parseRequestLine(boolean useAvailableData)
-			throws IOException {
+	public boolean parseRequestLine(boolean useAvailableData) throws IOException {
 
 		int start = 0;
 		// Skipping blank lines
@@ -302,8 +300,7 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 
 		request.unparsedURI().setBytes(buf, start, end - start);
 		if (questionPos >= 0) {
-			request.queryString().setBytes(buf, questionPos + 1,
-					end - questionPos - 1);
+			request.queryString().setBytes(buf, questionPos + 1, end - questionPos - 1);
 			request.requestURI().setBytes(buf, start, questionPos - start);
 		} else {
 			request.requestURI().setBytes(buf, start, end - start);
@@ -424,8 +421,7 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 
 		if (parsingHeader) {
 			if (lastValid == buf.length) {
-				throw new IllegalArgumentException(
-						sm.getString("iib.requestheadertoolarge.error"));
+				throw new IllegalArgumentException(sm.getString("iib.requestheadertoolarge.error"));
 			}
 		} else {
 			if (buf.length - end < 4500) {
@@ -456,8 +452,7 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 	 *            the byte buffer which will contain the bytes read from the
 	 *            current channel
 	 */
-	private void nonBlockingRead(final ByteBuffer bb, long timeout,
-			TimeUnit unit) {
+	private void nonBlockingRead(final ByteBuffer bb, long timeout, TimeUnit unit) {
 		final NioChannel ch = this.channel;
 		try {
 			ch.read(bb, ch, this.completionHandler);
@@ -493,8 +488,7 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 			}
 		} catch (Exception e) {
 			if (log.isDebugEnabled()) {
-				log.debug("An error occurs when trying a blocking read "
-						+ e.getMessage());
+				log.debug("An error occurs when trying a blocking read " + e.getMessage());
 			}
 		}
 		return nr;
@@ -523,5 +517,17 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 
 			return (length);
 		}
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * org.apache.coyote.http11.AbstractInternalInputBuffer#readBytes(java.nio
+	 * .ByteBuffer, long, java.util.concurrent.TimeUnit)
+	 */
+	@Override
+	public int readBytes(ByteBuffer dst, long timeout, TimeUnit unit) throws Exception {
+		return this.channel.readBytes(dst, timeout, unit);
 	}
 }

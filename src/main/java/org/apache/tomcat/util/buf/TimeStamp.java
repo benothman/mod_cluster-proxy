@@ -22,135 +22,140 @@ import java.io.Serializable;
 // XXX Shouldn't be here - has nothing to do with buffers.
 
 /**
- * Main tool for object expiry. 
- * Marks creation and access time of an "expirable" object,
- * and extra properties like "id", "valid", etc.
- *
- * Used for objects that expire - originally Sessions, but 
- * also Contexts, Servlets, cache - or any other object that
- * expires.
+ * Main tool for object expiry. Marks creation and access time of an "expirable"
+ * object, and extra properties like "id", "valid", etc.
+ * 
+ * Used for objects that expire - originally Sessions, but also Contexts,
+ * Servlets, cache - or any other object that expires.
  * 
  * @author Costin Manolache
  */
-public final class TimeStamp implements  Serializable {
-    private long creationTime = 0L;
-    private long lastAccessedTime = creationTime;
-    private long thisAccessedTime = creationTime;
-    private boolean isNew = true;
-    private long maxInactiveInterval = -1;
-    private boolean isValid = false;
-    MessageBytes name;
-    int id=-1;
-    
-    Object parent;
-    
-    public TimeStamp() {
-    }
+public final class TimeStamp implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	private long creationTime = 0L;
+	private long lastAccessedTime = creationTime;
+	private long thisAccessedTime = creationTime;
+	private boolean isNew = true;
+	private long maxInactiveInterval = -1;
+	private boolean isValid = false;
+	MessageBytes name;
+	int id = -1;
 
-    // -------------------- Active methods --------------------
+	Object parent;
 
-    /**
-     *  Access notification. This method takes a time parameter in order
-     *  to allow callers to efficiently manage expensive calls to
-     *  System.currentTimeMillis() 
-     */
-    public void touch(long time) {
-	this.lastAccessedTime = this.thisAccessedTime;
-	this.thisAccessedTime = time;
-	this.isNew=false;
-    }
+	public TimeStamp() {
+	}
 
-    // -------------------- Property access --------------------
+	// -------------------- Active methods --------------------
 
-    /** Return the "name" of the timestamp. This can be used
-     *  to associate unique identifier with each timestamped object.
-     *  The name is a MessageBytes - i.e. a modifiable byte[] or char[]. 
-     */
-    public MessageBytes getName() {
-	if( name==null ) name=MessageBytes.newInstance();//lazy
-	return name;
-    }
+	/**
+	 * Access notification. This method takes a time parameter in order to allow
+	 * callers to efficiently manage expensive calls to
+	 * System.currentTimeMillis()
+	 */
+	public void touch(long time) {
+		this.lastAccessedTime = this.thisAccessedTime;
+		this.thisAccessedTime = time;
+		this.isNew = false;
+	}
 
-    /** Each object can have an unique id, similar with name but
-     *  providing faster access ( array vs. hashtable lookup )
-     */
-    public int getId() {
-	return id;
-    }
+	// -------------------- Property access --------------------
 
-    public void setId( int id ) {
-	this.id=id;
-    }
-    
-    /** Returns the owner of this stamp ( the object that is
-     *  time-stamped ).
-     *  For a 
-     */
-    public void setParent( Object o ) {
-	parent=o;
-    }
+	/**
+	 * Return the "name" of the timestamp. This can be used to associate unique
+	 * identifier with each timestamped object. The name is a MessageBytes -
+	 * i.e. a modifiable byte[] or char[].
+	 */
+	public MessageBytes getName() {
+		if (name == null)
+			name = MessageBytes.newInstance();// lazy
+		return name;
+	}
 
-    public Object getParent() {
-	return parent;
-    }
+	/**
+	 * Each object can have an unique id, similar with name but providing faster
+	 * access ( array vs. hashtable lookup )
+	 */
+	public int getId() {
+		return id;
+	}
 
-    public void setCreationTime(long time) {
-	this.creationTime = time;
-	this.lastAccessedTime = time;
-	this.thisAccessedTime = time;
-    }
+	public void setId(int id) {
+		this.id = id;
+	}
 
+	/**
+	 * Returns the owner of this stamp ( the object that is time-stamped ). For
+	 * a
+	 */
+	public void setParent(Object o) {
+		parent = o;
+	}
 
-    public long getLastAccessedTime() {
-	return lastAccessedTime;
-    }
+	public Object getParent() {
+		return parent;
+	}
 
-    public long getThisAccessedTime() {
-        return thisAccessedTime;
-    }
+	public void setCreationTime(long time) {
+		this.creationTime = time;
+		this.lastAccessedTime = time;
+		this.thisAccessedTime = time;
+	}
 
-    /** Inactive interval in millis - the time is computed
-     *  in millis, convert to secs in the upper layer
-     */
-    public long getMaxInactiveInterval() {
-	return maxInactiveInterval;
-    }
+	public long getLastAccessedTime() {
+		return lastAccessedTime;
+	}
 
-    public void setMaxInactiveInterval(long interval) {
-	maxInactiveInterval = interval;
-    }
+	public long getThisAccessedTime() {
+		return thisAccessedTime;
+	}
 
-    public boolean isValid() {
-	return isValid;
-    }
+	/**
+	 * Inactive interval in millis - the time is computed in millis, convert to
+	 * secs in the upper layer
+	 */
+	public long getMaxInactiveInterval() {
+		return maxInactiveInterval;
+	}
 
-    public void setValid(boolean isValid) {
-	this.isValid = isValid;
-    }
+	public void setMaxInactiveInterval(long interval) {
+		maxInactiveInterval = interval;
+	}
 
-    public boolean isNew() {
-	return isNew;
-    }
+	public boolean isValid() {
+		return isValid;
+	}
 
-    public void setNew(boolean isNew) {
-	this.isNew = isNew;
-    }
+	public void setValid(boolean isValid) {
+		this.isValid = isValid;
+	}
 
-    public long getCreationTime() {
-	return creationTime;
-    }
+	public boolean isNew() {
+		return isNew;
+	}
 
-    // -------------------- Maintainance --------------------
+	public void setNew(boolean isNew) {
+		this.isNew = isNew;
+	}
 
-    public void recycle() {
-	creationTime = 0L;
-	lastAccessedTime = 0L;
-	maxInactiveInterval = -1;
-	isNew = true;
-	isValid = false;
-	id=-1;
-	if( name!=null) name.recycle();
-    }
+	public long getCreationTime() {
+		return creationTime;
+	}
+
+	// -------------------- Maintainance --------------------
+
+	public void recycle() {
+		creationTime = 0L;
+		lastAccessedTime = 0L;
+		maxInactiveInterval = -1;
+		isNew = true;
+		isValid = false;
+		id = -1;
+		if (name != null)
+			name.recycle();
+	}
 
 }
-

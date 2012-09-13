@@ -96,7 +96,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 							attachment, this);
 				} else {
 					// Clear the buffer when all bytes are written
-					clearBuffer();
+					bbuf.clear();
 				}
 			}
 
@@ -332,8 +332,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 					}
 				}
 				response.setLastWrite(res);
-				// bbuf.clear();
-				clearBuffer();
+				this.bbuf.clear();
 			}
 
 			if (res < 0) {

@@ -42,7 +42,6 @@ import org.apache.tomcat.util.net.NioEndpoint;
  */
 public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 
-	
 	/**
 	 * 
 	 */
@@ -70,8 +69,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 	 * @param headerBufferSize
 	 * @param endpoint
 	 */
-	public InternalNioOutputBuffer(Response response, int headerBufferSize,
-			NioEndpoint endpoint) {
+	public InternalNioOutputBuffer(Response response, int headerBufferSize, NioEndpoint endpoint) {
 		super(response, headerBufferSize);
 		this.endpoint = endpoint;
 		// Initialize the input buffer
@@ -85,8 +83,8 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 	 */
 	protected void init() {
 
-		this.writeTimeout = (endpoint.getSoTimeout() > 0 ? endpoint
-				.getSoTimeout() : Integer.MAX_VALUE);
+		this.writeTimeout = (endpoint.getSoTimeout() > 0 ? endpoint.getSoTimeout()
+				: Integer.MAX_VALUE);
 
 		this.completionHandler = new CompletionHandler<Integer, ByteBuffer>() {
 
@@ -97,15 +95,12 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 					return;
 				}
 				if (attachment.hasRemaining()) {
-					channel.write(attachment, writeTimeout,
-							TimeUnit.MILLISECONDS, attachment, this);
+					channel.write(attachment, writeTimeout, TimeUnit.MILLISECONDS, attachment, this);
 				} else {
 					if (!localPool.isEmpty()) {
 						ByteBuffer buffer = localPool.poll();
 						try {
-							channel.write(buffer, writeTimeout,
-									TimeUnit.MILLISECONDS, buffer, this);
-							//nonBlockingWrite(buffer, writeTimeout, TimeUnit.MILLISECONDS);
+							channel.write(buffer, writeTimeout, TimeUnit.MILLISECONDS, buffer, this);
 						} catch (Throwable t) {
 							failed(t, attachment);
 						}
@@ -118,7 +113,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 
 			@Override
 			public void failed(Throwable exc, ByteBuffer attachment) {
-				exc.printStackTrace();
+				log.error(exc.getMessage(), exc);
 				endpoint.close(channel);
 			}
 		};
@@ -149,7 +144,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 	public void recycle() {
 		super.recycle();
 		setChannel(null);
-		bufferPool.addAll(localPool);
+		bufferPool.offer(localPool);
 		localPool.clear();
 	}
 
@@ -206,12 +201,10 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 	 * @param unit
 	 *            The time unit
 	 */
-	private void nonBlockingWrite(final ByteBuffer buffer, final long timeout,
-			final TimeUnit unit) {
+	private void nonBlockingWrite(final ByteBuffer buffer, final long timeout, final TimeUnit unit) {
 		try {
 			// Perform the write operation
-			this.channel.write(buffer, timeout, unit, buffer,
-					this.completionHandler);
+			this.channel.write(buffer, timeout, unit, buffer, this.completionHandler);
 		} catch (Throwable t) {
 			log.error(t.getMessage(), t);
 			if (log.isDebugEnabled()) {
@@ -228,8 +221,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 	protected void tryWrite() {
 		if (!writing && !this.localPool.isEmpty()) {
 			writing = true;
-			nonBlockingWrite(this.localPool.poll(), writeTimeout,
-					TimeUnit.MILLISECONDS);
+			nonBlockingWrite(this.localPool.poll(), writeTimeout, TimeUnit.MILLISECONDS);
 		}
 	}
 
@@ -265,7 +257,6 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 			}
 		}
 	}
-	
 
 	/**
 	 * 
@@ -279,81 +270,79 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 		// From client to node
 		final NioChannel clientChannel = this.channel;
 		final ByteBuffer cBuff = poll();
-		final Tuple<NioChannel, NioChannel, ByteBuffer> cTuple = new Tuple<>(
-				clientChannel, nodeChannel, cBuff);
+		final Tuple<NioChannel, NioChannel, ByteBuffer> cTuple = new Tuple<>(clientChannel,
+				nodeChannel, cBuff);
 
-		clientChannel
-				.transferTo(
-						nodeChannel,
-						cBuff,
-						cTuple,
-						new CompletionHandler<Integer, Tuple<NioChannel, NioChannel, ByteBuffer>>() {
+		clientChannel.transferTo(nodeChannel, cBuff, cTuple,
+				new CompletionHandler<Integer, Tuple<NioChannel, NioChannel, ByteBuffer>>() {
 
-							@Override
-							public void completed(
-									Integer nBytes,
-									Tuple<NioChannel, NioChannel, ByteBuffer> attach) {
-								if (nBytes < 0) {
-									failed(null, attach);
-									return;
-								}
-								attach.last.clear();
-								attach.first.transferTo(attach.middle,
-										attach.last, attach, this);
-							}
+					@Override
+					public void completed(Integer nBytes,
+							Tuple<NioChannel, NioChannel, ByteBuffer> attach) {
+						if (nBytes < 0) {
+							failed(null, attach);
+							return;
+						}
+						System.out.println("Receiving Data from client to node --> " + nBytes);
+						attach.last.clear();
+						attach.first.transferTo(attach.middle, attach.last, attach, this);
+					}
 
-							@Override
-							public void failed(
-									Throwable exc,
-									Tuple<NioChannel, NioChannel, ByteBuffer> attachment) {
-								log.error("Client To Node");
-								offer(attachment.last);
-								// Closing client and node connection
-								close(attachment.first);
-								close(attachment.middle);
-							}
-						});
+					@Override
+					public void failed(Throwable exc,
+							Tuple<NioChannel, NioChannel, ByteBuffer> attachment) {
+
+						if (log.isDebugEnabled()) {
+							log.debug(exc.getMessage(), exc);
+						}
+
+						offer(attachment.last);
+						// Closing client and node connection
+						close(attachment.first);
+						close(attachment.middle);
+					}
+				});
 
 		// From node to client
 		final ByteBuffer nBuff = poll();
-		final Tuple<NioChannel, NioChannel, ByteBuffer> nTuple = new Tuple<>(
-				nodeChannel, clientChannel, nBuff);
+		final Tuple<NioChannel, NioChannel, ByteBuffer> nTuple = new Tuple<>(nodeChannel,
+				clientChannel, nBuff);
 
-		nodeChannel
-				.transferTo(
-						this.channel,
-						nBuff,
-						nTuple,
-						new CompletionHandler<Integer, Tuple<NioChannel, NioChannel, ByteBuffer>>() {
+		nodeChannel.transferTo(this.channel, nBuff, nTuple,
+				new CompletionHandler<Integer, Tuple<NioChannel, NioChannel, ByteBuffer>>() {
 
-							@Override
-							public void completed(
-									Integer nBytes,
-									Tuple<NioChannel, NioChannel, ByteBuffer> attachment) {
-								if (nBytes < 0) {
-									failed(null, attachment);
-									return;
-								}
+					@Override
+					public void completed(Integer nBytes,
+							Tuple<NioChannel, NioChannel, ByteBuffer> attachment) {
+						if (nBytes < 0) {
+							failed(null, attachment);
+							return;
+						}
 
-								attachment.last.clear();
-								attachment.first.transferTo(attachment.middle,
-										attachment.last, attachment, this);
-							}
+						System.out.println("Receiving Data from node to client --> " + nBytes);
 
-							@Override
-							public void failed(
-									Throwable exc,
-									Tuple<NioChannel, NioChannel, ByteBuffer> attachment) {
-								log.error("Node To Client");
-								if (attachment.first.isOpen()) {
-									close(attachment.first);
-								}
-								if (attachment.middle.isOpen()) {
-									close(attachment.middle);
-								}
-								offer(attachment.last);
-							}
-						});
+						attachment.last.clear();
+						attachment.first.transferTo(attachment.middle, attachment.last, attachment,
+								this);
+					}
+
+					@Override
+					public void failed(Throwable exc,
+							Tuple<NioChannel, NioChannel, ByteBuffer> attachment) {
+
+						if (log.isDebugEnabled()) {
+							log.debug(exc.getMessage(), exc);
+						}
+
+						if (attachment.first.isOpen()) {
+							close(attachment.first);
+						}
+						if (attachment.middle.isOpen()) {
+							close(attachment.middle);
+						}
+						offer(attachment.last);
+					}
+				});
 	}
 
 	/*
@@ -374,8 +363,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 
 		// If non blocking (event) and there are leftover bytes,
 		// and lastWrite was 0 -> error
-		if (leftover.getLength() > 0
-				&& !(Http11NioProcessor.containerThread.get() == Boolean.TRUE)) {
+		if (leftover.getLength() > 0 && !(Http11NioProcessor.containerThread.get() == Boolean.TRUE)) {
 			throw new IOException(sm.getString("oob.backlog"));
 		}
 
@@ -405,16 +393,14 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 				while (leftover.getLength() > 0) {
 					// Calculate the maximum number of bytes that can fit in the
 					// buffer
-					int n = Math.min(bbuf.capacity() - bbuf.position(),
-							leftover.getLength());
+					int n = Math.min(bbuf.capacity() - bbuf.position(), leftover.getLength());
 					int off = leftover.getOffset();
 					// Put bytes into the buffer
 					bbuf.put(leftover.getBuffer(), off, n).flip();
 					// Update the offset of the leftover ByteChunck
 					leftover.setOffset(off + n);
 					while (bbuf.hasRemaining()) {
-						res = blockingWrite(bbuf, writeTimeout,
-								TimeUnit.MILLISECONDS);
+						res = blockingWrite(bbuf, writeTimeout, TimeUnit.MILLISECONDS);
 						if (res < 0) {
 							break;
 						}
@@ -439,15 +425,13 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 				nonBlockingWrite(this.bbuf, writeTimeout, TimeUnit.MILLISECONDS);
 			} else {
 				while (bbuf.hasRemaining()) {
-					res = blockingWrite(bbuf, writeTimeout,
-							TimeUnit.MILLISECONDS);
+					res = blockingWrite(bbuf, writeTimeout, TimeUnit.MILLISECONDS);
 					if (res <= 0) {
 						break;
 					}
 				}
 				response.setLastWrite(res);
-				// bbuf.clear();
-				clearBuffer();
+				this.bbuf.clear();
 			}
 
 			if (res < 0) {
@@ -465,8 +449,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 	@Override
 	public boolean flushLeftover() throws IOException {
 		// Calculate the number of bytes that fit in the buffer
-		int n = Math.min(leftover.getLength(),
-				bbuf.capacity() - bbuf.position());
+		int n = Math.min(leftover.getLength(), bbuf.capacity() - bbuf.position());
 		// put bytes in the buffer
 		bbuf.put(leftover.getBuffer(), leftover.getOffset(), n).flip();
 		// Update the offset
@@ -479,18 +462,15 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 					@Override
 					public void completed(Integer result, Void attachment) {
 						if (result < 0) {
-							failed(new IOException(sm
-									.getString("oob.failedwrite")), attachment);
+							failed(new IOException(sm.getString("oob.failedwrite")), attachment);
 							return;
 						}
 						response.setLastWrite(result);
 						if (!bbuf.hasRemaining()) {
 							bbuf.clear();
 							if (leftover.getLength() > 0) {
-								int n = Math.min(leftover.getLength(),
-										bbuf.remaining());
-								bbuf.put(leftover.getBuffer(),
-										leftover.getOffset(), n).flip();
+								int n = Math.min(leftover.getLength(), bbuf.remaining());
+								bbuf.put(leftover.getBuffer(), leftover.getOffset(), n).flip();
 								leftover.setOffset(leftover.getOffset() + n);
 							} else {
 								leftover.recycle();
@@ -498,8 +478,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 							}
 						}
 						// Write the remaining bytes
-						ch.write(bbuf, writeTimeout, TimeUnit.MILLISECONDS,
-								null, this);
+						ch.write(bbuf, writeTimeout, TimeUnit.MILLISECONDS, null, this);
 					}
 
 					@Override
@@ -511,7 +490,6 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 		return true;
 	}
 
-	
 	/**
 	 * {@code Tuple}
 	 * 

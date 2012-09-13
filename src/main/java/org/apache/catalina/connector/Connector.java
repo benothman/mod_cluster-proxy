@@ -45,8 +45,11 @@ public final class Connector {
 	private static Logger log = Logger.getLogger(Connector.class);
 
 	protected static final boolean X_POWERED_BY = Boolean.valueOf(
-			System.getProperty("org.apache.catalina.connector.X_POWERED_BY",
-					"false")).booleanValue();
+			System.getProperty("org.apache.catalina.connector.X_POWERED_BY", "false"))
+			.booleanValue();
+
+	protected static final String URI_ENCODING = System.getProperty(
+			"org.apache.catalina.connector.URI_ENCODING", "UTF-8");
 
 	private ProtocolHandler protocolHandler;
 	private String protocol;
@@ -89,6 +92,11 @@ public final class Connector {
 	 * the server name included in the <code>Host</code> header is used.
 	 */
 	private String proxyName = null;
+
+	/**
+	 * URI encoding.
+	 */
+	protected String URIEncoding = URI_ENCODING;
 
 	/**
 	 * The server port to which we should pretent requests to this Connector
@@ -145,11 +153,9 @@ public final class Connector {
 	 */
 	private String protocolHandlerClassName = "org.apache.coyote.http11.Http11NioProtocol";
 
-	protected static final boolean USE_BODY_ENCODING_FOR_QUERY_STRING = Boolean
-			.valueOf(
-					System.getProperty(
-							"org.apache.catalina.connector.USE_BODY_ENCODING_FOR_QUERY_STRING",
-							"false")).booleanValue();
+	protected static final boolean USE_BODY_ENCODING_FOR_QUERY_STRING = Boolean.valueOf(
+			System.getProperty("org.apache.catalina.connector.USE_BODY_ENCODING_FOR_QUERY_STRING",
+					"false")).booleanValue();
 
 	/**
 	 * URI encoding as body.
@@ -167,10 +173,9 @@ public final class Connector {
 	private int maxPostSize = 2 * 1024 * 1024;
 
 	private NodeService nodeService;
-	
+
 	private ConnectionManager connectionManager;
-	
-	
+
 	/**
 	 * Create a new instance of {@code Connector}
 	 * 
@@ -202,7 +207,7 @@ public final class Connector {
 
 		this.nodeService.init();
 		this.connectionManager.init();
-		
+
 		if (this.protocolHandler.getClass().equals(
 				org.jboss.cluster.proxy.http11.Http11NioProtocol.class)) {
 			this.adapter = new MCMPAdapter(this);
@@ -217,15 +222,15 @@ public final class Connector {
 		protocolHandler.setAdapter(adapter);
 		IntrospectionUtils.setProperty(protocolHandler, "jkHome",
 				System.getProperty("catalina.base"));
-		
+
 		adapter.init();
-		
+
 		try {
 			log.info("Invoke Protocol Handler initialization");
 			protocolHandler.init();
 		} catch (Exception e) {
-			throw new Exception(sm.getString(
-					"coyoteConnector.protocolHandlerInitializationFailed", e));
+			throw new Exception(sm.getString("coyoteConnector.protocolHandlerInitializationFailed",
+					e));
 		}
 	}
 
@@ -247,8 +252,7 @@ public final class Connector {
 		try {
 			protocolHandler.start();
 		} catch (Exception e) {
-			throw new Exception(sm.getString(
-					"coyoteConnector.protocolHandlerStartFailed", e));
+			throw new Exception(sm.getString("coyoteConnector.protocolHandlerStartFailed", e));
 		}
 	}
 
@@ -261,9 +265,7 @@ public final class Connector {
 		try {
 			protocolHandler.pause();
 		} catch (Exception e) {
-			log.error(
-					sm.getString("coyoteConnector.protocolHandlerPauseFailed"),
-					e);
+			log.error(sm.getString("coyoteConnector.protocolHandlerPauseFailed"), e);
 		}
 	}
 
@@ -276,9 +278,7 @@ public final class Connector {
 		try {
 			protocolHandler.resume();
 		} catch (Exception e) {
-			log.error(
-					sm.getString("coyoteConnector.protocolHandlerResumeFailed"),
-					e);
+			log.error(sm.getString("coyoteConnector.protocolHandlerResumeFailed"), e);
 		}
 	}
 
@@ -300,8 +300,7 @@ public final class Connector {
 		try {
 			protocolHandler.destroy();
 		} catch (Exception e) {
-			throw new Exception(sm.getString(
-					"coyoteConnector.protocolHandlerDestroyFailed", e));
+			throw new Exception(sm.getString("coyoteConnector.protocolHandlerDestroyFailed", e));
 		}
 	}
 
@@ -502,8 +501,7 @@ public final class Connector {
 	public void setPort(int port) {
 		this.port = port;
 		try {
-			Method m = this.protocolHandler.getClass().getMethod("setPort",
-					Integer.TYPE);
+			Method m = this.protocolHandler.getClass().getMethod("setPort", Integer.TYPE);
 			m.invoke(this.protocolHandler, port);
 		} catch (Exception exp) {
 			exp.printStackTrace();
@@ -577,8 +575,7 @@ public final class Connector {
 	public void setMaxPostSize(int maxPostSize) {
 		this.maxPostSize = maxPostSize;
 		try {
-			Method m = this.protocolHandler.getClass().getMethod(
-					"setMaxPostSize", Integer.class);
+			Method m = this.protocolHandler.getClass().getMethod("setMaxPostSize", Integer.class);
 			m.invoke(this.protocolHandler, maxPostSize);
 		} catch (Throwable t) {
 			log.warn("The protocol handler does not support max post size", t);
@@ -715,7 +712,8 @@ public final class Connector {
 	}
 
 	/**
-	 * @param nodeService the nodeService to set
+	 * @param nodeService
+	 *            the nodeService to set
 	 */
 	public void setNodeService(NodeService nodeService) {
 		this.nodeService = nodeService;
@@ -729,9 +727,24 @@ public final class Connector {
 	}
 
 	/**
-	 * @param connectionManager the connectionManager to set
+	 * @param connectionManager
+	 *            the connectionManager to set
 	 */
 	public void setConnectionManager(ConnectionManager connectionManager) {
 		this.connectionManager = connectionManager;
+	}
+
+	/**
+	 * @return the uRIEncoding
+	 */
+	public String getURIEncoding() {
+		return URIEncoding;
+	}
+
+	/**
+	 * @param uRIEncoding the uRIEncoding to set
+	 */
+	public void setURIEncoding(String uRIEncoding) {
+		this.URIEncoding = uRIEncoding;
 	}
 }

@@ -23,10 +23,10 @@ package org.apache.coyote.http11;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.coyote.ActionCode;
+import org.apache.coyote.BufferPool;
 import org.apache.coyote.OutputBuffer;
 import org.apache.coyote.Response;
 import org.apache.tomcat.util.buf.ByteChunk;
@@ -49,17 +49,16 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	/**
 	 * 
 	 */
-	protected static final Logger log = Logger
-			.getLogger(AbstractInternalOutputBuffer.class);
+	protected static final Logger log = Logger.getLogger(AbstractInternalOutputBuffer.class);
 
 	/**
 	 * The string manager for this package.
 	 */
-	protected static StringManager sm = StringManager
-			.getManager(Constants.Package);
+	protected static StringManager sm = StringManager.getManager(Constants.Package);
 
-	protected static final ConcurrentLinkedQueue<ByteBuffer> bufferPool = new ConcurrentLinkedQueue<>();
-	protected ConcurrentLinkedQueue<ByteBuffer> localPool = new ConcurrentLinkedQueue<>();
+	protected static final BufferPool bufferPool = BufferPool
+			.newInstance(Constants.MIN_BUFFER_SIZE);
+	protected BufferPool localPool = BufferPool.newInstance(Constants.MIN_BUFFER_SIZE);
 
 	/**
 	 * Associated Coyote response.
@@ -136,6 +135,7 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 */
 	protected long contentLength = 0;
 
+	
 	/**
 	 * Create a new instance of {@code AbstractInternalOutputBuffer}
 	 * 
@@ -198,7 +198,7 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 
 		while (count < length) {
 			buffer = poll();
-			limit = min(buffer.remaining(), length - count);
+			limit = Math.min(buffer.remaining(), length - count);
 			buffer.put(data, off + count, limit).flip();
 			count += limit;
 			this.localPool.offer(buffer);
@@ -212,21 +212,6 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 * synchronous or asynchronous
 	 */
 	protected abstract void tryWrite();
-
-	/**
-	 * Returns the smaller of two {@code int} values. That is, the result the
-	 * argument closer to the value of {@link Integer#MIN_VALUE}. If the
-	 * arguments have the same value, the result is that same value.
-	 * 
-	 * @param a
-	 *            an argument.
-	 * @param b
-	 *            another argument.
-	 * @return the smaller of {@code a} and {@code b}.
-	 */
-	public static int min(int a, int b) {
-		return (a <= b) ? a : b;
-	}
 
 	/**
 	 * @return the byte array
@@ -338,21 +323,12 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	}
 
 	/**
-	 * 
-	 */
-	protected void clearBuffer() {
-		synchronized (this.bbuf) {
-			this.bbuf.clear();
-		}
-	}
-
-	/**
 	 * Recycle this object
 	 */
 	public void recycle() {
 		// Recycle Request object
 		response.recycle();
-		this.clearBuffer();
+		this.bbuf.clear();
 		pos = 0;
 		lastActiveFilter = -1;
 		committed = false;
@@ -431,17 +407,17 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 		// Write status code
 		int status = response.getStatus();
 		switch (status) {
-		case 200:
-			write(Constants._200_BYTES);
-			break;
-		case 400:
-			write(Constants._400_BYTES);
-			break;
-		case 404:
-			write(Constants._404_BYTES);
-			break;
-		default:
-			write(status);
+			case 200:
+				write(Constants._200_BYTES);
+				break;
+			case 400:
+				write(Constants._400_BYTES);
+				break;
+			case 404:
+				write(Constants._404_BYTES);
+				break;
+			default:
+				write(status);
 		}
 
 		buf[pos++] = Constants.SP;
@@ -532,8 +508,7 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 * @throws IOException
 	 *             an undelying I/O error occured
 	 */
-	public abstract int doWrite(ByteChunk chunk, Response res)
-			throws IOException;
+	public abstract int doWrite(ByteChunk chunk, Response res) throws IOException;
 
 	/**
 	 * Commit the response.
@@ -547,11 +522,9 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 		committed = true;
 		response.setCommitted(true);
 		/*
-		if (pos > 0) { 
-			// Sending the response header buffer
-			bbuf.put(buf, 0, pos);
-		}
-		*/
+		 * if (pos > 0) { // Sending the response header buffer bbuf.put(buf, 0,
+		 * pos); }
+		 */
 	}
 
 	/**
@@ -568,15 +541,15 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 		}
 
 		switch (mb.getType()) {
-		case MessageBytes.T_BYTES:
-			write(mb.getByteChunk());
-			break;
-		case MessageBytes.T_CHARS:
-			write(mb.getCharChunk());
-			break;
-		default:
-			write(mb.toString());
-			break;
+			case MessageBytes.T_BYTES:
+				write(mb.getByteChunk());
+				break;
+			case MessageBytes.T_CHARS:
+				write(mb.getCharChunk());
+				break;
+			default:
+				write(mb.toString());
+				break;
 		}
 	}
 
@@ -724,12 +697,7 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 * @return an instance of byte buffer
 	 */
 	protected static ByteBuffer poll() {
-		ByteBuffer buffer = bufferPool.poll();
-		if (buffer == null) {
-			buffer = ByteBuffer.allocateDirect(Constants.MIN_BUFFER_SIZE);
-		}
-
-		return buffer;
+		return bufferPool.poll();
 	}
 
 	/**
@@ -738,7 +706,6 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 * @param buffer
 	 */
 	protected static void offer(ByteBuffer buffer) {
-		buffer.clear();
 		bufferPool.offer(buffer);
 	}
 

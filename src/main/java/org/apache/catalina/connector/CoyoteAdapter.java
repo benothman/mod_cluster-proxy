@@ -60,11 +60,9 @@ public class CoyoteAdapter implements Adapter {
 	/**
 	 * 
 	 */
-	protected static final boolean ALLOW_BACKSLASH = Boolean
-			.valueOf(
-					System.getProperty(
-							"org.apache.catalina.connector.CoyoteAdapter.ALLOW_BACKSLASH",
-							"false")).booleanValue();
+	protected static final boolean ALLOW_BACKSLASH = Boolean.valueOf(
+			System.getProperty("org.apache.catalina.connector.CoyoteAdapter.ALLOW_BACKSLASH",
+					"false")).booleanValue();
 
 	protected static final String X_POWERED_BY = System.getProperty(
 			"org.apache.catalina.connector.CoyoteAdapter.X_POWERED_BY",
@@ -74,7 +72,6 @@ public class CoyoteAdapter implements Adapter {
 	 * The CoyoteConnector with which this processor is associated.
 	 */
 	private Connector connector = null;
-	
 
 	/**
 	 * The string manager for this package.
@@ -100,9 +97,9 @@ public class CoyoteAdapter implements Adapter {
 	 * @throws Exception
 	 */
 	public void init() throws Exception {
-		logger.info("Initializing adapter service");
-		
-		logger.info("Adapter service Initialized successfully");
+		logger.info("Initializing CoyoteAdapter service");
+		// Nothing to do
+		logger.info("CoyoteAdapter Initialized successfully");
 	}
 
 	/**
@@ -111,17 +108,13 @@ public class CoyoteAdapter implements Adapter {
 	 * @return false to indicate an error, expected or not
 	 */
 	public boolean event(Request req, Response res, SocketStatus status) {
-
-		// TODO
-
 		return false;
 	}
 
 	/**
 	 * Service method.
 	 */
-	public void service(final Request request, Response response)
-			throws Exception {
+	public void service(final Request request, Response response) throws Exception {
 
 		if (prepare(request, response)) {
 			// Send the request to the selected node
@@ -137,59 +130,56 @@ public class CoyoteAdapter implements Adapter {
 	 * @param params
 	 *            a map containing all required parameters
 	 */
-	private void sendToNode(final Request request, final Response response)
-			throws Exception {
-		final NioChannel nodeChannel = (NioChannel) response
-				.getNote(Constants.NODE_CHANNEL_NOTE);
-		final ByteBuffer inBuffer = (ByteBuffer) response
-				.getNote(Constants.IN_BUFFER_NOTE);
+	private void sendToNode(final Request request, final Response response) throws Exception {
+		final NioChannel nodeChannel = (NioChannel) response.getNote(Constants.NODE_CHANNEL_NOTE);
+		final ByteBuffer inBuffer = (ByteBuffer) response.getNote(Constants.IN_BUFFER_NOTE);
 
 		if (inBuffer.position() > 0) {
 			inBuffer.flip();
 		}
 		// Write the request to the node
-		nodeChannel.write(inBuffer, response,
-				new CompletionHandler<Integer, Response>() {
+		nodeChannel.write(inBuffer, response, new CompletionHandler<Integer, Response>() {
 
-					@Override
-					public void completed(Integer nBytes, Response attachment) {
-						if (nBytes < 0) {
-							failed(new ClosedChannelException(), attachment);
-						} else {
-							ByteBuffer buff = (ByteBuffer) attachment
-									.getNote(Constants.IN_BUFFER_NOTE);
-							if (buff.hasRemaining()) {
-								NioChannel ch = (NioChannel) attachment
-										.getNote(Constants.NODE_CHANNEL_NOTE);
-								ch.write(buff, attachment, this);
-							} else {
-								// Read response from the node and forward it
-								// back to client
-								try {
-									if (!checkPostMethod(
-											attachment.getRequest(), attachment)) {
-
-										readFromNode(attachment.getRequest(),
-												attachment);
-									}
-								} catch (Exception exp) {
-									failed(exp, attachment);
-								}
-							}
-						}
-					}
-
-					@Override
-					public void failed(Throwable exc, Response attachment) {
+			@Override
+			public void completed(Integer nBytes, Response attachment) {
+				if (nBytes < 0) {
+					failed(new ClosedChannelException(), attachment);
+				} else {
+					ByteBuffer buff = (ByteBuffer) attachment.getNote(Constants.IN_BUFFER_NOTE);
+					if (buff.hasRemaining()) {
+						NioChannel ch = (NioChannel) attachment
+								.getNote(Constants.NODE_CHANNEL_NOTE);
+						ch.write(buff, attachment, this);
+					} else {
+						// Read response from the node and forward it
+						// back to client
 						try {
-							// try again with node
-							tryWithNode(attachment);
-							sendToNode(attachment.getRequest(), attachment);
-						} catch (Throwable e) {
-							e.printStackTrace();
+							readFromNode(attachment.getRequest(), attachment);
+							/*
+							if (!checkPostMethod(attachment.getRequest(), attachment)) {
+
+								readFromNode(attachment.getRequest(), attachment);
+							}
+							*/
+						} catch (Exception exp) {
+							failed(exp, attachment);
 						}
 					}
-				});
+				}
+			}
+
+			@Override
+			public void failed(Throwable exc, Response attachment) {
+				exc.printStackTrace();
+				try {
+					// try again with node
+					// tryWithNode(attachment);
+					// sendToNode(attachment.getRequest(), attachment);
+				} catch (Throwable e) {
+					e.printStackTrace();
+				}
+			}
+		});
 	}
 
 	/**
@@ -199,10 +189,8 @@ public class CoyoteAdapter implements Adapter {
 	private void readFromNode(final org.apache.coyote.Request request,
 			final org.apache.coyote.Response response) throws Exception {
 
-		final NioChannel nodeChannel = (NioChannel) response
-				.getNote(Constants.NODE_CHANNEL_NOTE);
-		final ByteBuffer buffer = (ByteBuffer) response
-				.getNote(Constants.OUT_BUFFER_NOTE);
+		final NioChannel nodeChannel = (NioChannel) response.getNote(Constants.NODE_CHANNEL_NOTE);
+		final ByteBuffer buffer = (ByteBuffer) response.getNote(Constants.OUT_BUFFER_NOTE);
 		buffer.clear();
 
 		// Read bytes from node.
@@ -210,12 +198,16 @@ public class CoyoteAdapter implements Adapter {
 				new CompletionHandler<Integer, org.apache.coyote.Response>() {
 
 					private long contentLength = 0;
+					private long read = 0;
 
 					@Override
 					public void completed(Integer nBytes, Response attachment) {
 						if (nBytes < 0) {
 							failed(new ClosedChannelException(), attachment);
 						} else if (nBytes > 0) {
+							
+							this.read += nBytes;
+							
 							ByteBuffer buff = (ByteBuffer) response
 									.getNote(Constants.OUT_BUFFER_NOTE);
 							buff.flip();
@@ -224,27 +216,22 @@ public class CoyoteAdapter implements Adapter {
 									.getOutputBuffer();
 
 							// Parse the HTTP Header
-							HttpResponseParser httpResponseParser = attachment
-									.getResponseParser();
+							HttpResponseParser httpResponseParser = attachment.getResponseParser();
 
 							byte data[] = outputBuffer.getBytes();
 							buff.get(data, 0, nBytes);
 
 							if (httpResponseParser.parsingHeader()) {
-								httpResponseParser.parse(attachment, data,
-										nBytes);
+								httpResponseParser.parse(attachment, data, nBytes);
 							}
 
 							contentLength += nBytes;
-							outputBuffer.setContentLength(attachment
-									.getContentLengthLong()
+							outputBuffer.setContentLength(attachment.getContentLengthLong()
 									+ httpResponseParser.getHeaderLength());
 							buff.clear();
-							outputBuffer.writeToClient(outputBuffer.getBytes(),
-									0, nBytes);
+							outputBuffer.writeToClient(outputBuffer.getBytes(), 0, nBytes);
 
-							if (this.contentLength < attachment
-									.getContentLength()
+							if (this.contentLength < attachment.getContentLength()
 									+ httpResponseParser.getHeaderLength()) {
 								final NioChannel ch = (NioChannel) response
 										.getNote(Constants.NODE_CHANNEL_NOTE);
@@ -263,20 +250,18 @@ public class CoyoteAdapter implements Adapter {
 									} else {
 										processor.closeSocket();
 									}
-									Node node = (Node) attachment
-											.getNote(Constants.NODE_NOTE);
+									Node node = (Node) attachment.getNote(Constants.NODE_NOTE);
 									NioChannel channel = (NioChannel) attachment
 											.getNote(Constants.NODE_CHANNEL_NOTE);
-									connector.getConnectionManager().recycle(
-											node.getJvmRoute(), channel);
+									connector.getConnectionManager().recycle(node.getJvmRoute(),
+											channel);
 								}
 							}
 						}
 					}
 
 					@Override
-					public void failed(Throwable exc,
-							org.apache.coyote.Response attachment) {
+					public void failed(Throwable exc, org.apache.coyote.Response attachment) {
 
 						try {
 							// try again with node
@@ -297,8 +282,10 @@ public class CoyoteAdapter implements Adapter {
 	 * @throws IOException
 	 */
 	private boolean prepare(final org.apache.coyote.Request request,
-			final org.apache.coyote.Response response) throws IOException {
+			final org.apache.coyote.Response response) throws Exception {
 
+		postParseRequest(request, response);
+		
 		Node node = this.connector.getNodeService().getNode(request);
 
 		NioChannel nodeChannel = null;
@@ -330,15 +317,12 @@ public class CoyoteAdapter implements Adapter {
 		// Client response
 		AbstractInternalOutputBuffer outputBuffer = (AbstractInternalOutputBuffer) response
 				.getOutputBuffer();
-		final ByteBuffer outBuffer = (ByteBuffer) outputBuffer.getByteBuffer()
-				.clear();
+		final ByteBuffer outBuffer = (ByteBuffer) outputBuffer.getByteBuffer().clear();
 
 		// Put data to forward to the node in the byte buffer
-		inBuffer.put(inputBuffer.getBuffer(), 0, inputBuffer.getLastValid())
-				.flip();
+		inBuffer.put(inputBuffer.getBuffer(), 0, inputBuffer.getLastValid()).flip();
 
-		NioChannel clientChannel = ((InternalNioInputBuffer) inputBuffer)
-				.getChannel();
+		NioChannel clientChannel = ((InternalNioInputBuffer) inputBuffer).getChannel();
 
 		// Put relevant elements in the map attachment
 		response.setNote(Constants.NODE_CHANNEL_NOTE, nodeChannel);
@@ -356,13 +340,12 @@ public class CoyoteAdapter implements Adapter {
 	 */
 	private void tryWithNode(org.apache.coyote.Response response) {
 		// Closing the current channel
-		NioChannel channel = (NioChannel) response
-				.getNote(Constants.NODE_CHANNEL_NOTE);
+		NioChannel channel = (NioChannel) response.getNote(Constants.NODE_CHANNEL_NOTE);
 		this.connector.getConnectionManager().close(channel);
 
 		// Try with another node
-		Node node = this.connector.getNodeService().getNode(response.getRequest().requestURI()
-				.getString());
+		Node node = this.connector.getNodeService().getNode(
+				response.getRequest().requestURI().getString());
 		response.setNote(Constants.NODE_NOTE, node);
 		channel = this.connector.getConnectionManager().getChannel(node);
 		response.setNote(Constants.NODE_CHANNEL_NOTE, channel);
@@ -376,57 +359,11 @@ public class CoyoteAdapter implements Adapter {
 	 * @throws IOException
 	 */
 	private boolean checkPostMethod(final org.apache.coyote.Request request,
-			final org.apache.coyote.Response response) throws IOException {
+			final org.apache.coyote.Response response) throws Exception {
 
-		logger.info(getClass().getName()+"#checkPostMethod(...)");
-		
 		if (request.getContentLength() > 0) {
 			if (request.getContentLength() <= connector.getMaxPostSize()) {
-				// Client request
-				final AbstractInternalInputBuffer inputBuffer = (AbstractInternalInputBuffer) request
-						.getInputBuffer();
-				final NioChannel nodeChannel = (NioChannel) response
-						.getNote(Constants.NODE_CHANNEL_NOTE);
-
-				if (inputBuffer.fill()) {
-					final ByteBuffer buffer = inputBuffer.getByteBuffer();
-					buffer.flip();
-					nodeChannel.write(buffer, null,
-							new CompletionHandler<Integer, Void>() {
-
-								@Override
-								public void completed(Integer result,
-										Void attachment) {
-									if (result < 0) {
-										failed(new ClosedChannelException(), attachment);
-									}
-
-									if (buffer.hasRemaining()) {
-										nodeChannel.write(buffer, null, this);
-									} else {
-										try {
-											if (inputBuffer.needMoreData()
-													&& inputBuffer.fill()) {
-												buffer.flip();
-												nodeChannel.write(buffer, null,
-														this);
-											} else {
-												readFromNode(request, response);
-											}
-										} catch (Exception e) {
-											failed(e, attachment);
-										}
-									}
-								}
-
-								@Override
-								public void failed(Throwable exc,
-										Void attachment) {
-									exc.printStackTrace();
-								}
-							});
-				}
-
+				doPost(request, response);
 				return true;
 			} else {
 				logger.warn("Parameters were not parsed because the size of the posted data was too big. "
@@ -435,6 +372,181 @@ public class CoyoteAdapter implements Adapter {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @throws IOException
+	 */
+	private void doPost(final Request request, final Response response) throws Exception {
+
+		final AbstractInternalInputBuffer inputBuffer = (AbstractInternalInputBuffer) request
+				.getInputBuffer();
+		final NioChannel nodeChannel = (NioChannel) response.getNote(Constants.NODE_CHANNEL_NOTE);
+
+		int n = inputBuffer.getAvailable();
+		int pos = inputBuffer.getPosition();
+		int lastValid = inputBuffer.getLastValid();
+		int end = inputBuffer.getEnd();
+
+		final ByteBuffer buffer = inputBuffer.getByteBuffer();
+		buffer.clear();
+		int nRead = 0;
+
+		try {
+			nRead = inputBuffer.readBytes(buffer);
+		} catch (Throwable t) {
+			t.printStackTrace();
+		}
+
+		if (nRead > 0) {
+			buffer.flip();
+			nodeChannel.write(buffer, n + nRead, new CompletionHandler<Integer, Integer>() {
+
+				@Override
+				public void completed(Integer result, Integer attachment) {
+					if (result < 0) {
+						failed(new ClosedChannelException(), attachment);
+						return;
+					}
+
+					if (buffer.hasRemaining()) {
+						nodeChannel.write(buffer, attachment, this);
+					} else {
+						int len = request.getContentLength();
+						try {
+							if (attachment < len) {
+								buffer.clear();
+								int nRead = inputBuffer.readBytes(buffer);
+								if (nRead > 0) {
+									buffer.flip();
+									nodeChannel.write(buffer, attachment + nRead, this);
+								} else {
+									failed(new ClosedChannelException(), attachment);
+								}
+
+							} else {
+								readFromNode(request, response);
+							}
+						} catch (Exception e) {
+							failed(e, attachment);
+						}
+					}
+				}
+
+				@Override
+				public void failed(Throwable exc, Integer attachment) {
+					exc.printStackTrace();
+				}
+			});
+		} else {
+			throw new IOException("Read operation fails");
+		}
+	}
+
+	/**
+	 * Parse additional request parameters.
+	 */
+	protected boolean postParseRequest(org.apache.coyote.Request req, org.apache.coyote.Response res)
+			throws Exception {
+
+		// FIXME: The processor needs to set a correct scheme and port prior to
+		// this point,
+		// in ajp13 protocol does not make sense to get the port from the
+		// connector..
+		// otherwise, use connector configuration
+		if (req.scheme().isNull()) {
+			// Use connector scheme and secure configuration, (defaults to
+			// "http" and false respectively)
+			req.scheme().setString(connector.getScheme());
+		}
+
+		// FIXME: the code below doesnt belongs to here,
+		// this is only have sense
+		// in Http11, not in ajp13..
+		// At this point the Host header has been processed.
+		// Override if the proxyPort/proxyHost are set
+		String proxyName = connector.getProxyName();
+		int proxyPort = connector.getProxyPort();
+		if (proxyPort != 0) {
+			req.setServerPort(proxyPort);
+		}
+		if (proxyName != null) {
+			req.serverName().setString(proxyName);
+		}
+
+		// URI decoding
+		MessageBytes decodedURI = req.decodedURI();
+		decodedURI.duplicate(req.requestURI());
+
+		if (decodedURI.getType() == MessageBytes.T_BYTES) {
+			// Remove any path parameters
+			ByteChunk uriBB = decodedURI.getByteChunk();
+			int semicolon = uriBB.indexOf(';', 0);
+			if (semicolon > 0) {
+				decodedURI.setBytes(uriBB.getBuffer(), uriBB.getStart(), semicolon);
+			}
+			// %xx decoding of the URL
+			try {
+				req.getURLDecoder().convert(decodedURI, false);
+			} catch (IOException ioe) {
+				res.setStatus(400);
+				res.setMessage("Invalid URI: " + ioe.getMessage());
+				return false;
+			}
+			// Normalization
+			if (!normalize(req.decodedURI())) {
+				res.setStatus(400);
+				res.setMessage("Invalid URI");
+				return false;
+			}
+			// Character decoding
+			convertURI(decodedURI, req);
+			// Check that the URI is still normalized
+			if (!checkNormalize(req.decodedURI())) {
+				res.setStatus(400);
+				res.setMessage("Invalid URI character encoding");
+				return false;
+			}
+		} else {
+			// The URL is chars or String, and has been sent using an in-memory
+			// protocol handler, we have to assume the URL has been properly
+			// decoded already
+			decodedURI.toChars();
+			// Remove any path parameters
+			CharChunk uriCC = decodedURI.getCharChunk();
+			int semicolon = uriCC.indexOf(';');
+			if (semicolon > 0) {
+				decodedURI.setChars(uriCC.getBuffer(), uriCC.getStart(), semicolon);
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Character conversion of the URI.
+	 */
+	protected void convertURI(MessageBytes uri, Request request) throws Exception {
+
+		ByteChunk bc = uri.getByteChunk();
+		int length = bc.getLength();
+		CharChunk cc = uri.getCharChunk();
+		cc.allocate(length, -1);
+
+		String enc = connector.getURIEncoding();
+
+		// Default encoding: fast conversion
+		byte[] bbuf = bc.getBuffer();
+		char[] cbuf = cc.getBuffer();
+		int start = bc.getStart();
+		for (int i = 0; i < length; i++) {
+			cbuf[i] = (char) (bbuf[i + start] & 0xff);
+		}
+		uri.setChars(cbuf, 0, length);
+
 	}
 
 	/**
@@ -541,8 +653,7 @@ public class CoyoteAdapter implements Adapter {
 			index = uriBC.indexOf("/./", 0, 3, index);
 			if (index < 0)
 				break;
-			copyBytes(b, start + index, start + index + 2, end - start - index
-					- 2);
+			copyBytes(b, start + index, start + index + 2, end - start - index - 2);
 			end = end - 2;
 			uriBC.setEnd(end);
 		}
@@ -563,8 +674,7 @@ public class CoyoteAdapter implements Adapter {
 					index2 = pos;
 				}
 			}
-			copyBytes(b, start + index2, start + index + 3, end - start - index
-					- 3);
+			copyBytes(b, start + index2, start + index + 3, end - start - index - 3);
 			end = end + index2 - index - 3;
 			uriBC.setEnd(end);
 			index = index2;
@@ -617,8 +727,7 @@ public class CoyoteAdapter implements Adapter {
 
 		// Check for ending with "/." or "/.."
 		if (((end - start) >= 2) && (c[end - 1] == '.')) {
-			if ((c[end - 2] == '/')
-					|| ((c[end - 2] == '.') && (c[end - 3] == '/'))) {
+			if ((c[end - 2] == '/') || ((c[end - 2] == '.') && (c[end - 3] == '/'))) {
 				return false;
 			}
 		}

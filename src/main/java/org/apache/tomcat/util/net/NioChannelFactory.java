@@ -22,6 +22,7 @@
 package org.apache.tomcat.util.net;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.util.Hashtable;
@@ -82,8 +83,7 @@ public abstract class NioChannelFactory implements Cloneable {
 	 */
 	public static synchronized NioChannelFactory createNioChannelFactory(
 			AsynchronousChannelGroup threadGroup, boolean secure) {
-		return secure ? createSecureFactory(threadGroup)
-				: getDefault(threadGroup);
+		return secure ? createSecureFactory(threadGroup) : getDefault(threadGroup);
 	}
 
 	/**
@@ -92,8 +92,7 @@ public abstract class NioChannelFactory implements Cloneable {
 	 * @param threadGroup
 	 * @return the default factory
 	 */
-	public static synchronized NioChannelFactory getDefault(
-			AsynchronousChannelGroup threadGroup) {
+	public static synchronized NioChannelFactory getDefault(AsynchronousChannelGroup threadGroup) {
 		//
 		// optimize typical case: no synch needed
 		//
@@ -168,8 +167,7 @@ public abstract class NioChannelFactory implements Cloneable {
 	 * @return the channel connected to the remote address
 	 * @throws Exception
 	 */
-	public NioChannel connect(NioChannel channel, SocketAddress socketAddress)
-			throws Exception {
+	public NioChannel connect(NioChannel channel, SocketAddress socketAddress) throws Exception {
 		channel.connect(socketAddress).get();
 		return channel;
 	}
@@ -179,13 +177,26 @@ public abstract class NioChannelFactory implements Cloneable {
 	 * 
 	 * @param socketAddress
 	 *            the remote address
-	 * @return a new connected {@coe NioChannel}
+	 * @return a new connected {@code NioChannel}
 	 * @throws Exception
+	 * @see {@link #connect(NioChannel, SocketAddress)}
 	 */
 	public NioChannel connect(SocketAddress socketAddress) throws Exception {
-		NioChannel channel = open();
-		channel.connect(socketAddress).get();
-		return channel;
+		return connect(open(), socketAddress);
+	}
+
+	/**
+	 * Open a new {@code NioChannel} and connect it the remote address given by
+	 * the <tt>hostname</tt> and <tt>port</tt> number
+	 * 
+	 * @param hostname
+	 * @param port
+	 * @return
+	 * @throws Exception
+	 * @see {@link #connect(SocketAddress)}
+	 */
+	public NioChannel connect(String hostname, int port) throws Exception {
+		return connect(new InetSocketAddress(hostname, port));
 	}
 
 	/**

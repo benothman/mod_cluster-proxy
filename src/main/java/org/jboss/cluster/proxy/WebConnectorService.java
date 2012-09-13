@@ -39,8 +39,7 @@ import org.jboss.logging.Logger;
  */
 public class WebConnectorService {
 
-	private static final Logger logger = Logger
-			.getLogger(WebConnectorService.class);
+	private static final Logger logger = Logger.getLogger(WebConnectorService.class);
 	private volatile String protocol = "HTTP/1.1";
 	private volatile String scheme = "http";
 	private Boolean enableLookups = null;
@@ -81,8 +80,12 @@ public class WebConnectorService {
 		try {
 			// Create connector
 			Connector connector = new Connector(protocol);
-			//connector.setNodeService(ProxyMain.NODE_SERVICE);
-			connector.setNodeService(new MCMNodeService());
+			if ("org.jboss.cluster.proxy.http11.Http11NioProtocol".equals(protocol)) {
+				connector.setNodeService(new MCMNodeService());
+			} else {
+				connector.setNodeService(ProxyMain.NODE_SERVICE);
+			}
+
 			connector.setConnectionManager(ProxyMain.CONNECTION_MANAGER);
 			connector.setPort(address.getPort());
 			connector.setScheme(scheme);
@@ -296,8 +299,7 @@ public class WebConnectorService {
 	 */
 	public Integer getMaxPostSize() {
 		if (this.maxPostSize == null) {
-			String str = System
-					.getProperty("org.apache.coyote.http11.MAX_POST_SIZE");
+			String str = System.getProperty("org.apache.coyote.http11.MAX_POST_SIZE");
 			if (str != null) {
 				this.maxPostSize = Integer.valueOf(str);
 			}

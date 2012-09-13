@@ -168,6 +168,11 @@ public final class Response {
 		return headers;
 	}
 
+	public String getHeader(String name) {
+		return this.headers.getHeader(name);
+	}
+	
+	
 	/**
 	 * @return the action hook
 	 */
