@@ -17,8 +17,15 @@
 
 package org.jboss.cluster.proxy.container;
 
+import java.net.DatagramPacket;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.MulticastSocket;
+import java.security.MessageDigest;
+import java.sql.Date;
 import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.UUID;
 
 import javax.security.auth.login.Configuration;
 
@@ -79,6 +86,16 @@ public class MCMPAdapter implements Adapter {
 	static final byte[] CRLF = "\r\n".getBytes();
 
 	private Connector connector;
+	
+	protected Thread thread = null;
+	private String sgroup = "224.0.1.105";
+	private int sport = 23364;
+	private String slocal = "127.0.0.1";
+	private MessageDigest md = null;
+	private String chost = "127.0.0.1"; // System.getProperty("org.jboss.cluster.proxy.net.ADDRESS", "127.0.0.1");
+	private int cport = Integer.parseInt(System.getProperty("org.jboss.cluster.proxy.net.PORT", "6666"));
+	private String scheme = "http";
+	private String securityKey =  System.getProperty("org.jboss.cluster.proxy.securityKey", "secret");
 
 	/**
 	 * Create a new instance of {@code MCMPaddapter}
@@ -87,6 +104,7 @@ public class MCMPAdapter implements Adapter {
 	 */
 	public MCMPAdapter(Connector connector) {
 		this.connector = connector;
+		this.scheme = connector.getScheme();
 	}
 
 	/*
@@ -95,8 +113,105 @@ public class MCMPAdapter implements Adapter {
 	 * @see org.apache.coyote.Adapter#init()
 	 */
 	public void init() throws Exception {
-		// NOPE
+		System.out.println("init: " + connector);
+		if (md == null)
+			md = MessageDigest.getInstance("MD5");
+		if (thread == null) {
+			thread = new Thread(new MCMAdapterBackgroundProcessor(), "MCMAdapaterBackgroundProcessor");
+            thread.setDaemon(true);
+		    thread.start();
+
+		}
 	}
+	
+	 protected class MCMAdapterBackgroundProcessor implements Runnable {
+
+		 /* the messages to send are something like:
+		  *
+HTTP/1.0 200 OK
+Date: Thu, 13 Sep 2012 09:24:02 GMT
+Sequence: 5
+Digest: ae8e7feb7cd85be346134657de3b0661
+Server: b58743ba-fd84-11e1-bd12-ad866be2b4cc
+X-Manager-Address: 127.0.0.1:6666
+X-Manager-Url: /b58743ba-fd84-11e1-bd12-ad866be2b4cc
+X-Manager-Protocol: http
+X-Manager-Host: 10.33.144.3
+non-Javadoc)
+		  *
+		  */
+		@Override
+		public void run() {
+			try {
+			InetAddress group = InetAddress.getByName(sgroup);
+			InetAddress addr = InetAddress.getByName(slocal);
+			InetSocketAddress addrs = new InetSocketAddress(sport);
+
+			MulticastSocket s = new MulticastSocket(addrs);
+			s.setTimeToLive(29);
+			s.joinGroup(group);
+
+			int seq = 0;
+			/* apr_uuid_get(&magd->suuid);
+			   magd->srvid[0] = '/';
+			    apr_uuid_format(&magd->srvid[1], &magd->suuid);
+			    In fact we use the srvid on the 2 second byte [1]
+			*/
+			String server = UUID.randomUUID().toString();
+			boolean ok = true;
+			while (ok) {
+				Date date = new Date(System.currentTimeMillis());
+		        md.reset();
+		        digestString(md, securityKey);
+		        byte[] ssalt = md.digest();
+		        md.update(ssalt);
+		        digestString(md, date);
+		        digestString(md, seq);
+		        digestString(md, server);
+		        byte[] digest = md.digest();
+		        StringBuilder str = new StringBuilder();
+		        for(int i = 0; i < digest.length; i++)
+		            str.append(String.format("%x", digest[i]));
+		        
+				String sbuf = "HTTP/1.0 200 OK\r\n"
+						+ "Date: " + date + "\r\n"
+						+ "Sequence: " + seq + "\r\n"
+						+ "Digest: " + str.toString() + "\r\n"
+						+ "Server: " + server + "\r\n"
+						+ "X-Manager-Address: " + chost + ":" + cport  + "\r\n"
+						+ "X-Manager-Url: /" + server + "\r\n"
+						+ "X-Manager-Protocol: " + scheme + "\r\n"
+						+ "X-Manager-Host: " + chost  + "\r\n";
+
+				byte[] buf = sbuf.getBytes();
+				DatagramPacket data = new DatagramPacket(buf, buf.length, group, sport);
+				s.send(data);
+				Thread.sleep(1000);
+				seq ++;
+				}
+			s.leaveGroup(group);
+			} catch (Exception Ex) {
+				Ex.printStackTrace(System.out);
+			}
+		}
+
+		private void digestString(MessageDigest md, int seq) {
+			String sseq = "" + seq;
+			digestString(md, sseq);
+		}
+
+		private void digestString(MessageDigest md, Date date) {
+			String sdate = date.toString();
+			digestString(md, sdate);
+		}
+
+		private void digestString(MessageDigest md, String securityKey) {
+			byte buf[] = securityKey.getBytes();
+			md.update(buf);
+			
+		}
+		 
+	 }
 
 	/*
 	 * (non-Javadoc)
@@ -168,9 +283,91 @@ public class MCMPAdapter implements Adapter {
 	 * 
 	 * @param req
 	 * @param res
+	 * @throws Exception 
 	 */
-	private void process_ping(Request req, Response res) {
+	private void process_ping(Request req, Response res) throws Exception {
 		System.out.println("process_ping");
+		Parameters params = req.getParameters();
+		if (params == null) {
+			process_error(TYPESYNTAX, SMESPAR, res);
+			return;
+		}
+		String jvmRoute = null;
+		String scheme = null;
+		String host = null;
+		String port = null;
+		
+		Enumeration<String> names = params.getParameterNames();
+		while (names.hasMoreElements()) {
+			String name = (String) names.nextElement();
+			String[] value = params.getParameterValues(name);
+			if (name.equalsIgnoreCase("JVMRoute")) {
+				jvmRoute = value[0];
+			} else if (name.equalsIgnoreCase("Scheme")) {
+				scheme = value[0];
+			} else if (name.equalsIgnoreCase("Port")) {
+				port = value[0];
+			} else if (name.equalsIgnoreCase("Host")) {
+				host = value[0];
+			} else {
+				process_error(TYPESYNTAX, SBADFLD + name + SBADFLD1, res);
+				return;
+			}
+		}
+		if (jvmRoute == null) {
+			if (scheme == null && host == null && port == null) {
+				res.addHeader("Content-Type", "text/plain");
+				String data = "Type=PING-RSP&State=OK";
+				res.setContentLength(data.length());
+				ByteChunk chunk = new ByteChunk();
+				chunk.append(data.getBytes(), 0, data.length());
+				res.doWrite(chunk);
+                return;
+			} else {
+				if (scheme == null || host == null || port == null) {
+					process_error(TYPESYNTAX, SMISFLD, res);
+					return;
+				}
+				res.addHeader("Content-Type", "text/plain");
+				String data = "Type=PING-RSP&State=OK";
+				if (ishost_up(scheme, host, port))
+					data = data.concat("&State=OK");
+				else
+					data = data.concat("&State=NOTOK");
+				
+				res.setContentLength(data.length());
+				ByteChunk chunk = new ByteChunk();
+				chunk.append(data.getBytes(), 0, data.length());
+				res.doWrite(chunk);
+			}
+		} else {
+			// ping the corresponding node.
+			Node node = conf.getNode(jvmRoute);
+			if (node == null) {
+				process_error(TYPEMEM, MNODERD, res);
+				return;
+			}
+			res.addHeader("Content-Type", "text/plain");
+			String data = "Type=PING-RSP&State=OK";
+			if (isnode_up(node))
+				data = data.concat("&State=OK");
+			else
+				data = data.concat("&State=NOTOK");
+			
+			res.setContentLength(data.length());
+			ByteChunk chunk = new ByteChunk();
+			chunk.append(data.getBytes(), 0, data.length());
+			res.doWrite(chunk);
+		}	
+	}
+	private boolean isnode_up(Node node) {
+		System.out.println("process_ping: " + node);
+		return false;
+	}
+
+	private boolean ishost_up(String scheme, String host, String port) {
+		System.out.println("process_ping: " + scheme + "://" + host + ":" + port);
+		return false;
 	}
 
 	/*
@@ -222,7 +419,7 @@ public class MCMPAdapter implements Adapter {
 					+ ",Elected: " + node.getElected() + ",Read: "
 					+ node.getRead() + ",Transfered: " + node.getTransfered()
 					+ ",Connected: " + node.getConnected() + ",Load: "
-					+ node.getLoad() + "\r\n";
+					+ node.getLoad() + "\n";
 			data = data.concat(nod);
 			i++;
 		}
@@ -232,7 +429,7 @@ public class MCMPAdapter implements Adapter {
 			long node = conf.getNodeId(host.getJVMRoute());
 			for (String alias : host.getAliases()) {
 				String hos = "Vhost: [" + node + ":" + host.getId() + ":" + j
-						+ "], Alias: " + alias + "\r\n";
+						+ "], Alias: " + alias + "\n";
 				data = data.concat(hos);
 				j++;
 			}
@@ -243,7 +440,7 @@ public class MCMPAdapter implements Adapter {
 			String cont = "Context: [" + conf.getNodeId(context.getJVMRoute())
 					+ ":" + context.getHostId() + ":" + i + "], Context: "
 					+ context.getPath() + ", Status: " + context.getStatus()
-					+ "\r\n";
+					+ "\n";
 			data = data.concat(cont);
 		}
 		return data;
@@ -280,12 +477,13 @@ public class MCMPAdapter implements Adapter {
 					+ " force: "
 					+ (balancer.isStickySessionForce() ? "1" : "0")
 					+ " Timeout: " + balancer.getWaitWorker()
-					+ " maxAttempts: " + balancer.getMaxattempts() + "\r\n";
+					+ " maxAttempts: " + balancer.getMaxattempts() + "\n";
 			data = data.concat(bal);
 			i++;
 		}
 		// TODO Add more...
-
+		
+		System.out.println("process_dump");
 	}
 
 	/**

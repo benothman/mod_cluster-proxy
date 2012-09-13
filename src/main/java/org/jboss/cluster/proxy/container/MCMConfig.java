@@ -64,16 +64,28 @@ public class MCMConfig {
 
 	public void insertupdate(Node node) {
 		if (getNodes().isEmpty()) {
+			node.setId(1);
 			getNodes().add(node);
 		} else {
+			int i = 1;
+			Node replace = null;
 			for (Node nod : getNodes()) {
 				if (nod.getJvmRoute().equals(node.getJvmRoute())) {
 					// replace it.
 					// TODO that is more tricky see mod_cluster C code.
-					getNodes().remove(nod);
-					getNodes().add(node);
-					break; // Done
+					replace = nod;
+					break;
+				} else {
+					i++;
 				}
+			}
+			if (replace != null) {
+				node.setId(replace.getId());
+				getNodes().remove(replace);
+				getNodes().add(node);
+			} else {
+				node.setId(i);
+				getNodes().add(node);
 			}
 		}
 	}
@@ -159,6 +171,7 @@ public class MCMConfig {
 				i++;
 			}
 		}
+		host.setId(i);
 		getHosts().add(host);
 		return i;
 	}
@@ -186,12 +199,14 @@ public class MCMConfig {
 		} else {
 			for (Context con : getContexts()) {
 				if (context.getJVMRoute().equals(con.getJVMRoute())
-						&& context.getHostid() == con.getHostid()) {
+						&& context.getHostid() == con.getHostid()
+						&& context.getPath() == con.getPath()) {
 					// update the status.
 					con.setStatus(context.getStatus());
-					break; // Done
+					return;
 				}
 			}
+			getContexts().add(context);
 		}
 	}
 	
