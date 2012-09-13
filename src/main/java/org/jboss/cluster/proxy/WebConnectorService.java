@@ -89,6 +89,10 @@ public class WebConnectorService {
 			connector.setConnectionManager(ProxyMain.CONNECTION_MANAGER);
 			connector.setPort(address.getPort());
 			connector.setScheme(scheme);
+			if("https".equalsIgnoreCase(getScheme())) {
+				connector.setSecure(true);
+			}
+			
 			if (enableLookups != null)
 				connector.setEnableLookups(enableLookups);
 			if (getMaxPostSize() != null)

@@ -76,6 +76,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 		this.init();
 	}
 
+	
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -94,6 +95,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 					failed(new ClosedChannelException(), attachment);
 					return;
 				}
+
 				if (attachment.hasRemaining()) {
 					channel.write(attachment, writeTimeout, TimeUnit.MILLISECONDS, attachment, this);
 				} else {
@@ -144,7 +146,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 	public void recycle() {
 		super.recycle();
 		setChannel(null);
-		bufferPool.offer(localPool);
+		BUFFER_POOL.offer(localPool);
 		localPool.clear();
 	}
 
@@ -283,7 +285,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 							failed(null, attach);
 							return;
 						}
-						System.out.println("Receiving Data from client to node --> " + nBytes);
+
 						attach.last.clear();
 						attach.first.transferTo(attach.middle, attach.last, attach, this);
 					}
@@ -291,7 +293,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 					@Override
 					public void failed(Throwable exc,
 							Tuple<NioChannel, NioChannel, ByteBuffer> attachment) {
-
+						log.warn("CLIENT --> NODE : failed");
 						if (log.isDebugEnabled()) {
 							log.debug(exc.getMessage(), exc);
 						}
@@ -319,8 +321,6 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 							return;
 						}
 
-						System.out.println("Receiving Data from node to client --> " + nBytes);
-
 						attachment.last.clear();
 						attachment.first.transferTo(attachment.middle, attachment.last, attachment,
 								this);
@@ -329,7 +329,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 					@Override
 					public void failed(Throwable exc,
 							Tuple<NioChannel, NioChannel, ByteBuffer> attachment) {
-
+						log.warn("NODE --> CLIENT : failed");
 						if (log.isDebugEnabled()) {
 							log.debug(exc.getMessage(), exc);
 						}

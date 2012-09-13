@@ -154,13 +154,10 @@ public class CoyoteAdapter implements Adapter {
 						// Read response from the node and forward it
 						// back to client
 						try {
-							readFromNode(attachment.getRequest(), attachment);
-							/*
+							// TODO
 							if (!checkPostMethod(attachment.getRequest(), attachment)) {
-
 								readFromNode(attachment.getRequest(), attachment);
 							}
-							*/
 						} catch (Exception exp) {
 							failed(exp, attachment);
 						}
@@ -198,16 +195,14 @@ public class CoyoteAdapter implements Adapter {
 				new CompletionHandler<Integer, org.apache.coyote.Response>() {
 
 					private long contentLength = 0;
-					private long read = 0;
 
 					@Override
 					public void completed(Integer nBytes, Response attachment) {
 						if (nBytes < 0) {
 							failed(new ClosedChannelException(), attachment);
 						} else if (nBytes > 0) {
-							
-							this.read += nBytes;
-							
+
+							contentLength += nBytes;
 							ByteBuffer buff = (ByteBuffer) response
 									.getNote(Constants.OUT_BUFFER_NOTE);
 							buff.flip();
@@ -225,7 +220,6 @@ public class CoyoteAdapter implements Adapter {
 								httpResponseParser.parse(attachment, data, nBytes);
 							}
 
-							contentLength += nBytes;
 							outputBuffer.setContentLength(attachment.getContentLengthLong()
 									+ httpResponseParser.getHeaderLength());
 							buff.clear();
@@ -285,7 +279,7 @@ public class CoyoteAdapter implements Adapter {
 			final org.apache.coyote.Response response) throws Exception {
 
 		postParseRequest(request, response);
-		
+
 		Node node = this.connector.getNodeService().getNode(request);
 
 		NioChannel nodeChannel = null;

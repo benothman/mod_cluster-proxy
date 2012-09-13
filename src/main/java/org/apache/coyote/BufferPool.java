@@ -35,7 +35,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public final class BufferPool {
 
 	public static final int DEFAULT_BUFFER_SIZE = Integer.valueOf(System.getProperty(
-			"org.apache.coyote.BUFFER_SIZE", "" + (8 * 1024)));
+			"org.apache.coyote.BUFFER_SIZE", "" + (2 * 8 * 1024)));
 
 	private int capacity;
 	private ConcurrentLinkedQueue<ByteBuffer> pool;

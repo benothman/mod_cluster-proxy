@@ -213,6 +213,13 @@ public final class Connector {
 			this.adapter = new MCMPAdapter(this);
 		}
 
+		try {
+			Method m = this.protocolHandler.getClass().getMethod("setSSLEnabled", Boolean.TYPE);
+			m.invoke(this.protocolHandler, isSecure());
+		} catch (Throwable e) {
+			// NOT all protocols have this method
+		}
+
 		// Initializing adapter
 		if (this.adapter == null) {
 			// By default we use the CoyoteAdapter
@@ -742,7 +749,8 @@ public final class Connector {
 	}
 
 	/**
-	 * @param uRIEncoding the uRIEncoding to set
+	 * @param uRIEncoding
+	 *            the uRIEncoding to set
 	 */
 	public void setURIEncoding(String uRIEncoding) {
 		this.URIEncoding = uRIEncoding;

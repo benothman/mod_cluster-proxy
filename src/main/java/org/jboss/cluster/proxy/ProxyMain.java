@@ -42,13 +42,12 @@ import org.jboss.logging.Logger;
 public class ProxyMain {
 
 	private static final String DEFAULT_PROTOCOL = "org.apache.coyote.http11.Http11NioProtocol";
-	private static final String DEFAULT_NODE_PROTOCOL = "org.jboss.cluster.proxy.http11.Http11NioProtocol";
+	private static final String DEFAULT_MCM_PROTOCOL = "org.jboss.cluster.proxy.http11.Http11NioProtocol";
 	private static final String DEFAULT_SCHEME = "http";
 	private static final List<Thread> threads = new ArrayList<>();
 	private static final List<WebConnectorService> services = new ArrayList<>();
 	protected static final NodeService NODE_SERVICE = new NodeService();
 	protected static final ConnectionManager CONNECTION_MANAGER = new ConnectionManager();
-
 	public static final int DEFAULT_MCM_PORT = 6666;
 	public static final int DEFAULT_HTTP_PORT = 8080;
 
@@ -81,7 +80,7 @@ public class ProxyMain {
 
 		try {
 			String protocol = System.getProperty("http-protocol", DEFAULT_PROTOCOL);
-			String scheme = System.getProperty("scheme", DEFAULT_SCHEME);
+			String scheme = System.getProperty("org.apache.coyote.http11.SCHEME", DEFAULT_SCHEME);
 			// Creating the web connector service
 			WebConnectorService service = new WebConnectorService(protocol, scheme);
 			// configure the web connector service
@@ -117,18 +116,18 @@ public class ProxyMain {
 
 			// Adding node web connector service
 
-			protocol = System.getProperty("http-protocol", DEFAULT_NODE_PROTOCOL);
-			scheme = System.getProperty("scheme", DEFAULT_SCHEME);
+			protocol = System.getProperty("http-protocol", DEFAULT_MCM_PROTOCOL);
+			scheme = System.getProperty("org.jboss.cluster.proxy.http11.SCHEME", DEFAULT_SCHEME);
 			// Creating the web connector service
 			WebConnectorService nodeService = new WebConnectorService(protocol, scheme);
 			// configure the web connector service
 
 			// Setting the address (host:port)
-			int nodePort = DEFAULT_MCM_PORT;
-			String nodePortStr = System.getProperty("org.jboss.cluster.proxy.net.PORT");
-			if (nodePortStr != null) {
+			int mcmPort = DEFAULT_MCM_PORT;
+			String mcmPortStr = System.getProperty("org.jboss.cluster.proxy.net.PORT");
+			if (mcmPortStr != null) {
 				try {
-					nodePort = Integer.valueOf(nodePortStr);
+					mcmPort = Integer.valueOf(mcmPortStr);
 				} catch (Throwable t) {
 					logger.error(t.getMessage(), t);
 					System.setProperty("org.jboss.cluster.proxy.net.PORT", "" + DEFAULT_MCM_PORT);
@@ -138,13 +137,13 @@ public class ProxyMain {
 			}
 
 			// Retrieve the MCMP hostname
-			String nodeHostname = System.getProperty("org.jboss.cluster.proxy.net.ADDRESS");
-			if (nodeHostname == null) {
-				nodeHostname = "0.0.0.0";
-				System.setProperty("org.jboss.cluster.proxy.net.ADDRESS", nodeHostname);
+			String mcmHostname = System.getProperty("org.jboss.cluster.proxy.net.ADDRESS");
+			if (mcmHostname == null) {
+				mcmHostname = "0.0.0.0";
+				System.setProperty("org.jboss.cluster.proxy.net.ADDRESS", mcmHostname);
 			}
 
-			nodeService.setAddress(new InetSocketAddress(nodeHostname, nodePort));
+			nodeService.setAddress(new InetSocketAddress(mcmHostname, mcmPort));
 
 			// TODO finish configuration setup
 

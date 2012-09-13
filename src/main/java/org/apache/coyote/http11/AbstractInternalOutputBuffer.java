@@ -23,6 +23,7 @@ package org.apache.coyote.http11;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.coyote.ActionCode;
@@ -56,9 +57,12 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 */
 	protected static StringManager sm = StringManager.getManager(Constants.Package);
 
-	protected static final BufferPool bufferPool = BufferPool
-			.newInstance(Constants.MIN_BUFFER_SIZE);
-	protected BufferPool localPool = BufferPool.newInstance(Constants.MIN_BUFFER_SIZE);
+	protected static final BufferPool BUFFER_POOL = BufferPool
+			.newInstance(Constants.WRITE_BUFFER_SIZE);
+
+	protected ConcurrentLinkedQueue<ByteBuffer> localPool = new ConcurrentLinkedQueue<>();
+
+	public long totalWritten = 0;
 
 	/**
 	 * Associated Coyote response.
@@ -135,7 +139,6 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 */
 	protected long contentLength = 0;
 
-	
 	/**
 	 * Create a new instance of {@code AbstractInternalOutputBuffer}
 	 * 
@@ -195,7 +198,7 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 		int count = 0;
 		int limit = 0;
 		ByteBuffer buffer;
-
+		
 		while (count < length) {
 			buffer = poll();
 			limit = Math.min(buffer.remaining(), length - count);
@@ -334,6 +337,7 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 		committed = false;
 		finished = false;
 		this.contentLength = 0;
+		totalWritten = 0;
 	}
 
 	/**
@@ -697,7 +701,7 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 * @return an instance of byte buffer
 	 */
 	protected static ByteBuffer poll() {
-		return bufferPool.poll();
+		return BUFFER_POOL.poll();
 	}
 
 	/**
@@ -706,7 +710,7 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 * @param buffer
 	 */
 	protected static void offer(ByteBuffer buffer) {
-		bufferPool.offer(buffer);
+		BUFFER_POOL.offer(buffer);
 	}
 
 	// ----------------------------------- OutputBufferImpl Inner Class
