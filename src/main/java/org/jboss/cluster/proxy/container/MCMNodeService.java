@@ -45,5 +45,10 @@ public class MCMNodeService extends NodeService {
         System.out.println("getNode returns: " + node);
         return node;
 	}
+	@Override
+	public Node getNode(Request request, Node failed) {
+		System.out.println("MCMNodeService: getNode failed: " + failed);
+		return failed; // stupid no ?
+	}
 
 }
