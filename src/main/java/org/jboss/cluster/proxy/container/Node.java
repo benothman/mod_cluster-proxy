@@ -68,7 +68,7 @@ public class Node implements Serializable {
 	private String domain = "";
 	private String hostname = "localhost";
 	private int port = 8009;
-	
+
 	/**
 	 * Protocol using by the connector (AJP/http/https).
 	 */
@@ -482,6 +482,24 @@ public class Node implements Serializable {
 		this.load = load;
 	}
 
+	/**
+	 * @param pos
+	 *            the position of the node in the list
+	 * @return the global information about the node
+	 */
+	public String getInfos(int pos) {
+		return new StringBuilder("Node: [" + pos + "],Name: ").append(this.jvmRoute)
+				.append("Balancer: ").append(this.balancer).append(",LBGroup: ")
+				.append(this.domain).append(",Host: ").append(getHostname()).append(",Port: ")
+				.append(getPort()).append(",Type: ").append(getType()).append(",Flushpackets: ")
+				.append((isFlushpackets() ? "On" : "Off")).append(",Flushwait: ")
+				.append(getFlushwait()).append(",Ping: ").append(getPing()).append(",Smax: ")
+				.append(getSmax()).append(",Ttl: ").append(getTtl()).append(",Elected: ")
+				.append(getElected()).append(",Read: ").append(getRead()).append(",Transfered: ")
+				.append(getTransfered()).append(",Connected: ").append(getConnected())
+				.append(",Load: ").append(getLoad()).append("\n").toString();
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -498,6 +516,7 @@ public class Node implements Serializable {
 				.append(", flush-wait: ").append(this.flushwait).append(", Ping: ")
 				.append(this.ping).append(", smax: ").append(this.smax).append(", TTL: ")
 				.append(this.ttl).append(", Timeout: ").append(this.timeout);
+
 		return sb.toString();
 	}
 

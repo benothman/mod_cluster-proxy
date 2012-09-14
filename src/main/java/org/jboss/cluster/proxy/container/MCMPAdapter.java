@@ -27,8 +27,6 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.UUID;
 
-import javax.security.auth.login.Configuration;
-
 import org.apache.catalina.connector.Connector;
 import org.apache.coyote.ActionCode;
 import org.apache.coyote.Adapter;
@@ -86,16 +84,19 @@ public class MCMPAdapter implements Adapter {
 	static final byte[] CRLF = "\r\n".getBytes();
 
 	private Connector connector;
-	
+
 	protected Thread thread = null;
 	private String sgroup = "224.0.1.105";
 	private int sport = 23364;
 	private String slocal = "127.0.0.1";
 	private MessageDigest md = null;
-	private String chost = "127.0.0.1"; // System.getProperty("org.jboss.cluster.proxy.net.ADDRESS", "127.0.0.1");
-	private int cport = Integer.parseInt(System.getProperty("org.jboss.cluster.proxy.net.PORT", "6666"));
+	private String chost = "127.0.0.1"; // System.getProperty("org.jboss.cluster.proxy.net.ADDRESS",
+										// "127.0.0.1");
+	private int cport = Integer.parseInt(System.getProperty("org.jboss.cluster.proxy.net.PORT",
+			"6666"));
 	private String scheme = "http";
-	private String securityKey =  System.getProperty("org.jboss.cluster.proxy.securityKey", "secret");
+	private String securityKey = System
+			.getProperty("org.jboss.cluster.proxy.securityKey", "secret");
 
 	/**
 	 * Create a new instance of {@code MCMPaddapter}
@@ -117,79 +118,78 @@ public class MCMPAdapter implements Adapter {
 		if (md == null)
 			md = MessageDigest.getInstance("MD5");
 		if (thread == null) {
-			thread = new Thread(new MCMAdapterBackgroundProcessor(), "MCMAdapaterBackgroundProcessor");
-            thread.setDaemon(true);
-		    thread.start();
+			thread = new Thread(new MCMAdapterBackgroundProcessor(),
+					"MCMAdapaterBackgroundProcessor");
+			thread.setDaemon(true);
+			thread.start();
 
 		}
 	}
-	
-	 protected class MCMAdapterBackgroundProcessor implements Runnable {
 
-		 /* the messages to send are something like:
-		  *
-HTTP/1.0 200 OK
-Date: Thu, 13 Sep 2012 09:24:02 GMT
-Sequence: 5
-Digest: ae8e7feb7cd85be346134657de3b0661
-Server: b58743ba-fd84-11e1-bd12-ad866be2b4cc
-X-Manager-Address: 127.0.0.1:6666
-X-Manager-Url: /b58743ba-fd84-11e1-bd12-ad866be2b4cc
-X-Manager-Protocol: http
-X-Manager-Host: 10.33.144.3
-non-Javadoc)
-		  *
-		  */
+	protected class MCMAdapterBackgroundProcessor implements Runnable {
+
+		/*
+		 * the messages to send are something like:
+		 * 
+		 * HTTP/1.0 200 OK
+		 * Date: Thu, 13 Sep 2012 09:24:02 GMT
+		 * Sequence: 5
+		 * Digest: ae8e7feb7cd85be346134657de3b0661
+		 * Server: b58743ba-fd84-11e1-bd12-ad866be2b4cc
+		 * X-Manager-Address: 127.0.0.1:6666
+		 * X-Manager-Url: /b58743ba-fd84-11e1-bd12-ad866be2b4cc
+		 * X-Manager-Protocol: http
+		 * X-Manager-Host: 10.33.144.3
+		 * non-Javadoc)
+		 */
 		@Override
 		public void run() {
 			try {
-			InetAddress group = InetAddress.getByName(sgroup);
-			InetAddress addr = InetAddress.getByName(slocal);
-			InetSocketAddress addrs = new InetSocketAddress(sport);
+				InetAddress group = InetAddress.getByName(sgroup);
+				InetAddress addr = InetAddress.getByName(slocal);
+				InetSocketAddress addrs = new InetSocketAddress(sport);
 
-			MulticastSocket s = new MulticastSocket(addrs);
-			s.setTimeToLive(29);
-			s.joinGroup(group);
+				MulticastSocket s = new MulticastSocket(addrs);
+				s.setTimeToLive(29);
+				s.joinGroup(group);
 
-			int seq = 0;
-			/* apr_uuid_get(&magd->suuid);
-			   magd->srvid[0] = '/';
-			    apr_uuid_format(&magd->srvid[1], &magd->suuid);
-			    In fact we use the srvid on the 2 second byte [1]
-			*/
-			String server = UUID.randomUUID().toString();
-			boolean ok = true;
-			while (ok) {
-				Date date = new Date(System.currentTimeMillis());
-		        md.reset();
-		        digestString(md, securityKey);
-		        byte[] ssalt = md.digest();
-		        md.update(ssalt);
-		        digestString(md, date);
-		        digestString(md, seq);
-		        digestString(md, server);
-		        byte[] digest = md.digest();
-		        StringBuilder str = new StringBuilder();
-		        for(int i = 0; i < digest.length; i++)
-		            str.append(String.format("%x", digest[i]));
-		        
-				String sbuf = "HTTP/1.0 200 OK\r\n"
-						+ "Date: " + date + "\r\n"
-						+ "Sequence: " + seq + "\r\n"
-						+ "Digest: " + str.toString() + "\r\n"
-						+ "Server: " + server + "\r\n"
-						+ "X-Manager-Address: " + chost + ":" + cport  + "\r\n"
-						+ "X-Manager-Url: /" + server + "\r\n"
-						+ "X-Manager-Protocol: " + scheme + "\r\n"
-						+ "X-Manager-Host: " + chost  + "\r\n";
+				int seq = 0;
+				/*
+				 * apr_uuid_get(&magd->suuid);
+				 * magd->srvid[0] = '/';
+				 * apr_uuid_format(&magd->srvid[1], &magd->suuid);
+				 * In fact we use the srvid on the 2 second byte [1]
+				 */
+				String server = UUID.randomUUID().toString();
+				boolean ok = true;
+				while (ok) {
+					Date date = new Date(System.currentTimeMillis());
+					md.reset();
+					digestString(md, securityKey);
+					byte[] ssalt = md.digest();
+					md.update(ssalt);
+					digestString(md, date);
+					digestString(md, seq);
+					digestString(md, server);
+					byte[] digest = md.digest();
+					StringBuilder str = new StringBuilder();
+					for (int i = 0; i < digest.length; i++)
+						str.append(String.format("%x", digest[i]));
 
-				byte[] buf = sbuf.getBytes();
-				DatagramPacket data = new DatagramPacket(buf, buf.length, group, sport);
-				s.send(data);
-				Thread.sleep(1000);
-				seq ++;
+					String sbuf = "HTTP/1.0 200 OK\r\n" + "Date: " + date + "\r\n" + "Sequence: "
+							+ seq + "\r\n" + "Digest: " + str.toString() + "\r\n" + "Server: "
+							+ server + "\r\n" + "X-Manager-Address: " + chost + ":" + cport
+							+ "\r\n" + "X-Manager-Url: /" + server + "\r\n"
+							+ "X-Manager-Protocol: " + scheme + "\r\n" + "X-Manager-Host: " + chost
+							+ "\r\n";
+
+					byte[] buf = sbuf.getBytes();
+					DatagramPacket data = new DatagramPacket(buf, buf.length, group, sport);
+					s.send(data);
+					Thread.sleep(1000);
+					seq++;
 				}
-			s.leaveGroup(group);
+				s.leaveGroup(group);
 			} catch (Exception Ex) {
 				Ex.printStackTrace(System.out);
 			}
@@ -208,10 +208,10 @@ non-Javadoc)
 		private void digestString(MessageDigest md, String securityKey) {
 			byte buf[] = securityKey.getBytes();
 			md.update(buf);
-			
+
 		}
-		 
-	 }
+
+	}
 
 	/*
 	 * (non-Javadoc)
@@ -219,8 +219,7 @@ non-Javadoc)
 	 * @see org.apache.coyote.Adapter#event(org.apache.coyote.Request,
 	 * org.apache.coyote.Response, org.apache.tomcat.util.net.SocketStatus)
 	 */
-	public boolean event(Request req, Response res, SocketStatus status)
-			throws Exception {
+	public boolean event(Request req, Response res, SocketStatus status) throws Exception {
 		return false;
 	}
 
@@ -233,7 +232,7 @@ non-Javadoc)
 	 * org.apache.coyote.Response)
 	 */
 	public void service(Request req, Response res) throws Exception {
-		
+
 		System.out.println("service...");
 		MessageBytes methodMB = req.method();
 		if (methodMB.equals(Constants.GET)) {
@@ -252,7 +251,7 @@ non-Javadoc)
 			process_stop(req, res);
 		} else if (methodMB.equals(Constants.REMOVE_APP)) {
 			try {
-			process_remove(req, res);
+				process_remove(req, res);
 			} catch (Exception Ex) {
 				Ex.printStackTrace(System.out);
 			}
@@ -284,7 +283,7 @@ non-Javadoc)
 	 * 
 	 * @param req
 	 * @param res
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	private void process_ping(Request req, Response res) throws Exception {
 		System.out.println("process_ping");
@@ -297,7 +296,7 @@ non-Javadoc)
 		String scheme = null;
 		String host = null;
 		String port = null;
-		
+
 		Enumeration<String> names = params.getParameterNames();
 		while (names.hasMoreElements()) {
 			String name = (String) names.nextElement();
@@ -323,7 +322,7 @@ non-Javadoc)
 				ByteChunk chunk = new ByteChunk();
 				chunk.append(data.getBytes(), 0, data.length());
 				res.doWrite(chunk);
-                return;
+				return;
 			} else {
 				if (scheme == null || host == null || port == null) {
 					process_error(TYPESYNTAX, SMISFLD, res);
@@ -335,7 +334,7 @@ non-Javadoc)
 					data = data.concat("&State=OK");
 				else
 					data = data.concat("&State=NOTOK");
-				
+
 				res.setContentLength(data.length());
 				ByteChunk chunk = new ByteChunk();
 				chunk.append(data.getBytes(), 0, data.length());
@@ -354,13 +353,14 @@ non-Javadoc)
 				data = data.concat("&State=OK");
 			else
 				data = data.concat("&State=NOTOK");
-			
+
 			res.setContentLength(data.length());
 			ByteChunk chunk = new ByteChunk();
 			chunk.append(data.getBytes(), 0, data.length());
 			res.doWrite(chunk);
-		}	
+		}
 	}
+
 	private boolean isnode_up(Node node) {
 		System.out.println("process_ping: " + node);
 		return false;
@@ -390,7 +390,7 @@ non-Javadoc)
 	 * @throws Exception
 	 */
 	private void process_info(Request req, Response res) throws Exception {
-		
+
 		String data = process_info_string();
 		process_OK(res);
 		res.addHeader("Content-Type", "text/plain");
@@ -403,25 +403,24 @@ non-Javadoc)
 		chunk.append(data.getBytes(), 0, data.length());
 		res.doWrite(chunk);
 	}
-		
+
 	private String process_info_string() {
-		String data = "";
 		int i = 1;
+		StringBuilder data = new StringBuilder();
 
 		for (Node node : conf.getNodes()) {
-			String nod = "Node: [" + i + "],Name: " + node.getJvmRoute()
-					+ ",Balancer: " + node.getBalancer() + ",LBGroup: "
-					+ node.getDomain() + ",Host: " + node.getHostname()
-					+ ",Port: " + node.getPort() + ",Type: " + node.getType()
-					+ ",Flushpackets: "
-					+ (node.isFlushpackets() ? "On" : "Off") + ",Flushwait: "
-					+ node.getFlushwait() + ",Ping: " + node.getPing()
-					+ ",Smax: " + node.getSmax() + ",Ttl: " + node.getTtl()
-					+ ",Elected: " + node.getElected() + ",Read: "
-					+ node.getRead() + ",Transfered: " + node.getTransfered()
-					+ ",Connected: " + node.getConnected() + ",Load: "
-					+ node.getLoad() + "\n";
-			data = data.concat(nod);
+			data.append("Node: [").append(i).append("],Name: ").append(node.getJvmRoute())
+					.append(",Balancer: ").append(node.getBalancer()).append(",LBGroup: ")
+					.append(node.getDomain()).append(",Host: ").append(node.getHostname())
+					.append(",Port: ").append(node.getPort()).append(",Type: ")
+					.append(node.getType()).append(",Flushpackets: ")
+					.append((node.isFlushpackets() ? "On" : "Off")).append(",Flushwait: ")
+					.append(node.getFlushwait()).append(",Ping: ").append(node.getPing())
+					.append(",Smax: ").append(node.getSmax()).append(",Ttl: ")
+					.append(node.getTtl()).append(",Elected: ").append(node.getElected())
+					.append(",Read: ").append(node.getRead()).append(",Transfered: ")
+					.append(node.getTransfered()).append(",Connected: ")
+					.append(node.getConnected()).append(",Load: ").append(node.getLoad() + "\n");
 			i++;
 		}
 
@@ -429,24 +428,25 @@ non-Javadoc)
 			int j = 1;
 			long node = conf.getNodeId(host.getJVMRoute());
 			for (String alias : host.getAliases()) {
-				String hos = "Vhost: [" + node + ":" + host.getId() + ":" + j
-						+ "], Alias: " + alias + "\n";
-				data = data.concat(hos);
+				data.append("Vhost: [").append(node).append(":").append(host.getId()).append(":")
+						.append(j).append("], Alias: ").append(alias).append("\n");
+
 				j++;
 			}
 		}
 
 		i = 1;
 		for (Context context : conf.getContexts()) {
-			String cont = "Context: [" + conf.getNodeId(context.getJVMRoute())
-					+ ":" + context.getHostId() + ":" + i + "], Context: "
-					+ context.getPath() + ", Status: " + context.getStatus()
-					+ "\n";
-			data = data.concat(cont);
-		}
-		return data;
-	}
+			data.append("Context: [").append(conf.getNodeId(context.getJVMRoute())).append(":")
+					.append(context.getHostId()).append(":").append(i).append("], Context: ")
+					.append(context.getPath()).append(", Status: ").append(context.getStatus())
+					.append("\n");
 
+			// TODO do we need to increment i ?
+			// i++;
+		}
+		return data.toString();
+	}
 
 	/*
 	 * something like:
@@ -470,20 +470,18 @@ non-Javadoc)
 		String data = "";
 		int i = 1;
 		for (Balancer balancer : conf.getBalancers()) {
-			String bal = "balancer: [" + i + "] Name: " + balancer.getName()
-					+ " Sticky: " + (balancer.isStickySession() ? "1" : "0")
-					+ " [" + balancer.getStickySessionCookie() + "]/["
-					+ balancer.getStickySessionPath() + "] remove: "
-					+ (balancer.isStickySessionRemove() ? "1" : "0")
-					+ " force: "
-					+ (balancer.isStickySessionForce() ? "1" : "0")
-					+ " Timeout: " + balancer.getWaitWorker()
-					+ " maxAttempts: " + balancer.getMaxattempts() + "\n";
+			String bal = "balancer: [" + i + "] Name: " + balancer.getName() + " Sticky: "
+					+ (balancer.isStickySession() ? "1" : "0") + " ["
+					+ balancer.getStickySessionCookie() + "]/[" + balancer.getStickySessionPath()
+					+ "] remove: " + (balancer.isStickySessionRemove() ? "1" : "0") + " force: "
+					+ (balancer.isStickySessionForce() ? "1" : "0") + " Timeout: "
+					+ balancer.getWaitWorker() + " maxAttempts: " + balancer.getMaxattempts()
+					+ "\n";
 			data = data.concat(bal);
 			i++;
 		}
 		// TODO Add more...
-		
+
 		System.out.println("process_dump");
 	}
 
@@ -536,7 +534,7 @@ non-Javadoc)
 	 * 
 	 * @param req
 	 * @param res
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	private void process_remove(Request req, Response res) throws Exception {
 		Parameters params = req.getParameters();
@@ -544,10 +542,9 @@ non-Javadoc)
 			process_error(TYPESYNTAX, SMESPAR, res);
 			return;
 		}
-		
+
 		boolean global = false;
-		if (req.unparsedURI().toString().equals("*") ||
-				req.unparsedURI().toString().endsWith("/*")) {
+		if (req.unparsedURI().toString().equals("*") || req.unparsedURI().toString().endsWith("/*")) {
 			global = true;
 		}
 		Context context = new Context();
@@ -589,7 +586,7 @@ non-Javadoc)
 	 * 
 	 * @param req
 	 * @param res
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	private void process_stop(Request req, Response res) throws Exception {
 		process_cmd(req, res, Context.Status.STOPPED);
@@ -600,7 +597,7 @@ non-Javadoc)
 	 * 
 	 * @param req
 	 * @param res
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	private void process_disable(Request req, Response res) throws Exception {
 		process_cmd(req, res, Context.Status.DISABLED);
@@ -616,15 +613,15 @@ non-Javadoc)
 	private void process_enable(Request req, Response res) throws Exception {
 		process_cmd(req, res, Context.Status.ENABLED);
 	}
+
 	private void process_cmd(Request req, Response res, Context.Status status) throws Exception {
 		Parameters params = req.getParameters();
 		if (params == null) {
 			process_error(TYPESYNTAX, SMESPAR, res);
 			return;
 		}
-		
-		if (req.unparsedURI().toString().equals("*") ||
-				req.unparsedURI().toString().endsWith("/*")) {
+
+		if (req.unparsedURI().toString().equals("*") || req.unparsedURI().toString().endsWith("/*")) {
 			process_node_cmd(req, res, status);
 			return;
 		}
@@ -765,8 +762,7 @@ non-Javadoc)
 	 * @param res
 	 * @throws Exception
 	 */
-	private void process_error(String type, String errstring, Response res)
-			throws Exception {
+	private void process_error(String type, String errstring, Response res) throws Exception {
 		res.setStatus(500);
 		res.setMessage("ERROR");
 		res.addHeader("Version", VERSION_PROTOCOL);

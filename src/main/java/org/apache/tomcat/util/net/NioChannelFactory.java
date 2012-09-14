@@ -169,6 +169,10 @@ public abstract class NioChannelFactory implements Cloneable {
 	 */
 	public NioChannel connect(NioChannel channel, SocketAddress socketAddress) throws Exception {
 		channel.connect(socketAddress).get();
+		// Initialize the channel
+		initChannel(channel);
+		// Perform a handshake
+		handshake(channel);
 		return channel;
 	}
 
