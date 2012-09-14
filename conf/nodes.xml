@@ -7,14 +7,14 @@
 		<hostname>localhost</hostname>
 		<port>8080</port>
 	</node>
-	<!-- node>
+	<node>
 		<hostname>localhost</hostname>
 		<port>8082</port>
 	</node>
 	<node>
 		<hostname>localhost</hostname>
 		<port>8083</port>
-	</node -->
+	</node>
 	
 	<!-- Remote nodes -->
 	

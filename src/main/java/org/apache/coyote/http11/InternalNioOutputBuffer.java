@@ -76,7 +76,6 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 		this.init();
 	}
 
-	
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -293,7 +292,6 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 					@Override
 					public void failed(Throwable exc,
 							Tuple<NioChannel, NioChannel, ByteBuffer> attachment) {
-						log.warn("CLIENT --> NODE : failed");
 						if (log.isDebugEnabled()) {
 							log.debug(exc.getMessage(), exc);
 						}
@@ -329,7 +327,6 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 					@Override
 					public void failed(Throwable exc,
 							Tuple<NioChannel, NioChannel, ByteBuffer> attachment) {
-						log.warn("NODE --> CLIENT : failed");
 						if (log.isDebugEnabled()) {
 							log.debug(exc.getMessage(), exc);
 						}

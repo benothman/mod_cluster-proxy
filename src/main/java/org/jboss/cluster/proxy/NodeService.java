@@ -28,8 +28,6 @@ import java.util.UUID;
 
 import org.apache.LifeCycleServiceAdapter;
 import org.apache.coyote.Request;
-import org.jboss.cluster.proxy.container.MCMConfig;
-import org.jboss.cluster.proxy.container.MCMPAdapter;
 import org.jboss.cluster.proxy.container.Node;
 import org.jboss.cluster.proxy.xml.XmlConfig;
 import org.jboss.cluster.proxy.xml.XmlNode;
@@ -121,7 +119,7 @@ public class NodeService extends LifeCycleServiceAdapter {
 		if (failedNode == null) {
 			return getNode(request);
 		}
-
+		
 		// TODO mark the failed node as unreachable and try to get new node
 		
 		

@@ -130,8 +130,7 @@ public class CoyoteAdapter implements Adapter {
 	 * @param response
 	 */
 	private void sendError(Request request, Response response) {
-		
-		
+
 	}
 
 	/**
@@ -289,8 +288,7 @@ public class CoyoteAdapter implements Adapter {
 			final org.apache.coyote.Response response) throws Exception {
 
 		postParseRequest(request, response);
-
-		Node node = this.connector.getNodeService().getNode(request);
+		Node node = this.connector.getNodeService().getNode(request, null);
 
 		NioChannel nodeChannel = null;
 		int tries = 0;
@@ -305,11 +303,11 @@ public class CoyoteAdapter implements Adapter {
 			response.setStatus(503);
 			response.setMessage("Service Unavailable");
 			response.addHeader("Server", "Apache-Coyote/1.1");
-			
+
 			if (connector.getXpoweredBy()) {
 				response.addHeader("X-Powered-By", X_POWERED_BY);
 			}
-			
+
 			throw new IOException("Unable to connect to node");
 		}
 
@@ -348,9 +346,10 @@ public class CoyoteAdapter implements Adapter {
 		// Closing the current channel
 		NioChannel channel = (NioChannel) response.getNote(Constants.NODE_CHANNEL_NOTE);
 		this.connector.getConnectionManager().close(channel);
-
+		// Retrieve the failed node
+		Node failedNode = (Node) response.getNote(Constants.NODE_NOTE);
 		// Try with another node
-		Node node = this.connector.getNodeService().getNode(request);
+		Node node = this.connector.getNodeService().getNode(request, failedNode);
 		response.setNote(Constants.NODE_NOTE, node);
 		channel = this.connector.getConnectionManager().getChannel(node);
 		response.setNote(Constants.NODE_CHANNEL_NOTE, channel);
