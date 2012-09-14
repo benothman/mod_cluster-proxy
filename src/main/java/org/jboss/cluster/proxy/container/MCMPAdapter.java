@@ -329,7 +329,7 @@ public class MCMPAdapter implements Adapter {
 					return;
 				}
 				res.addHeader("Content-Type", "text/plain");
-				String data = "Type=PING-RSP&State=OK";
+				String data = "Type=PING-RSP";
 				if (ishost_up(scheme, host, port))
 					data = data.concat("&State=OK");
 				else
@@ -348,7 +348,7 @@ public class MCMPAdapter implements Adapter {
 				return;
 			}
 			res.addHeader("Content-Type", "text/plain");
-			String data = "Type=PING-RSP&State=OK";
+			String data = "Type=PING-RSP";
 			if (isnode_up(node))
 				data = data.concat("&State=OK");
 			else
