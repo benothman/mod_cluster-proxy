@@ -65,7 +65,6 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 
 	protected ConcurrentLinkedQueue<ByteBuffer> localPool = new ConcurrentLinkedQueue<>();
 
-	public long totalWritten = 0;
 
 	/**
 	 * Associated Coyote response.
@@ -77,6 +76,9 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 */
 	protected MimeHeaders headers;
 
+	protected boolean error = false; 
+	
+	
 	/**
 	 * Committed flag.
 	 */
@@ -340,7 +342,7 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 		committed = false;
 		finished = false;
 		this.contentLength = 0;
-		totalWritten = 0;
+		error = false;
 	}
 
 	/**
@@ -521,15 +523,19 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 * 
 	 */
 	public void sendError() throws IOException {
+		error = true;
+		System.out.println(getClass().getName()+"#sendError()");
+		
 		String fileName = "res" + File.separatorChar + "503.html";
 		fileName = getClass().getResource(".").getFile() + fileName;
 		RandomAccessFile raf = new RandomAccessFile(fileName, "r");
 		long length = raf.length();
 
-		StringBuilder headers = new StringBuilder("HTTP/1.1 503 Service Unavailable\n")
-				.append("Server: Apache-Coyote/1.1\n")
-				.append("Content-Type: text/html;charset=utf-8\n").append("Content-Length: ")
-				.append(length).append("\n").append("Date: ").append(new Date()).append("\n\n");
+		StringBuilder headers = new StringBuilder("HTTP/1.1 503 Service not available\n");
+		headers.append("Server: Apache-Coyote/1.1\n").append("Connection: close\n")
+				.append("Content-Type: text/html;charset=utf-8\n")
+				.append("Content-Length: " + length + "\n").append("Date: " + new Date())
+				.append("\n\n");
 
 		writeToClient(headers.toString().getBytes());
 		byte bytes[] = new byte[1024];
@@ -540,6 +546,12 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 		}
 
 		raf.close();
+		
+		
+		AbstractHttp11Processor<?> processor = (AbstractHttp11Processor<?>) response.hook;
+		processor.endRequest();
+		processor.nextRequest();
+		
 	}
 
 	/**

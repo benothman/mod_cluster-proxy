@@ -107,6 +107,9 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 						}
 					} else {
 						writing = false;
+						if(error) {
+							close(channel);
+						}
 					}
 					offer(attachment);
 				}
