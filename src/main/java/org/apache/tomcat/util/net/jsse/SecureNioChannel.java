@@ -24,6 +24,7 @@ package org.apache.tomcat.util.net.jsse;
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.CompletionHandler;
@@ -40,8 +41,6 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 
 import org.apache.tomcat.util.net.NioChannel;
-
-
 
 /**
  * {@code SecureNioChannel}
@@ -82,6 +81,39 @@ public class SecureNioChannel extends NioChannel {
 		}
 
 		this.sslEngine = engine;
+	}
+
+	/**
+	 * Create a new instance of {@code SecureNioChannel}
+	 * 
+	 * @param channel
+	 */
+	protected SecureNioChannel(AsynchronousSocketChannel channel) {
+		super(channel);
+	}
+
+	/**
+	 * 
+	 * @param group
+	 * @param engine
+	 * @return
+	 * @throws IOException
+	 */
+	public static NioChannel open(AsynchronousChannelGroup group, SSLEngine engine)
+			throws IOException {
+		AsynchronousSocketChannel channel = AsynchronousSocketChannel.open(group);
+		return new SecureNioChannel(channel, engine);
+	}
+
+	/**
+	 * 
+	 * @param group
+	 * @return
+	 * @throws IOException
+	 */
+	public static NioChannel open(AsynchronousChannelGroup group) throws IOException {
+		AsynchronousSocketChannel channel = AsynchronousSocketChannel.open(group);
+		return new SecureNioChannel(channel);
 	}
 
 	/*
@@ -467,29 +499,29 @@ public class SecureNioChannel extends NioChannel {
 			SSLEngineResult res = sslEngine.wrap(this.netInBuffer, this.netOutBuffer);
 
 			switch (res.getStatus()) {
-			case OK:
-				// Execute tasks if we need to
-				tryTasks();
-				while (this.netOutBuffer.hasRemaining()) {
-					if (this.channel.write(this.netOutBuffer).get() < 0) {
-						break;
+				case OK:
+					// Execute tasks if we need to
+					tryTasks();
+					while (this.netOutBuffer.hasRemaining()) {
+						if (this.channel.write(this.netOutBuffer).get() < 0) {
+							break;
+						}
+						this.netOutBuffer.compact();
 					}
-					this.netOutBuffer.compact();
-				}
-				break;
-			case BUFFER_OVERFLOW:
-				ByteBuffer tmp = ByteBuffer.allocateDirect(packetBufferSize
-						+ this.netOutBuffer.capacity());
-				this.netOutBuffer.flip();
-				tmp.put(this.netOutBuffer);
-				this.netOutBuffer = tmp;
+					break;
+				case BUFFER_OVERFLOW:
+					ByteBuffer tmp = ByteBuffer.allocateDirect(packetBufferSize
+							+ this.netOutBuffer.capacity());
+					this.netOutBuffer.flip();
+					tmp.put(this.netOutBuffer);
+					this.netOutBuffer = tmp;
 
-				break;
-			case BUFFER_UNDERFLOW:
-				// Cannot happens in case of wrap
-			case CLOSED:
-				// Already closed, so return
-				break;
+					break;
+				case BUFFER_UNDERFLOW:
+					// Cannot happens in case of wrap
+				case CLOSED:
+					// Already closed, so return
+					break;
 			}
 		}
 	}
@@ -533,18 +565,18 @@ public class SecureNioChannel extends NioChannel {
 		this.handshakeStatus = result.getHandshakeStatus();
 
 		switch (result.getStatus()) {
-		case OK:
-			// Execute tasks if we need to
-			tryTasks();
-			break;
-		case CLOSED:
-			// We can't do encryption any more
-			written = -1;
-		case BUFFER_OVERFLOW:
-			throw new BufferOverflowException();
-		case BUFFER_UNDERFLOW:
-			// This case should not happen for a wrap method
-			break;
+			case OK:
+				// Execute tasks if we need to
+				tryTasks();
+				break;
+			case CLOSED:
+				// We can't do encryption any more
+				written = -1;
+			case BUFFER_OVERFLOW:
+				throw new BufferOverflowException();
+			case BUFFER_UNDERFLOW:
+				// This case should not happen for a wrap method
+				break;
 		}
 
 		return written;
@@ -693,84 +725,85 @@ public class SecureNioChannel extends NioChannel {
 		while (!handshakeComplete) {
 
 			switch (handshakeStatus) {
-			case NEED_UNWRAP:
-				int nBytes = 0;
-				if (read) {
-					clientAppData.clear();
-					nBytes = this.channel.read(this.netInBuffer).get();
-				}
-				if (nBytes < 0) {
-					throw new IOException(this + " : EOF encountered during handshake UNWRAP.");
-				} else {
-					boolean cont = false;
-					// Loop while we can perform pure SSLEngine data
-					do {
-						// Prepare the buffer with the incoming data
-						this.netInBuffer.flip();
-						// Call unwrap
-						SSLEngineResult res = sslEngine.unwrap(this.netInBuffer, clientAppData);
-						// Compact the buffer, this is an optional method,
-						// wonder what would happen if we didn't
-						this.netInBuffer.compact();
-						// Read in the status
-						handshakeStatus = res.getHandshakeStatus();
-						if (res.getStatus() == SSLEngineResult.Status.OK) {
-							// Execute tasks if we need to
-							tryTasks();
-							read = true;
-						} else if (res.getStatus() == Status.BUFFER_UNDERFLOW) {
-							read = true;
-						} else if (res.getStatus() == Status.BUFFER_OVERFLOW) {
-							ByteBuffer tmp = ByteBuffer.allocateDirect(packetBufferSize * (++i));
-
-							if (clientAppData.position() > 0) {
-								clientAppData.flip();
-							}
-							tmp.put(clientAppData);
-							clientAppData = tmp;
-							read = false;
-						}
-						// Perform another unwrap?
-						cont = res.getStatus() == SSLEngineResult.Status.OK
-								&& handshakeStatus == HandshakeStatus.NEED_UNWRAP;
-					} while (cont);
-				}
-
-				break;
-			case NEED_WRAP:
-				clientNetData.compact();
-				this.netOutBuffer.clear();
-				SSLEngineResult res = sslEngine.wrap(clientNetData, this.netOutBuffer);
-				handshakeStatus = res.getHandshakeStatus();
-				this.netOutBuffer.flip();
-
-				if (res.getStatus() == Status.OK) {
-					// Execute tasks if we need to
-					tryTasks();
-					// Send the handshaking data to client
-					while (this.netOutBuffer.hasRemaining()) {
-						if (this.channel.write(this.netOutBuffer).get() < 0) {
-							// Handle closed channel
-							throw new IOException(this
-									+ " : EOF encountered during handshake WRAP.");
-						}
+				case NEED_UNWRAP:
+					int nBytes = 0;
+					if (read) {
+						clientAppData.clear();
+						nBytes = this.channel.read(this.netInBuffer).get();
 					}
-				} else {
-					// Wrap should always work with our buffers
-					throw new IOException("Unexpected status:" + res.getStatus()
-							+ " during handshake WRAP.");
-				}
+					if (nBytes < 0) {
+						throw new IOException(this + " : EOF encountered during handshake UNWRAP.");
+					} else {
+						boolean cont = false;
+						// Loop while we can perform pure SSLEngine data
+						do {
+							// Prepare the buffer with the incoming data
+							this.netInBuffer.flip();
+							// Call unwrap
+							SSLEngineResult res = sslEngine.unwrap(this.netInBuffer, clientAppData);
+							// Compact the buffer, this is an optional method,
+							// wonder what would happen if we didn't
+							this.netInBuffer.compact();
+							// Read in the status
+							handshakeStatus = res.getHandshakeStatus();
+							if (res.getStatus() == SSLEngineResult.Status.OK) {
+								// Execute tasks if we need to
+								tryTasks();
+								read = true;
+							} else if (res.getStatus() == Status.BUFFER_UNDERFLOW) {
+								read = true;
+							} else if (res.getStatus() == Status.BUFFER_OVERFLOW) {
+								ByteBuffer tmp = ByteBuffer
+										.allocateDirect(packetBufferSize * (++i));
 
-				break;
-			case NEED_TASK:
-				handshakeStatus = tasks();
+								if (clientAppData.position() > 0) {
+									clientAppData.flip();
+								}
+								tmp.put(clientAppData);
+								clientAppData = tmp;
+								read = false;
+							}
+							// Perform another unwrap?
+							cont = res.getStatus() == SSLEngineResult.Status.OK
+									&& handshakeStatus == HandshakeStatus.NEED_UNWRAP;
+						} while (cont);
+					}
 
-				break;
-			case NOT_HANDSHAKING:
-				throw new SSLHandshakeException("NOT_HANDSHAKING during handshake");
-			case FINISHED:
-				handshakeComplete = true;
-				break;
+					break;
+				case NEED_WRAP:
+					clientNetData.compact();
+					this.netOutBuffer.clear();
+					SSLEngineResult res = sslEngine.wrap(clientNetData, this.netOutBuffer);
+					handshakeStatus = res.getHandshakeStatus();
+					this.netOutBuffer.flip();
+
+					if (res.getStatus() == Status.OK) {
+						// Execute tasks if we need to
+						tryTasks();
+						// Send the handshaking data to client
+						while (this.netOutBuffer.hasRemaining()) {
+							if (this.channel.write(this.netOutBuffer).get() < 0) {
+								// Handle closed channel
+								throw new IOException(this
+										+ " : EOF encountered during handshake WRAP.");
+							}
+						}
+					} else {
+						// Wrap should always work with our buffers
+						throw new IOException("Unexpected status:" + res.getStatus()
+								+ " during handshake WRAP.");
+					}
+
+					break;
+				case NEED_TASK:
+					handshakeStatus = tasks();
+
+					break;
+				case NOT_HANDSHAKING:
+					throw new SSLHandshakeException("NOT_HANDSHAKING during handshake");
+				case FINISHED:
+					handshakeComplete = true;
+					break;
 			}
 		}
 

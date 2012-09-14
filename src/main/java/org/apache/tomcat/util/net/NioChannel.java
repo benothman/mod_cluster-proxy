@@ -232,10 +232,8 @@ public class NioChannel implements AsynchronousByteChannel, NetworkChannel {
 	 * @throws IOException
 	 *             If an I/O error occurs
 	 */
-	public static NioChannel open(AsynchronousChannelGroup group)
-			throws IOException {
-		AsynchronousSocketChannel channel = AsynchronousSocketChannel
-				.open(group);
+	public static NioChannel open(AsynchronousChannelGroup group) throws IOException {
+		AsynchronousSocketChannel channel = AsynchronousSocketChannel.open(group);
 		return new NioChannel(channel);
 	}
 
@@ -595,8 +593,8 @@ public class NioChannel implements AsynchronousByteChannel, NetworkChannel {
 	 * @throws ExecutionException
 	 * @throws InterruptedException
 	 */
-	public int readBytes(final ByteBuffer dst, final long timeout,
-			final TimeUnit unit) throws Exception {
+	public int readBytes(final ByteBuffer dst, final long timeout, final TimeUnit unit)
+			throws Exception {
 
 		try {
 			int x = this.reset(dst);
@@ -619,8 +617,7 @@ public class NioChannel implements AsynchronousByteChannel, NetworkChannel {
 	 * java.lang.Object, java.nio.channels.CompletionHandler)
 	 */
 	@Override
-	public <A> void read(ByteBuffer dst, A attachment,
-			CompletionHandler<Integer, ? super A> handler) {
+	public <A> void read(ByteBuffer dst, A attachment, CompletionHandler<Integer, ? super A> handler) {
 		this.read(dst, 0L, TimeUnit.MILLISECONDS, attachment, handler);
 	}
 
@@ -668,23 +665,22 @@ public class NioChannel implements AsynchronousByteChannel, NetworkChannel {
 	 * @throws ShutdownChannelGroupException
 	 *             If the channel group has terminated
 	 */
-	public <A> void read(ByteBuffer dst, long timeout, TimeUnit unit,
-			A attachment, final CompletionHandler<Integer, ? super A> handler) {
-		
+	public <A> void read(ByteBuffer dst, long timeout, TimeUnit unit, A attachment,
+			final CompletionHandler<Integer, ? super A> handler) {
+
 		final int x = this.reset(dst);
-		this.channel.read(dst, timeout, unit, attachment,
-				new CompletionHandler<Integer, A>() {
+		this.channel.read(dst, timeout, unit, attachment, new CompletionHandler<Integer, A>() {
 
-					@Override
-					public void completed(Integer result, A attach) {
-						handler.completed(result + x, attach);
-					}
+			@Override
+			public void completed(Integer result, A attach) {
+				handler.completed(result + x, attach);
+			}
 
-					@Override
-					public void failed(Throwable exc, A attach) {
-						handler.failed(exc, attach);
-					}
-				});
+			@Override
+			public void failed(Throwable exc, A attach) {
+				handler.failed(exc, attach);
+			}
+		});
 	}
 
 	/**
@@ -770,9 +766,8 @@ public class NioChannel implements AsynchronousByteChannel, NetworkChannel {
 	 * @throws ShutdownChannelGroupException
 	 *             If the channel group has terminated
 	 */
-	public <A> void read(ByteBuffer[] dsts, int offset, int length,
-			long timeout, TimeUnit unit, A attachment,
-			final CompletionHandler<Long, ? super A> handler) {
+	public <A> void read(ByteBuffer[] dsts, int offset, int length, long timeout, TimeUnit unit,
+			A attachment, final CompletionHandler<Long, ? super A> handler) {
 
 		// Retrieve bytes, if any, from the internal buffer
 		final int x = this.reset(dsts[0]);
@@ -916,8 +911,7 @@ public class NioChannel implements AsynchronousByteChannel, NetworkChannel {
 	 * @throws ExecutionException
 	 * @throws InterruptedException
 	 */
-	public int writeBytes(ByteBuffer src, long timeout, TimeUnit unit)
-			throws Exception {
+	public int writeBytes(ByteBuffer src, long timeout, TimeUnit unit) throws Exception {
 		return this.channel.write(src).get(timeout, unit);
 	}
 
@@ -974,8 +968,8 @@ public class NioChannel implements AsynchronousByteChannel, NetworkChannel {
 	 * @throws ShutdownChannelGroupException
 	 *             If the channel group has terminated
 	 */
-	public <A> void write(ByteBuffer src, long timeout, TimeUnit unit,
-			A attachment, final CompletionHandler<Integer, ? super A> handler) {
+	public <A> void write(ByteBuffer src, long timeout, TimeUnit unit, A attachment,
+			final CompletionHandler<Integer, ? super A> handler) {
 
 		this.channel.write(src, timeout, unit, attachment, handler);
 	}
@@ -1059,11 +1053,9 @@ public class NioChannel implements AsynchronousByteChannel, NetworkChannel {
 	 * @throws ShutdownChannelGroupException
 	 *             If the channel group has terminated
 	 */
-	public <A> void write(ByteBuffer[] srcs, int offset, int length,
-			long timeout, TimeUnit unit, A attachment,
-			final CompletionHandler<Long, ? super A> handler) {
-		this.channel.write(srcs, offset, length, timeout, unit, attachment,
-				handler);
+	public <A> void write(ByteBuffer[] srcs, int offset, int length, long timeout, TimeUnit unit,
+			A attachment, final CompletionHandler<Long, ? super A> handler) {
+		this.channel.write(srcs, offset, length, timeout, unit, attachment, handler);
 	}
 
 	/**
@@ -1103,8 +1095,8 @@ public class NioChannel implements AsynchronousByteChannel, NetworkChannel {
 	 * @return the number of bytes forwarded
 	 * @throws Exception
 	 */
-	public int transferTo(NioChannel dst, ByteBuffer buffer, long timeout,
-			TimeUnit unit) throws Exception {
+	public int transferTo(NioChannel dst, ByteBuffer buffer, long timeout, TimeUnit unit)
+			throws Exception {
 
 		if (dst == null) {
 			throw new NullPointerException("Null Destination channel");
@@ -1165,9 +1157,8 @@ public class NioChannel implements AsynchronousByteChannel, NetworkChannel {
 	 * @param handler
 	 *            The handler for consuming the result
 	 */
-	public <A> void transferTo(final NioChannel dst, final ByteBuffer buffer,
-			final long timeout, final TimeUnit unit, A attachment,
-			final CompletionHandler<Integer, ? super A> handler) {
+	public <A> void transferTo(final NioChannel dst, final ByteBuffer buffer, final long timeout,
+			final TimeUnit unit, A attachment, final CompletionHandler<Integer, ? super A> handler) {
 
 		if (dst == null) {
 			throw new NullPointerException("Null Destination channel");
@@ -1178,54 +1169,47 @@ public class NioChannel implements AsynchronousByteChannel, NetworkChannel {
 		}
 
 		// Perform a read operation with this channel
-		this.read(buffer, timeout, unit, attachment,
-				new CompletionHandler<Integer, A>() {
+		this.read(buffer, timeout, unit, attachment, new CompletionHandler<Integer, A>() {
 
-					@Override
-					public void completed(final Integer result, A attachment) {
-						if (result < 0) {
-							failed(new ClosedChannelException(), attachment);
-						} else {
-							// FIXME Adapt the timeout
-							buffer.flip();
-							// Write the received bytes to the destination
-							// channel
-							dst.write(buffer, timeout, unit, attachment,
-									new CompletionHandler<Integer, A>() {
+			@Override
+			public void completed(final Integer result, A attachment) {
+				if (result < 0) {
+					failed(new ClosedChannelException(), attachment);
+				} else {
+					// FIXME Adapt the timeout
+					buffer.flip();
+					// Write the received bytes to the destination
+					// channel
+					dst.write(buffer, timeout, unit, attachment,
+							new CompletionHandler<Integer, A>() {
 
-										@Override
-										public void completed(Integer nb,
-												A attachment) {
-											if (nb < 0) {
-												failed(new ClosedChannelException(),
-														attachment);
-											} else if (buffer.hasRemaining()) {
-												dst.write(buffer, timeout,
-														unit, attachment, this);
-											} else {
-												// The buffer position indicates
-												// the
-												// number of bytes received
-												handler.completed(
-														buffer.position(),
-														attachment);
-											}
-										}
+								@Override
+								public void completed(Integer nb, A attachment) {
+									if (nb < 0) {
+										failed(new ClosedChannelException(), attachment);
+									} else if (buffer.hasRemaining()) {
+										dst.write(buffer, timeout, unit, attachment, this);
+									} else {
+										// The buffer position indicates
+										// the
+										// number of bytes received
+										handler.completed(buffer.position(), attachment);
+									}
+								}
 
-										@Override
-										public void failed(Throwable exc,
-												A attachment) {
-											handler.failed(exc, attachment);
-										}
-									});
-						}
-					}
+								@Override
+								public void failed(Throwable exc, A attachment) {
+									handler.failed(exc, attachment);
+								}
+							});
+				}
+			}
 
-					@Override
-					public void failed(Throwable exc, A attachment) {
-						handler.failed(exc, attachment);
-					}
-				});
+			@Override
+			public void failed(Throwable exc, A attachment) {
+				handler.failed(exc, attachment);
+			}
+		});
 	}
 
 	/**
@@ -1316,8 +1300,7 @@ public class NioChannel implements AsynchronousByteChannel, NetworkChannel {
 	 * 
 	 * @see java.net.StandardSocketOptions
 	 */
-	public <T> NioChannel setOption(SocketOption<T> name, T value)
-			throws IOException {
+	public <T> NioChannel setOption(SocketOption<T> name, T value) throws IOException {
 		this.channel.setOption(name, value);
 		return this;
 	}

@@ -93,10 +93,7 @@ public abstract class NioChannelFactory implements Cloneable {
 	 * @return the default factory
 	 */
 	public static synchronized NioChannelFactory getDefault(AsynchronousChannelGroup threadGroup) {
-		//
-		// optimize typical case: no synch needed
-		//
-
+	
 		if (theFactory == null) {
 			//
 			// Different implementations of this method could
@@ -153,8 +150,8 @@ public abstract class NioChannelFactory implements Cloneable {
 	 * @return the channel opened
 	 * @throws IOException
 	 */
-	public NioChannel open() throws IOException {
-		return NioChannel.open();
+	protected NioChannel open() throws IOException {
+		return NioChannel.open(channelGroup);
 	}
 
 	/**
