@@ -21,8 +21,11 @@
  */
 package org.apache.coyote.http11;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.util.Date;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -198,7 +201,7 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 		int count = 0;
 		int limit = 0;
 		ByteBuffer buffer;
-		
+
 		while (count < length) {
 			buffer = poll();
 			limit = Math.min(buffer.remaining(), length - count);
@@ -515,6 +518,37 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	public abstract int doWrite(ByteChunk chunk, Response res) throws IOException;
 
 	/**
+	 * 
+	 */
+	public void sendError() throws IOException {
+		String fileName = "res" + File.separatorChar + "503.html";
+		fileName = getClass().getResource(".").getFile() + fileName;
+		RandomAccessFile raf = new RandomAccessFile(fileName, "r");
+		long length = raf.length();
+
+		/*
+		 * Content-Type: text/html;charset=utf-8
+		 * Content-Length: 990
+		 * Date: Fri, 14 Sep 2012 14:39:08 GMT
+		 */
+
+		StringBuilder headers = new StringBuilder("HTTP/1.1 503 Service Unavailable\n")
+				.append("Server: Apache-Coyote/1.1\n")
+				.append("Content-Type: text/html;charset=utf-8").append("Content-Length: ")
+				.append(length).append("\n").append("Date: ").append(new Date()).append("\n\n");
+
+		writeToClient(headers.toString().getBytes());
+		byte bytes[] = new byte[1024];
+		int n = 0;
+
+		while ((n = raf.read(bytes)) != -1) {
+			writeToClient(bytes, 0, n);
+		}
+
+		raf.close();
+	}
+
+	/**
 	 * Commit the response.
 	 * 
 	 * @throws IOException
@@ -522,13 +556,14 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 */
 	public void commit() throws IOException {
 
+		System.out.println(getClass().getName() + "#commit()");
+
 		// The response is now committed
 		committed = true;
 		response.setCommitted(true);
-		/*
-		 * if (pos > 0) { // Sending the response header buffer bbuf.put(buf, 0,
-		 * pos); }
-		 */
+		if (pos > 0) { // Sending the response header buffer
+			bbuf.put(buf, 0, pos);
+		}
 	}
 
 	/**
@@ -774,9 +809,8 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 						return chunk.getLength();
 					}
 				}
-				// if (thisTime > bbuf.capacity() - bbuf.position()) {
+
 				if (thisTime > bbuf.remaining()) {
-					// thisTime = bbuf.capacity() - bbuf.position();
 					thisTime = bbuf.remaining();
 				}
 

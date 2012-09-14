@@ -84,7 +84,7 @@ public class ProxyMain {
 			String scheme = System.getProperty("org.apache.coyote.http11.SCHEME", DEFAULT_SCHEME);
 			// Creating the web connector service
 			// use the static NodeService if configured.
-			WebConnectorService service = new WebConnectorService(protocol, scheme, new MCMNodeService());
+			WebConnectorService service = new WebConnectorService(protocol, scheme, new NodeService());
 			// configure the web connector service
 
 			// Setting the address (host:port)
@@ -122,7 +122,7 @@ public class ProxyMain {
 			protocol = System.getProperty("http-protocol", DEFAULT_MCM_PROTOCOL);
 			scheme = System.getProperty("org.jboss.cluster.proxy.http11.SCHEME", DEFAULT_SCHEME);
 			// Creating the web connector service
-			WebConnectorService nodeService = new WebConnectorService(protocol, scheme, null);
+			WebConnectorService nodeService = new WebConnectorService(protocol, scheme, new MCMNodeService());
 			// configure the web connector service
 
 			// Setting the address (host:port)

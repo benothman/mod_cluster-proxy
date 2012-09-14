@@ -57,6 +57,8 @@ public class CoyoteAdapter implements Adapter {
 
 	private static final Logger logger = Logger.getLogger(CoyoteAdapter.class);
 
+	private ByteChunk chunk503;
+
 	/**
 	 * 
 	 */
@@ -128,9 +130,12 @@ public class CoyoteAdapter implements Adapter {
 	/**
 	 * @param request
 	 * @param response
+	 * @throws IOException
 	 */
-	private void sendError(Request request, Response response) {
-
+	private void sendError(Request request, Response response) throws IOException {
+		AbstractInternalOutputBuffer outputBuffer = (AbstractInternalOutputBuffer) response
+				.getOutputBuffer();
+		outputBuffer.sendError();
 	}
 
 	/**
@@ -288,7 +293,12 @@ public class CoyoteAdapter implements Adapter {
 			final org.apache.coyote.Response response) throws Exception {
 
 		postParseRequest(request, response);
-		prepareNode(request, response);
+		try {
+			prepareNode(request, response, null);
+		} catch (Throwable t) {
+			logger.error("No node is available", t);
+			return false;
+		}
 		// Client request
 		AbstractInternalInputBuffer inputBuffer = (AbstractInternalInputBuffer) request
 				.getInputBuffer();
@@ -322,22 +332,44 @@ public class CoyoteAdapter implements Adapter {
 	 * @throws Exception
 	 */
 	private void prepareNode(final org.apache.coyote.Request request,
-			final org.apache.coyote.Response response) throws Exception {
-		Node node = this.connector.getNodeService().getNode(request, null);
-		NioChannel nodeChannel = null;
-		int tries = 0;
+			final org.apache.coyote.Response response, Node failedNode) throws Exception {
 
-		while (nodeChannel == null && tries < Constants.MAX_TRIES) {
-			nodeChannel = this.connector.getConnectionManager().getChannel(node);
-			tries++;
+		boolean error = false;
+		Node node = null;
+		try {
+			node = this.connector.getNodeService().getNode(request, failedNode);
+			response.setNote(Constants.NODE_NOTE, node);
+		} catch (Throwable e) {
+			logger.error(e.getMessage(), e);
+			error = true;
 		}
 
-		if (nodeChannel == null) {
-			// This means that we are not able to get a connection to a node
+		if (node == null) {
+			error = true;
+		}
+
+		if (!error) {
+			NioChannel nodeChannel = null;
+			int tries = 0;
+			try {
+				while (nodeChannel == null && tries < Constants.MAX_TRIES) {
+					nodeChannel = this.connector.getConnectionManager().getChannel(node);
+					tries++;
+				}
+			} catch (Throwable e) {
+				logger.warn(e.getMessage(), e);
+			}
+			if (nodeChannel == null) {
+				error = true;
+			} else {
+				response.setNote(Constants.NODE_CHANNEL_NOTE, nodeChannel);
+			}
+		}
+
+		if (error) {
 			response.setStatus(503);
 			response.setMessage("Service Unavailable");
 			response.addHeader("Server", "Apache-Coyote/1.1");
-
 			if (connector.getXpoweredBy()) {
 				response.addHeader("X-Powered-By", X_POWERED_BY);
 			}
@@ -345,8 +377,6 @@ public class CoyoteAdapter implements Adapter {
 			throw new IOException("Unable to connect to node");
 		}
 
-		response.setNote(Constants.NODE_CHANNEL_NOTE, nodeChannel);
-		response.setNote(Constants.NODE_NOTE, node);
 	}
 
 	/**
