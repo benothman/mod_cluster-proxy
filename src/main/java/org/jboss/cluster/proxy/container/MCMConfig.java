@@ -42,6 +42,7 @@ public class MCMConfig {
 			thread = new Thread(new MCMConfigBackgroundProcessor(), "MCMConfigBackgroundProcessor");
             thread.setDaemon(true);
 		    thread.start();
+
 		}
 		
 	}
@@ -59,7 +60,8 @@ public class MCMConfig {
                 // check if the value have changed otherwise the node may be broken.
                 checkHealthNode();
             }
-		}		 
+		}
+		 
 	 }
 
 	public void insertupdate(Node node) {
@@ -210,11 +212,13 @@ public class MCMConfig {
 		}
 	}
 	
-	/* get the least loaded node according to the tabel values */
+	/* get the least loaded node according to the tablel values */
 
 	public Node getNode() {
 		Node node = null;
 		for (Node nod : getNodes()) {
+			if (nod.getStatus() == Node.NodeStatus.NODE_DOWN)
+				continue; // skip it.
 			if (node != null) {
 				int status = ((node.getElected() - node.getOldelected()) * 1000) / node.getLoad();
 				int status1 = ((nod.getElected() - nod.getOldelected()) * 1000) / nod.getLoad();
