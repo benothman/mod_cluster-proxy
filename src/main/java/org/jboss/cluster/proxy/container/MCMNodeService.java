@@ -4,6 +4,7 @@ import org.apache.coyote.Request;
 import org.apache.tomcat.util.http.Cookies;
 import org.apache.tomcat.util.http.ServerCookie;
 import org.jboss.cluster.proxy.NodeService;
+import org.jboss.cluster.proxy.container.Node.NodeStatus;
 
 public class MCMNodeService extends NodeService {
 	static MCMConfig conf = MCMPAdapter.conf;
@@ -44,6 +45,15 @@ public class MCMNodeService extends NodeService {
         }
         System.out.println("getNode returns: " + node);
         return node;
+	}
+	@Override
+	public Node getNode(Request request, Node failed) {
+		System.out.println("MCMNodeService: getNode (failed:" + failed + ")");
+		if (failed != null) {
+			failed.setStatus(NodeStatus.NODE_DOWN);
+			conf.insertupdate(failed);
+		}
+		return this.getNode(request);
 	}
 
 }
