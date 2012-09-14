@@ -288,8 +288,42 @@ public class CoyoteAdapter implements Adapter {
 			final org.apache.coyote.Response response) throws Exception {
 
 		postParseRequest(request, response);
-		Node node = this.connector.getNodeService().getNode(request, null);
+		prepareNode(request, response);
+		// Client request
+		AbstractInternalInputBuffer inputBuffer = (AbstractInternalInputBuffer) request
+				.getInputBuffer();
 
+		final ByteBuffer inBuffer = (ByteBuffer) inputBuffer.getByteBuffer();
+		inBuffer.clear();
+
+		// Client response
+		AbstractInternalOutputBuffer outputBuffer = (AbstractInternalOutputBuffer) response
+				.getOutputBuffer();
+		final ByteBuffer outBuffer = (ByteBuffer) outputBuffer.getByteBuffer().clear();
+
+		// Put data to forward to the node in the byte buffer
+		inBuffer.put(inputBuffer.getBuffer(), 0, inputBuffer.getLastValid()).flip();
+
+		NioChannel clientChannel = ((InternalNioInputBuffer) inputBuffer).getChannel();
+
+		// Put relevant elements in the map attachment
+
+		response.setNote(Constants.IN_BUFFER_NOTE, inBuffer);
+		response.setNote(Constants.OUT_BUFFER_NOTE, outBuffer);
+		response.setNote(Constants.CLIENT_CHANNEL_NOTE, clientChannel);
+
+		return true;
+	}
+
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @throws Exception
+	 */
+	private void prepareNode(final org.apache.coyote.Request request,
+			final org.apache.coyote.Response response) throws Exception {
+		Node node = this.connector.getNodeService().getNode(request, null);
 		NioChannel nodeChannel = null;
 		int tries = 0;
 
@@ -311,31 +345,8 @@ public class CoyoteAdapter implements Adapter {
 			throw new IOException("Unable to connect to node");
 		}
 
-		// Client request
-		AbstractInternalInputBuffer inputBuffer = (AbstractInternalInputBuffer) request
-				.getInputBuffer();
-
-		final ByteBuffer inBuffer = (ByteBuffer) inputBuffer.getByteBuffer();
-		inBuffer.clear();
-
-		// Client response
-		AbstractInternalOutputBuffer outputBuffer = (AbstractInternalOutputBuffer) response
-				.getOutputBuffer();
-		final ByteBuffer outBuffer = (ByteBuffer) outputBuffer.getByteBuffer().clear();
-
-		// Put data to forward to the node in the byte buffer
-		inBuffer.put(inputBuffer.getBuffer(), 0, inputBuffer.getLastValid()).flip();
-
-		NioChannel clientChannel = ((InternalNioInputBuffer) inputBuffer).getChannel();
-
-		// Put relevant elements in the map attachment
 		response.setNote(Constants.NODE_CHANNEL_NOTE, nodeChannel);
 		response.setNote(Constants.NODE_NOTE, node);
-		response.setNote(Constants.IN_BUFFER_NOTE, inBuffer);
-		response.setNote(Constants.OUT_BUFFER_NOTE, outBuffer);
-		response.setNote(Constants.CLIENT_CHANNEL_NOTE, clientChannel);
-
-		return true;
 	}
 
 	/**
