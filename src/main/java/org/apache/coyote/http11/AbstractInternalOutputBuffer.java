@@ -526,15 +526,9 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 		RandomAccessFile raf = new RandomAccessFile(fileName, "r");
 		long length = raf.length();
 
-		/*
-		 * Content-Type: text/html;charset=utf-8
-		 * Content-Length: 990
-		 * Date: Fri, 14 Sep 2012 14:39:08 GMT
-		 */
-
 		StringBuilder headers = new StringBuilder("HTTP/1.1 503 Service Unavailable\n")
 				.append("Server: Apache-Coyote/1.1\n")
-				.append("Content-Type: text/html;charset=utf-8").append("Content-Length: ")
+				.append("Content-Type: text/html;charset=utf-8\n").append("Content-Length: ")
 				.append(length).append("\n").append("Date: ").append(new Date()).append("\n\n");
 
 		writeToClient(headers.toString().getBytes());
@@ -556,14 +550,14 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 */
 	public void commit() throws IOException {
 
-		System.out.println(getClass().getName() + "#commit()");
-
 		// The response is now committed
 		committed = true;
 		response.setCommitted(true);
-		if (pos > 0) { // Sending the response header buffer
-			bbuf.put(buf, 0, pos);
-		}
+		/*
+		 * if (pos > 0) { // Sending the response header buffer
+		 * bbuf.put(buf, 0, pos);
+		 * }
+		 */
 	}
 
 	/**
