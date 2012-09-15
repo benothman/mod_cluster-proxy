@@ -57,18 +57,12 @@ public class CoyoteAdapter implements Adapter {
 
 	private static final Logger logger = Logger.getLogger(CoyoteAdapter.class);
 
-	private ByteChunk chunk503;
-
 	/**
 	 * 
 	 */
 	protected static final boolean ALLOW_BACKSLASH = Boolean.valueOf(
 			System.getProperty("org.apache.catalina.connector.CoyoteAdapter.ALLOW_BACKSLASH",
 					"false")).booleanValue();
-
-	protected static final String X_POWERED_BY = System.getProperty(
-			"org.apache.catalina.connector.CoyoteAdapter.X_POWERED_BY",
-			"Servlet/3.0; JBoss Proxy-1");
 
 	/**
 	 * The CoyoteConnector with which this processor is associated.
@@ -293,6 +287,9 @@ public class CoyoteAdapter implements Adapter {
 			final org.apache.coyote.Response response) throws Exception {
 
 		postParseRequest(request, response);
+		
+		
+		
 		try {
 			prepareNode(request, response, null);
 		} catch (Throwable t) {
@@ -370,9 +367,6 @@ public class CoyoteAdapter implements Adapter {
 			response.setStatus(503);
 			response.setMessage("Service Unavailable");
 			response.addHeader("Server", "Apache-Coyote/1.1");
-			if (connector.getXpoweredBy()) {
-				response.addHeader("X-Powered-By", X_POWERED_BY);
-			}
 
 			throw new IOException("Unable to connect to node");
 		}

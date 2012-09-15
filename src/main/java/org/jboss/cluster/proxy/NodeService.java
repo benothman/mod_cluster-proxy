@@ -29,6 +29,7 @@ import java.util.UUID;
 import org.apache.LifeCycleServiceAdapter;
 import org.apache.coyote.Request;
 import org.jboss.cluster.proxy.container.Node;
+import org.jboss.cluster.proxy.container.Node.NodeStatus;
 import org.jboss.cluster.proxy.xml.XmlConfig;
 import org.jboss.cluster.proxy.xml.XmlNode;
 import org.jboss.cluster.proxy.xml.XmlNodes;
@@ -45,6 +46,7 @@ public class NodeService extends LifeCycleServiceAdapter {
 
 	private static final Logger logger = Logger.getLogger(NodeService.class);
 	private List<Node> nodes;
+	private List<Node> failedNodes;
 	private Random random;
 
 	// private MCMConfig config = MCMPAdapter.conf;
@@ -69,6 +71,7 @@ public class NodeService extends LifeCycleServiceAdapter {
 		logger.info("Initializing Node Service");
 		this.random = new Random();
 		this.nodes = new ArrayList<Node>();
+		this.failedNodes = new ArrayList<>();
 
 		XmlNodes xmlNodes = XmlConfig.loadNodes();
 		logger.info("Adding new nodes : " + xmlNodes);
@@ -87,8 +90,15 @@ public class NodeService extends LifeCycleServiceAdapter {
 	 * @return a node
 	 */
 	private Node getNode() {
-		int index = random.nextInt(this.nodes.size());
-		return this.nodes.get(index);
+		Node node = null;
+		if (!this.nodes.isEmpty()) {
+			int index = random.nextInt(this.nodes.size());
+			node = this.nodes.get(index);
+		}
+
+		System.out.println("Selected node --> " + node.getJvmRoute());
+		
+		return node;
 	}
 
 	/**
@@ -99,8 +109,8 @@ public class NodeService extends LifeCycleServiceAdapter {
 	 */
 	public Node getNode(Request request) {
 		// URI decoding
-		String requestURI = request.decodedURI().toString();
-
+		//String requestURI = request.decodedURI().toString();
+		
 		// TODO complete code here
 
 		return getNode();
@@ -116,22 +126,13 @@ public class NodeService extends LifeCycleServiceAdapter {
 	 */
 	public Node getNode(Request request, Node failedNode) {
 
-		if (failedNode == null) {
-			return getNode(request);
+		if (failedNode != null) {
+			failedNode.setStatus(NodeStatus.NODE_DOWN);
+			failedNodes.add(failedNode);
+			nodes.remove(failedNode);
 		}
-		
-		// TODO mark the failed node as unreachable and try to get new node
-		
-		
-		return getNode();
+
+		return getNode(request);
 	}
 
-	/**
-	 * @param contextPath
-	 * @return a node hosting the specified context path
-	 */
-	private Node getNode(String contextPath) {
-		// TODO
-		return getNode();
-	}
 }

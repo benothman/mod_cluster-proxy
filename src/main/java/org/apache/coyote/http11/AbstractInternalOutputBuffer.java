@@ -23,7 +23,7 @@ package org.apache.coyote.http11;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Date;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -65,7 +65,6 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 
 	protected ConcurrentLinkedQueue<ByteBuffer> localPool = new ConcurrentLinkedQueue<>();
 
-
 	/**
 	 * Associated Coyote response.
 	 */
@@ -76,9 +75,8 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 */
 	protected MimeHeaders headers;
 
-	protected boolean error = false; 
-	
-	
+	protected boolean error = false;
+
 	/**
 	 * Committed flag.
 	 */
@@ -524,34 +522,33 @@ public abstract class AbstractInternalOutputBuffer implements OutputBuffer {
 	 */
 	public void sendError() throws IOException {
 		error = true;
-		System.out.println(getClass().getName()+"#sendError()");
-		
-		String fileName = "res" + File.separatorChar + "503.html";
-		fileName = getClass().getResource(".").getFile() + fileName;
-		RandomAccessFile raf = new RandomAccessFile(fileName, "r");
-		long length = raf.length();
+		try {
+			InputStream is = getClass()
+					.getResourceAsStream("res" + File.separatorChar + "503.html");
+			long length = is.available();
 
-		StringBuilder headers = new StringBuilder("HTTP/1.1 503 Service not available\n");
-		headers.append("Server: Apache-Coyote/1.1\n").append("Connection: close\n")
-				.append("Content-Type: text/html;charset=utf-8\n")
-				.append("Content-Length: " + length + "\n").append("Date: " + new Date())
-				.append("\n\n");
+			StringBuilder headers = new StringBuilder("HTTP/1.1 503 Service not available\n");
+			headers.append("Server: Apache-Coyote/1.1\n").append("Connection: close\n")
+					.append("Content-Type: text/html;charset=utf-8\n")
+					.append("Content-Length: " + length + "\n").append("Date: " + new Date())
+					.append("\n\n");
 
-		writeToClient(headers.toString().getBytes());
-		byte bytes[] = new byte[1024];
-		int n = 0;
+			writeToClient(headers.toString().getBytes());
+			byte bytes[] = new byte[(int) length];
+			int n = 0;
 
-		while ((n = raf.read(bytes)) != -1) {
-			writeToClient(bytes, 0, n);
+			while ((n = is.read(bytes)) != -1) {
+				writeToClient(bytes, 0, n);
+			}
+
+			is.close();
+
+			AbstractHttp11Processor<?> processor = (AbstractHttp11Processor<?>) response.hook;
+			processor.endRequest();
+			processor.nextRequest();
+		} catch (Throwable t) {
+			t.printStackTrace();
 		}
-
-		raf.close();
-		
-		
-		AbstractHttp11Processor<?> processor = (AbstractHttp11Processor<?>) response.hook;
-		processor.endRequest();
-		processor.nextRequest();
-		
 	}
 
 	/**

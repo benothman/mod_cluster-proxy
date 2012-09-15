@@ -44,10 +44,6 @@ public final class Connector {
 
 	private static Logger log = Logger.getLogger(Connector.class);
 
-	protected static final boolean X_POWERED_BY = Boolean.valueOf(
-			System.getProperty("org.apache.catalina.connector.X_POWERED_BY", "false"))
-			.booleanValue();
-
 	protected static final String URI_ENCODING = System.getProperty(
 			"org.apache.catalina.connector.URI_ENCODING", "UTF-8");
 
@@ -161,11 +157,6 @@ public final class Connector {
 	 * URI encoding as body.
 	 */
 	protected boolean useBodyEncodingForURI = USE_BODY_ENCODING_FOR_QUERY_STRING;
-
-	/**
-	 * Is generation of X-Powered-By response header enabled/disabled?
-	 */
-	protected boolean xpoweredBy = X_POWERED_BY;
 
 	/**
 	 * 
@@ -652,31 +643,6 @@ public final class Connector {
 	 */
 	public void setAllowedHosts(Set<String> allowedHosts) {
 		this.allowedHosts = allowedHosts;
-	}
-
-	/**
-	 * Indicates whether the generation of an X-Powered-By response header for
-	 * servlet-generated responses is enabled or disabled for this Connector.
-	 * 
-	 * @return true if generation of X-Powered-By response header is enabled,
-	 *         false otherwise
-	 */
-	public boolean getXpoweredBy() {
-		return xpoweredBy;
-	}
-
-	/**
-	 * Enables or disables the generation of an X-Powered-By header (with value
-	 * Servlet/2.4) for all servlet-generated responses returned by this
-	 * Connector.
-	 * 
-	 * @param xpoweredBy
-	 *            true if generation of X-Powered-By response header is to be
-	 *            enabled, false otherwise
-	 */
-	public void setXpoweredBy(boolean xpoweredBy) {
-		this.xpoweredBy = xpoweredBy;
-		// setProperty("xpoweredBy", String.valueOf(xpoweredBy));
 	}
 
 	/**
