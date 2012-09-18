@@ -62,7 +62,7 @@ public class Node implements Serializable {
      */
 	private static final AtomicInteger counter = new AtomicInteger(0);
 	private long id;
-	private NodeStatus status;
+	private NodeStatus status = NodeStatus.NODE_UP;
 	private String balancer = "mycluster";
 	private String jvmRoute;
 	private String domain = "";
@@ -157,6 +157,48 @@ public class Node implements Serializable {
 	 */
 	public void setStatus(NodeStatus status) {
 		this.status = status;
+	}
+
+	/**
+	 * @return <tt>true</tt> if the node is up else <tt>false</tt>
+	 */
+	public boolean isNodeUp() {
+		return this.status == NodeStatus.NODE_UP;
+	}
+
+	/**
+	 * Set this node status to {@link NodeStatus.NODE_UP}
+	 */
+	public void setNodeUp() {
+		setStatus(NodeStatus.NODE_UP);
+	}
+
+	/**
+	 * @return <tt>true</tt> if the node is down else <tt>false</tt>
+	 */
+	public boolean isNodeDown() {
+		return this.status == NodeStatus.NODE_DOWN;
+	}
+
+	/**
+	 * Set this node status to {@link NodeStatus.NODE_DOWN}
+	 */
+	public void setNodeDown() {
+		setStatus(NodeStatus.NODE_DOWN);
+	}
+
+	/**
+	 * @return <tt>true</tt> if the node is paused else <tt>false</tt>
+	 */
+	public boolean isNodePaused() {
+		return this.status == NodeStatus.NODE_PAUSED;
+	}
+
+	/**
+	 * Set this node status to {@link NodeStatus.NODE_PAUSED}
+	 */
+	public void setNodePaused() {
+		setStatus(NodeStatus.NODE_PAUSED);
 	}
 
 	/**

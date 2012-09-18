@@ -247,8 +247,9 @@ public final class Connector {
 			return;
 		}
 		started = true;
-
 		try {
+			this.nodeService.start();
+			this.connectionManager.start();
 			protocolHandler.start();
 		} catch (Exception e) {
 			throw new Exception(sm.getString("coyoteConnector.protocolHandlerStartFailed", e));

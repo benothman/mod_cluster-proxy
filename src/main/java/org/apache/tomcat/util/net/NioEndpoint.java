@@ -266,6 +266,11 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 		if (running) {
 			running = false;
 			unlockAccept();
+			try {
+				this.listener.setOption(StandardSocketOptions.SO_LINGER, 0);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 

@@ -48,6 +48,8 @@ public class NodeService extends LifeCycleServiceAdapter {
 	private List<Node> nodes;
 	private List<Node> failedNodes;
 	private Random random;
+	private Runnable task;
+	private Runnable healthCheckerTask;
 
 	// private MCMConfig config = MCMPAdapter.conf;
 
@@ -83,34 +85,167 @@ public class NodeService extends LifeCycleServiceAdapter {
 			this.nodes.add(node);
 		}
 		setInitialized(true);
-		logger.info("Node Service initialized");
 
-		Thread t = new Thread() {
+		this.healthCheckerTask = new Runnable() {
+
+			@Override
 			public void run() {
-				while(true) {
+				List<Node> tmp = new ArrayList<>();
+				while (true) {
+					while (failedNodes.isEmpty()) {
+						synchronized (failedNodes) {
+							try {
+								// max wait is 5 seconds
+								failedNodes.wait(5000);
+							} catch (InterruptedException e) {
+								// NOPE
+							}
+						}
+					}
+
+					for (Node node : failedNodes) {
+						if (checkHealth(node)) {
+							node.setNodeUp();
+							tmp.add(node);
+						}
+					}
+
+					if (!tmp.isEmpty()) {
+						for (Node node : tmp) {
+							synchronized (nodes) {
+								nodes.add(node);
+							}
+						}
+
+						synchronized (failedNodes) {
+							failedNodes.removeAll(tmp);
+						}
+						tmp.clear();
+					}
+
 					try {
+						// Try after 5 seconds
+						Thread.sleep(5000);
+					} catch (InterruptedException e) {
+						// NOPE
+					}
+				}
+			}
+
+			/**
+			 * Check the health of the failed node
+			 * 
+			 * @param node
+			 * @return <tt>true</tt> if the node is reachable else
+			 *         <tt>false</tt>
+			 */
+			public boolean checkHealth(Node node) {
+				if (node == null) {
+					return false;
+				}
+				boolean ok = false;
+				java.net.Socket s = null;
+				try {
+					s = new java.net.Socket(node.getHostname(), node.getPort());
+					s.setSoLinger(true, 0);
+					ok = true;
+				} catch (Exception e) {
+					// Ignore
+				} finally {
+					if (s != null) {
+						try {
+							s.close();
+						} catch (Exception e) {
+							// Ignore
+						}
+					}
+				}
+
+				return ok;
+			}
+		};
+
+		task = new Runnable() {
+
+			@Override
+			public void run() {
+				List<Node> tmp = new ArrayList<>();
+				while (true) {
+					try {
+						Thread.sleep(5000);
+						for (Node n : nodes) {
+							if (n.getStatus() == NodeStatus.NODE_DOWN) {
+								tmp.add(n);
+							}
+						}
+						if (!tmp.isEmpty()) {
+							nodes.removeAll(tmp);
+							failedNodes.addAll(tmp);
+							tmp.clear();
+						}
+
+						for (Node n : failedNodes) {
+							if (n.getStatus() == NodeStatus.NODE_UP) {
+								tmp.add(n);
+							}
+						}
+						if (!tmp.isEmpty()) {
+							failedNodes.removeAll(tmp);
+							nodes.addAll(tmp);
+							tmp.clear();
+						}
+
 						printNodes();
-						sleep(5000);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
 				}
 			}
 		};
+
+		logger.info("Node Service initialized");
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.apache.LifeCycleServiceAdapter#start()
+	 */
+	@Override
+	public void start() throws Exception {
+		// NOPE
+		Thread t = new Thread(this.task);
 		t.setDaemon(true);
 		t.start();
+
+		Thread healthThread = new Thread(this.healthCheckerTask);
+		healthThread.setDaemon(true);
+		healthThread.start();
 	}
 
 	/**
 	 * @return a node
 	 */
 	private Node getNode() {
-		if (!this.nodes.isEmpty()) {
-			int index = random.nextInt(this.nodes.size());
-			return this.nodes.get(index);
-		}
+		return (this.nodes.isEmpty() ? null : getNode(0));
+	}
 
-		return null;
+	/**
+	 * Select a node randomly
+	 * 
+	 * @param n
+	 *            the number of tries
+	 * @return a {@link Node}
+	 * @see #getNode()
+	 */
+	private Node getNode(int n) {
+		if (n >= this.nodes.size()) {
+			return null;
+		} else {
+			int index = random.nextInt(this.nodes.size());
+			Node node = this.nodes.get(index);
+			return (node.isNodeUp() ? node : getNode(n + 1));
+		}
 	}
 
 	/**
@@ -129,7 +264,7 @@ public class NodeService extends LifeCycleServiceAdapter {
 	}
 
 	public void printNodes() {
-		StringBuilder sb = new StringBuilder(" Available nodes : [");
+		StringBuilder sb = new StringBuilder("--> Available nodes : [");
 		int i = 0;
 		for (Node n : this.nodes) {
 			sb.append(n.getHostname() + ":" + n.getPort());
@@ -171,11 +306,8 @@ public class NodeService extends LifeCycleServiceAdapter {
 	 */
 	public void nodeDown(Node failedNode) {
 		if (failedNode != null) {
-			failedNode.setStatus(NodeStatus.NODE_DOWN);
-			failedNodes.add(failedNode);
-			nodes.remove(failedNode);
+			failedNode.setNodeDown();
 		}
-		printNodes();
 	}
 
 }

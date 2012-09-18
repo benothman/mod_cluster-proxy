@@ -40,7 +40,6 @@ import org.apache.tomcat.util.buf.CharChunk;
 import org.apache.tomcat.util.buf.MessageBytes;
 import org.apache.tomcat.util.net.NioChannel;
 import org.apache.tomcat.util.net.SocketStatus;
-import org.jboss.cluster.proxy.NodeService;
 import org.jboss.cluster.proxy.container.Node;
 import org.jboss.logging.Logger;
 
@@ -358,7 +357,6 @@ public class CoyoteAdapter implements Adapter {
 				}
 			}
 		} catch (Throwable t) {
-			logger.error("*******" + t.getMessage(), t);
 			this.connector.getNodeService().nodeDown(node);
 			prepareNode(request, response, node, n + 1);
 			return;
