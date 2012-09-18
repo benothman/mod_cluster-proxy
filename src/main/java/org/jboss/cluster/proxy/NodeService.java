@@ -95,7 +95,7 @@ public class NodeService extends LifeCycleServiceAdapter {
 					while (failedNodes.isEmpty()) {
 						synchronized (failedNodes) {
 							try {
-								// max wait is 5 seconds
+								// Waits at most 5 seconds
 								failedNodes.wait(5000);
 							} catch (InterruptedException e) {
 								// NOPE
@@ -111,10 +111,8 @@ public class NodeService extends LifeCycleServiceAdapter {
 					}
 
 					if (!tmp.isEmpty()) {
-						for (Node node : tmp) {
-							synchronized (nodes) {
-								nodes.add(node);
-							}
+						synchronized (nodes) {
+							nodes.addAll(tmp);
 						}
 
 						synchronized (failedNodes) {
@@ -174,7 +172,7 @@ public class NodeService extends LifeCycleServiceAdapter {
 					try {
 						Thread.sleep(5000);
 						for (Node n : nodes) {
-							if (n.getStatus() == NodeStatus.NODE_DOWN) {
+							if (n.isNodeDown()) {
 								tmp.add(n);
 							}
 						}
@@ -185,7 +183,7 @@ public class NodeService extends LifeCycleServiceAdapter {
 						}
 
 						for (Node n : failedNodes) {
-							if (n.getStatus() == NodeStatus.NODE_UP) {
+							if (n.isNodeUp()) {
 								tmp.add(n);
 							}
 						}
