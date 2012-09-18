@@ -88,8 +88,8 @@ public class NodeService extends LifeCycleServiceAdapter {
 		Thread t = new Thread() {
 			public void run() {
 				while(true) {
-					printNodes();
 					try {
+						printNodes();
 						sleep(5000);
 					} catch (InterruptedException e) {
 						e.printStackTrace();

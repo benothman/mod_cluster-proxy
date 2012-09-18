@@ -171,7 +171,8 @@ public class ProxyMain {
 						if (line.isEmpty()) {
 							continue;
 						}
-						if (line.equalsIgnoreCase("stop") || line.equalsIgnoreCase("quit")) {
+						
+						if ("stop".equalsIgnoreCase(line) || "quit".equalsIgnoreCase(line) || "exit".equalsIgnoreCase(line)) {
 							logger.info("Processing command '" + line + "'");
 							break;
 						} else {

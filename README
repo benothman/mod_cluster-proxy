@@ -20,4 +20,40 @@
  * site: http://www.fsf.org.
  */
 
+@author <a href="mailto:jclere@redhat.com">Jean-Frederic Clere</a>
+@author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
+
+This project is a prototype of a reverse proxy for JBoss Application Server 7.
+The project is based on the JBossweb NIO.2 web connector. The goal of the work
+is to provide a pure Java solution as an alternative to the current proxy based
+on the Apache httpd.
+
+Project requirements:
+ 1) JDK 7 installed which can be downloaded from oracle web site
+   
+    http://www.oracle.com/technetwork/java/javase/downloads/index.html
+   
+ 2) Maven 3.x.x installed which can be installed from Maven web site
+   
+    http://maven.apache.org/download.html
+
+To run the project, you can follow the steps below:
+
+ 1) Download the source code form the repository
+
+ 2) Actually, the project supports only static node configuration, so edit the
+    file "conf/nodes.xml" and specify the address and the port number of each
+    node. Other configurations may be specified in the files "conf/*.properties"
+
+ 3) Open a command line prompt, navigate to the project folder, and type the
+    following command:
+   
+    install_dir/mod_cluster-proxy$ sh build.sh
+   
+ 4) To run the application, just type the command line:
+   
+    install_dir/mod_cluster-proxy$ sh run.sh
+   
+    You can also edit the file "run.sh" to modify start up configurations. 
+
 
