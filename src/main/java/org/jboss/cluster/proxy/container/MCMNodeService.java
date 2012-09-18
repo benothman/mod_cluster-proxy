@@ -12,6 +12,16 @@ public class MCMNodeService extends NodeService {
 	public void init() throws Exception {
 		// Nothing to do :D
 	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see org.jboss.cluster.proxy.NodeService#start()
+	 */
+	@Override
+	public void start() {
+		// Nothing to do :D
+	}
+	
 	@Override
 	public Node getNode(Request request) {
 		System.out.println("MCMNodeService: getNode");

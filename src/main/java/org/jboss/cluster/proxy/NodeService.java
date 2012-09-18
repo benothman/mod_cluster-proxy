@@ -29,7 +29,6 @@ import java.util.UUID;
 import org.apache.LifeCycleServiceAdapter;
 import org.apache.coyote.Request;
 import org.jboss.cluster.proxy.container.Node;
-import org.jboss.cluster.proxy.container.Node.NodeStatus;
 import org.jboss.cluster.proxy.xml.XmlConfig;
 import org.jboss.cluster.proxy.xml.XmlNode;
 import org.jboss.cluster.proxy.xml.XmlNodes;
@@ -48,8 +47,6 @@ public class NodeService extends LifeCycleServiceAdapter {
 	private List<Node> nodes;
 	private List<Node> failedNodes;
 	private Random random;
-	private Runnable task;
-	private Runnable healthCheckerTask;
 
 	// private MCMConfig config = MCMPAdapter.conf;
 
@@ -72,7 +69,7 @@ public class NodeService extends LifeCycleServiceAdapter {
 
 		logger.info("Initializing Node Service");
 		this.random = new Random();
-		this.nodes = new ArrayList<Node>();
+		this.nodes = new ArrayList<>();
 		this.failedNodes = new ArrayList<>();
 
 		XmlNodes xmlNodes = XmlConfig.loadNodes();
@@ -85,122 +82,6 @@ public class NodeService extends LifeCycleServiceAdapter {
 			this.nodes.add(node);
 		}
 		setInitialized(true);
-
-		this.healthCheckerTask = new Runnable() {
-
-			@Override
-			public void run() {
-				List<Node> tmp = new ArrayList<>();
-				while (true) {
-					while (failedNodes.isEmpty()) {
-						synchronized (failedNodes) {
-							try {
-								// Waits at most 5 seconds
-								failedNodes.wait(5000);
-							} catch (InterruptedException e) {
-								// NOPE
-							}
-						}
-					}
-
-					for (Node node : failedNodes) {
-						if (checkHealth(node)) {
-							node.setNodeUp();
-							tmp.add(node);
-						}
-					}
-
-					if (!tmp.isEmpty()) {
-						synchronized (nodes) {
-							nodes.addAll(tmp);
-						}
-
-						synchronized (failedNodes) {
-							failedNodes.removeAll(tmp);
-						}
-						tmp.clear();
-					}
-
-					try {
-						// Try after 5 seconds
-						Thread.sleep(5000);
-					} catch (InterruptedException e) {
-						// NOPE
-					}
-				}
-			}
-
-			/**
-			 * Check the health of the failed node
-			 * 
-			 * @param node
-			 * @return <tt>true</tt> if the node is reachable else
-			 *         <tt>false</tt>
-			 */
-			public boolean checkHealth(Node node) {
-				if (node == null) {
-					return false;
-				}
-				boolean ok = false;
-				java.net.Socket s = null;
-				try {
-					s = new java.net.Socket(node.getHostname(), node.getPort());
-					s.setSoLinger(true, 0);
-					ok = true;
-				} catch (Exception e) {
-					// Ignore
-				} finally {
-					if (s != null) {
-						try {
-							s.close();
-						} catch (Exception e) {
-							// Ignore
-						}
-					}
-				}
-
-				return ok;
-			}
-		};
-
-		task = new Runnable() {
-
-			@Override
-			public void run() {
-				List<Node> tmp = new ArrayList<>();
-				while (true) {
-					try {
-						Thread.sleep(5000);
-						for (Node n : nodes) {
-							if (n.isNodeDown()) {
-								tmp.add(n);
-							}
-						}
-						if (!tmp.isEmpty()) {
-							nodes.removeAll(tmp);
-							failedNodes.addAll(tmp);
-							tmp.clear();
-						}
-
-						for (Node n : failedNodes) {
-							if (n.isNodeUp()) {
-								tmp.add(n);
-							}
-						}
-						if (!tmp.isEmpty()) {
-							failedNodes.removeAll(tmp);
-							nodes.addAll(tmp);
-							tmp.clear();
-						}
-
-						printNodes();
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-		};
-
 		logger.info("Node Service initialized");
 	}
 
@@ -211,14 +92,21 @@ public class NodeService extends LifeCycleServiceAdapter {
 	 */
 	@Override
 	public void start() throws Exception {
-		// NOPE
-		Thread t = new Thread(this.task);
+		// start new thread for node status checker task
+		startNewDaemonThread(new NodeStatusChecker());
+		// Start new thread for failed node health check
+		startNewDaemonThread(new HealthChecker());
+	}
+
+	/**
+	 * Create and start a new thread for the specified target task
+	 * 
+	 * @param task
+	 */
+	private void startNewDaemonThread(Runnable task) {
+		Thread t = new Thread(task);
 		t.setDaemon(true);
 		t.start();
-
-		Thread healthThread = new Thread(this.healthCheckerTask);
-		healthThread.setDaemon(true);
-		healthThread.start();
 	}
 
 	/**
@@ -261,7 +149,14 @@ public class NodeService extends LifeCycleServiceAdapter {
 		return getNode();
 	}
 
+	/**
+	 * 
+	 */
 	public void printNodes() {
+		if (this.nodes.isEmpty()) {
+			logger.info("No nodes available");
+			return;
+		}
 		StringBuilder sb = new StringBuilder("--> Available nodes : [");
 		int i = 0;
 		for (Node n : this.nodes) {
@@ -308,4 +203,136 @@ public class NodeService extends LifeCycleServiceAdapter {
 		}
 	}
 
+	/**
+	 * {@code HealthChecker}
+	 * 
+	 * Created on Sep 18, 2012 at 3:46:36 PM
+	 * 
+	 * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
+	 */
+	private class HealthChecker implements Runnable {
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see java.lang.Runnable#run()
+		 */
+		@Override
+		public void run() {
+			List<Node> tmp = new ArrayList<>();
+			while (true) {
+				while (failedNodes.isEmpty()) {
+					synchronized (failedNodes) {
+						try {
+							// Waits at most 5 seconds
+							failedNodes.wait(5000);
+						} catch (InterruptedException e) {
+							// NOPE
+						}
+					}
+				}
+
+				for (Node node : failedNodes) {
+					if (checkHealth(node)) {
+						node.setNodeUp();
+						tmp.add(node);
+					}
+				}
+
+				if (!tmp.isEmpty()) {
+					synchronized (nodes) {
+						nodes.addAll(tmp);
+					}
+
+					synchronized (failedNodes) {
+						failedNodes.removeAll(tmp);
+					}
+					tmp.clear();
+				}
+
+				try {
+					// Try after 5 seconds
+					Thread.sleep(5000);
+				} catch (InterruptedException e) {
+					// NOPE
+				}
+			}
+		}
+
+		/**
+		 * Check the health of the failed node
+		 * 
+		 * @param node
+		 * @return <tt>true</tt> if the node is reachable else <tt>false</tt>
+		 */
+		public boolean checkHealth(Node node) {
+			if (node == null) {
+				return false;
+			}
+			boolean ok = false;
+			java.net.Socket s = null;
+			try {
+				s = new java.net.Socket(node.getHostname(), node.getPort());
+				s.setSoLinger(true, 0);
+				ok = true;
+			} catch (Exception e) {
+				// Ignore
+			} finally {
+				if (s != null) {
+					try {
+						s.close();
+					} catch (Exception e) {
+						// Ignore
+					}
+				}
+			}
+
+			return ok;
+		}
+	}
+
+	/**
+	 * {@code NodeStatusChecker}
+	 * 
+	 * Created on Sep 18, 2012 at 3:49:56 PM
+	 * 
+	 * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
+	 */
+	private class NodeStatusChecker implements Runnable {
+
+		@Override
+		public void run() {
+			List<Node> tmp = new ArrayList<>();
+			while (true) {
+				try {
+					Thread.sleep(5000);
+					for (Node n : nodes) {
+						if (n.isNodeDown()) {
+							tmp.add(n);
+						}
+					}
+					if (!tmp.isEmpty()) {
+						nodes.removeAll(tmp);
+						failedNodes.addAll(tmp);
+						tmp.clear();
+					}
+
+					for (Node n : failedNodes) {
+						if (n.isNodeUp()) {
+							tmp.add(n);
+						}
+					}
+					if (!tmp.isEmpty()) {
+						failedNodes.removeAll(tmp);
+						nodes.addAll(tmp);
+						tmp.clear();
+					}
+
+					printNodes();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
 }
