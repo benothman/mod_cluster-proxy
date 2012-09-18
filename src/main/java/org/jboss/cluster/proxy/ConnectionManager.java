@@ -43,8 +43,7 @@ import org.jboss.logging.Logger;
  */
 public class ConnectionManager extends LifeCycleServiceAdapter {
 
-	private static final Logger logger = Logger
-			.getLogger(ConnectionManager.class);
+	private static final Logger logger = Logger.getLogger(ConnectionManager.class);
 	private ConcurrentHashMap<String, ConcurrentLinkedQueue<NioChannel>> connections;
 	private NioChannelFactory factory;
 
@@ -67,8 +66,7 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 		}
 		logger.info("Initializing Connection Manager");
 
-		String secureStr = System.getProperty(Constants.SECURE_PROP_NAME,
-				"false");
+		String secureStr = System.getProperty(Constants.SECURE_PROP_NAME, "false");
 		boolean secure = Boolean.valueOf(secureStr).booleanValue();
 
 		int nThreads = Constants.DEFAULT_MAX_THREADS;
@@ -83,10 +81,9 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 
 		logger.info("Configure max thread number for nodes : " + nThreads);
 
-		AsynchronousChannelGroup channelGroup = AsynchronousChannelGroup
-				.withFixedThreadPool(nThreads, Executors.defaultThreadFactory());
-		this.factory = NioChannelFactory.createNioChannelFactory(channelGroup,
-				secure);
+		AsynchronousChannelGroup channelGroup = AsynchronousChannelGroup.withFixedThreadPool(
+				nThreads, Executors.defaultThreadFactory());
+		this.factory = NioChannelFactory.createNioChannelFactory(channelGroup, secure);
 		this.factory.init();
 		this.connections = new ConcurrentHashMap<>();
 		setInitialized(true);
@@ -121,8 +118,12 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	/**
 	 * @param node
 	 * @return a channel
+	 * @throws Exception
 	 */
-	public NioChannel getChannel(Node node) {
+	public NioChannel getChannel(Node node) throws Exception {
+		if (node == null) {
+			return null;
+		}
 		checkJvmRoute(node.getJvmRoute());
 		NioChannel channel = null;
 		do {
@@ -144,8 +145,9 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	 * @param port
 	 *            the port number
 	 * @return
+	 * @throws Exception
 	 */
-	public NioChannel getChannel(String hostname, int port) {
+	public NioChannel getChannel(String hostname, int port) throws Exception {
 		return connect(hostname, port);
 	}
 
@@ -155,8 +157,9 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	 * @param node
 	 *            the node to which the channel will be connected
 	 * @return a new connection to the node
+	 * @throws Exception
 	 */
-	private NioChannel connect(Node node) {
+	private NioChannel connect(Node node) throws Exception {
 		return connect(node.getHostname(), node.getPort());
 	}
 
@@ -168,14 +171,10 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	 * @param port
 	 * @return a new {@link NioChannel} representing the connection to the
 	 *         remote host
+	 * @throws Exception
 	 */
-	private NioChannel connect(String hostname, int port) {
-		try {
-			return this.factory.connect(hostname, port);
-		} catch (Exception e) {
-			logger.error(e.getMessage(), e);
-		}
-		return null;
+	private NioChannel connect(String hostname, int port) throws Exception {
+		return this.factory.connect(hostname, port);
 	}
 
 	/**
@@ -243,8 +242,7 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	 */
 	private void checkJvmRoute(String jvmRoute) {
 		if (this.connections.get(jvmRoute) == null) {
-			this.connections.put(jvmRoute,
-					new ConcurrentLinkedQueue<NioChannel>());
+			this.connections.put(jvmRoute, new ConcurrentLinkedQueue<NioChannel>());
 		}
 	}
 }

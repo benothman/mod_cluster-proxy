@@ -84,21 +84,33 @@ public class NodeService extends LifeCycleServiceAdapter {
 		}
 		setInitialized(true);
 		logger.info("Node Service initialized");
+
+		Thread t = new Thread() {
+			public void run() {
+				while(true) {
+					printNodes();
+					try {
+						sleep(5000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		};
+		t.setDaemon(true);
+		t.start();
 	}
 
 	/**
 	 * @return a node
 	 */
 	private Node getNode() {
-		Node node = null;
 		if (!this.nodes.isEmpty()) {
 			int index = random.nextInt(this.nodes.size());
-			node = this.nodes.get(index);
+			return this.nodes.get(index);
 		}
 
-		System.out.println("Selected node --> " + node.getJvmRoute());
-		
-		return node;
+		return null;
 	}
 
 	/**
@@ -109,11 +121,24 @@ public class NodeService extends LifeCycleServiceAdapter {
 	 */
 	public Node getNode(Request request) {
 		// URI decoding
-		//String requestURI = request.decodedURI().toString();
-		
+		// String requestURI = request.decodedURI().toString();
+
 		// TODO complete code here
 
 		return getNode();
+	}
+
+	public void printNodes() {
+		StringBuilder sb = new StringBuilder(" Available nodes : [");
+		int i = 0;
+		for (Node n : this.nodes) {
+			sb.append(n.getHostname() + ":" + n.getPort());
+			if ((i++) < this.nodes.size() - 1) {
+				sb.append(", ");
+			}
+		}
+		sb.append("]");
+		logger.info(sb);
 	}
 
 	/**
@@ -126,13 +151,31 @@ public class NodeService extends LifeCycleServiceAdapter {
 	 */
 	public Node getNode(Request request, Node failedNode) {
 
+		/*
+		 * if (failedNode != null) {
+		 * logger.info("The node [" + failedNode.getHostname() + ":" +
+		 * failedNode.getPort()
+		 * + "] is failed --> removed from available nodes");
+		 * failedNode.setStatus(NodeStatus.NODE_DOWN);
+		 * failedNodes.add(failedNode);
+		 * nodes.remove(failedNode);
+		 * }
+		 */
+
+		return getNode(request);
+	}
+
+	/**
+	 * 
+	 * @param failedNode
+	 */
+	public void nodeDown(Node failedNode) {
 		if (failedNode != null) {
 			failedNode.setStatus(NodeStatus.NODE_DOWN);
 			failedNodes.add(failedNode);
 			nodes.remove(failedNode);
 		}
-
-		return getNode(request);
+		printNodes();
 	}
 
 }

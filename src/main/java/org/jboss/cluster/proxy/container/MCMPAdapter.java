@@ -114,7 +114,7 @@ public class MCMPAdapter implements Adapter {
 	 * @see org.apache.coyote.Adapter#init()
 	 */
 	public void init() throws Exception {
-		System.out.println("init: " + connector);
+
 		if (md == null)
 			md = MessageDigest.getInstance("MD5");
 		if (thread == null) {
