@@ -426,11 +426,8 @@ public class CoyoteAdapter implements Adapter {
 		final NioChannel nodeChannel = (NioChannel) response.getNote(Constants.NODE_CHANNEL_NOTE);
 
 		int n = inputBuffer.getAvailable();
-		int pos = inputBuffer.getPosition();
 		int lastValid = inputBuffer.getLastValid();
 		int end = inputBuffer.getEnd();
-
-		System.out.println("pos = " +pos+", lastValid = " + lastValid+", end = " + end+", content-length = "+ request.getContentLength());
 		
 		if(lastValid >= end + request.getContentLength()) {
 			readFromNode(request, response);
@@ -444,7 +441,7 @@ public class CoyoteAdapter implements Adapter {
 		try {
 			nRead = inputBuffer.readBytes(buffer);
 		} catch (Throwable t) {
-			t.printStackTrace();
+			th = t;
 		}
 
 		if (nRead > 0) {
