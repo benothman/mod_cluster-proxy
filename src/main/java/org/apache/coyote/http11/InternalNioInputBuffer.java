@@ -80,8 +80,7 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 	 * @param headerBufferSize
 	 * @param endpoint
 	 */
-	public InternalNioInputBuffer(Request request, int headerBufferSize,
-			NioEndpoint endpoint) {
+	public InternalNioInputBuffer(Request request, int headerBufferSize, NioEndpoint endpoint) {
 		super(request, headerBufferSize);
 		this.endpoint = endpoint;
 		this.init();
@@ -94,8 +93,8 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 	 */
 	public void init() {
 		this.inputBuffer = new InputBufferImpl();
-		this.readTimeout = (endpoint.getSoTimeout() > 0 ? endpoint
-				.getSoTimeout() : Integer.MAX_VALUE);
+		this.readTimeout = (endpoint.getSoTimeout() > 0 ? endpoint.getSoTimeout()
+				: Integer.MAX_VALUE);
 
 		// Initialize the completion handler
 		this.completionHandler = new CompletionHandler<Integer, NioChannel>() {
@@ -235,8 +234,7 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 
 		if (parsingHeader) {
 			if (lastValid == buf.length) {
-				throw new IllegalArgumentException(
-						sm.getString("iib.requestheadertoolarge.error"));
+				throw new IllegalArgumentException(sm.getString("iib.requestheadertoolarge.error"));
 			}
 		} else {
 			if (buf.length - end < 4500) {
@@ -267,8 +265,7 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 	 *            the byte buffer which will contain the bytes read from the
 	 *            current channel
 	 */
-	private void nonBlockingRead(final ByteBuffer bb, long timeout,
-			TimeUnit unit) {
+	private void nonBlockingRead(final ByteBuffer bb, long timeout, TimeUnit unit) {
 		final NioChannel ch = this.channel;
 		try {
 			ch.read(bb, ch, this.completionHandler);
@@ -304,11 +301,10 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 			}
 		} catch (Throwable e) {
 			if (log.isDebugEnabled()) {
-				log.debug(
-						"An error occurs when trying a blocking read "
-								+ e.getMessage(), e);
+				log.debug("An error occurs when trying a blocking read " + e.getMessage(), e);
 			}
 		}
+
 		return nr;
 	}
 
@@ -319,13 +315,12 @@ public class InternalNioInputBuffer extends AbstractInternalInputBuffer {
 	 * org.apache.coyote.http11.AbstractInternalInputBuffer#readBytes(java.nio
 	 * .ByteBuffer, long, java.util.concurrent.TimeUnit)
 	 */
-	public int readBytes(ByteBuffer dst, long timeout, TimeUnit unit)
-			throws Exception {
-		
+	public int readBytes(ByteBuffer dst, long timeout, TimeUnit unit) throws Exception {
 		int n = this.channel.readBytes(dst, timeout, unit);
-		if(n > 0) {
+		if (n > 0) {
 			lastValid += n;
 		}
+
 		return n;
 	}
 

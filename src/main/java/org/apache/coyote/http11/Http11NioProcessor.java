@@ -338,6 +338,7 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 					response.setStatus(500);
 					error = true;
 				}
+				break;
 			}
 
 			if (error) {

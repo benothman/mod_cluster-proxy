@@ -168,17 +168,22 @@ public class NioChannel implements AsynchronousByteChannel, NetworkChannel {
 	 * Write timeout status code
 	 */
 	public static final int OP_STATUS_WRITE_TIMEOUT = -3;
-
 	/**
 	 * 
 	 */
 	public static final int OP_STATUS_READ_KILLED = -4;
-
 	/**
 	 * 
 	 */
 	public static final int OP_STATUS_WRITE_KILLED = -5;
-
+	/**
+	 * 
+	 */
+	public static final int OP_STATUS_READ_PENDING = -6;
+	/**
+	 * 
+	 */
+	public static final int OP_STATUS_WRITE_PENDING = -7;
 	/**
 	 * Read/write operation error code
 	 */
@@ -595,7 +600,6 @@ public class NioChannel implements AsynchronousByteChannel, NetworkChannel {
 	 */
 	public int readBytes(final ByteBuffer dst, final long timeout, final TimeUnit unit)
 			throws Exception {
-
 		try {
 			int x = this.reset(dst);
 			return (x + this.channel.read(dst).get(timeout, unit));

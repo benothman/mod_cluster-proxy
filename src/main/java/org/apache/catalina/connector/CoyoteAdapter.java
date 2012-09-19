@@ -161,7 +161,6 @@ public class CoyoteAdapter implements Adapter {
 						// Read response from the node and forward it
 						// back to client
 						try {
-							// TODO
 							if (!checkPostMethod(attachment.getRequest(), attachment)) {
 								readFromNode(attachment.getRequest(), attachment);
 							}
@@ -177,8 +176,8 @@ public class CoyoteAdapter implements Adapter {
 				exc.printStackTrace();
 				try {
 					// try again with node
-					tryWithNode(attachment.getRequest(), attachment);
-					sendToNode(attachment.getRequest(), attachment);
+					//tryWithNode(attachment.getRequest(), attachment);
+					//sendToNode(attachment.getRequest(), attachment);
 				} catch (Throwable e) {
 					try {
 						((AbstractInternalOutputBuffer) attachment.getOutputBuffer()).sendError();
@@ -431,10 +430,17 @@ public class CoyoteAdapter implements Adapter {
 		int lastValid = inputBuffer.getLastValid();
 		int end = inputBuffer.getEnd();
 
+		System.out.println("pos = " +pos+", lastValid = " + lastValid+", end = " + end+", content-length = "+ request.getContentLength());
+		
+		if(lastValid >= end + request.getContentLength()) {
+			readFromNode(request, response);
+			return;
+		}
+		
 		final ByteBuffer buffer = inputBuffer.getByteBuffer();
 		buffer.clear();
 		int nRead = 0;
-
+		Throwable th = null;
 		try {
 			nRead = inputBuffer.readBytes(buffer);
 		} catch (Throwable t) {
@@ -482,7 +488,7 @@ public class CoyoteAdapter implements Adapter {
 				}
 			});
 		} else {
-			throw new IOException("Read operation fails");
+			throw new IOException("Read operation fails", th);
 		}
 	}
 

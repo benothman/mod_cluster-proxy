@@ -526,7 +526,7 @@ public abstract class AbstractInternalInputBuffer implements InputBuffer {
 	 *         immediately and thread should be freed
 	 */
 	public boolean parseRequestLine(boolean useAvailableData) throws IOException {
-
+		
 		int start = 0;
 		// Skipping blank lines
 

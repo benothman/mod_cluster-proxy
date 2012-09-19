@@ -306,6 +306,7 @@ public class NodeService extends LifeCycleServiceAdapter {
 			while (true) {
 				try {
 					Thread.sleep(5000);
+					// Retrieve nodes with status "DOWN"
 					for (Node n : nodes) {
 						if (n.isNodeDown()) {
 							tmp.add(n);
@@ -317,6 +318,7 @@ public class NodeService extends LifeCycleServiceAdapter {
 						tmp.clear();
 					}
 
+					// Retrieve nodes with status "UP"
 					for (Node n : failedNodes) {
 						if (n.isNodeUp()) {
 							tmp.add(n);
