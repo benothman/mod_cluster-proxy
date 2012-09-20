@@ -268,6 +268,7 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	 */
 	private void checkJvmRoute(String jvmRoute) {
 		if (this.connections.get(jvmRoute) == null) {
+			System.out.println("CREATE NEW CHANNEL LIST FOR JVM-ROUTE : " + jvmRoute);
 			this.connections.put(jvmRoute, new ConcurrentLinkedQueue<NioChannel>());
 		}
 	}
