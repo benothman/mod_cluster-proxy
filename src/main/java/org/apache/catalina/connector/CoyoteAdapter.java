@@ -356,7 +356,6 @@ public class CoyoteAdapter implements Adapter {
 				}
 			}
 		} catch (Throwable t) {
-			this.connector.getNodeService().nodeDown(node);
 			prepareNode(request, response, node, n + 1);
 			return;
 		}

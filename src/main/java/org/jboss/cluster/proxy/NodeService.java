@@ -184,26 +184,14 @@ public class NodeService extends LifeCycleServiceAdapter {
 	 * @return
 	 */
 	public Node getNode(Request request, Node failedNode) {
-
-		/*
-		 * if (failedNode != null) {
-		 * failedNode.setStatus(NodeStatus.NODE_DOWN);
-		 * failedNodes.add(failedNode);
-		 * nodes.remove(failedNode);
-		 * }
-		 */
-
-		return getNode(request);
-	}
-
-	/**
-	 * 
-	 * @param failedNode
-	 */
-	public void nodeDown(Node failedNode) {
 		if (failedNode != null) {
+			// Set the node status to down
+			logger.warn("The node [" + failedNode.getHostname() + ":" + failedNode.getPort()
+					+ "] is down");
 			failedNode.setNodeDown();
 		}
+
+		return getNode(request);
 	}
 
 	/**
