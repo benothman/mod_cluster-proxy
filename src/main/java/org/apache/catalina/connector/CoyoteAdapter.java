@@ -176,8 +176,8 @@ public class CoyoteAdapter implements Adapter {
 				exc.printStackTrace();
 				try {
 					// try again with node
-					//tryWithNode(attachment.getRequest(), attachment);
-					//sendToNode(attachment.getRequest(), attachment);
+					// tryWithNode(attachment.getRequest(), attachment);
+					// sendToNode(attachment.getRequest(), attachment);
 				} catch (Throwable e) {
 					try {
 						((AbstractInternalOutputBuffer) attachment.getOutputBuffer()).sendError();
@@ -336,7 +336,7 @@ public class CoyoteAdapter implements Adapter {
 	private void prepareNode(final org.apache.coyote.Request request,
 			final org.apache.coyote.Response response, Node failedNode, int n) throws Exception {
 
-		if (n >= 3) {
+		if (n >= this.connector.getNodeService().getActiveNodes()) {
 			throw new IOException("No node available");
 		}
 
@@ -428,12 +428,14 @@ public class CoyoteAdapter implements Adapter {
 		int n = inputBuffer.getAvailable();
 		int lastValid = inputBuffer.getLastValid();
 		int end = inputBuffer.getEnd();
-		
-		if(lastValid >= end + request.getContentLength()) {
+
+		if (lastValid >= end + request.getContentLength()) {
+			// All data are read from client and transfered to node
+			// Wait for node response
 			readFromNode(request, response);
 			return;
 		}
-		
+
 		final ByteBuffer buffer = inputBuffer.getByteBuffer();
 		buffer.clear();
 		int nRead = 0;

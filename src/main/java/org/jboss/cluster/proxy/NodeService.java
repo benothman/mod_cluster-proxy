@@ -48,8 +48,6 @@ public class NodeService extends LifeCycleServiceAdapter {
 	private List<Node> failedNodes;
 	private Random random;
 
-	// private MCMConfig config = MCMPAdapter.conf;
-
 	/**
 	 * Create a new instance of {@code NodeService}
 	 */
@@ -106,7 +104,15 @@ public class NodeService extends LifeCycleServiceAdapter {
 	private void startNewDaemonThread(Runnable task) {
 		Thread t = new Thread(task);
 		t.setDaemon(true);
+		t.setPriority(Thread.MIN_PRIORITY);
 		t.start();
+	}
+
+	/**
+	 * @return the number of active nodes
+	 */
+	public int getActiveNodes() {
+		return this.nodes.size();
 	}
 
 	/**
@@ -181,9 +187,6 @@ public class NodeService extends LifeCycleServiceAdapter {
 
 		/*
 		 * if (failedNode != null) {
-		 * logger.info("The node [" + failedNode.getHostname() + ":" +
-		 * failedNode.getPort()
-		 * + "] is failed --> removed from available nodes");
 		 * failedNode.setStatus(NodeStatus.NODE_DOWN);
 		 * failedNodes.add(failedNode);
 		 * nodes.remove(failedNode);
