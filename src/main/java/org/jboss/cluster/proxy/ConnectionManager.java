@@ -130,6 +130,10 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 		NioChannel channel = null;
 		do {
 			channel = this.connections.get(node.getJvmRoute()).poll();
+			System.out.println("channel: " + channel);
+			if (channel != null) {
+				System.out.println(channel + "isClosed() --> " + channel.isClosed());
+			}
 		} while (channel != null && channel.isClosed());
 
 		if (channel == null) {
@@ -214,7 +218,8 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 
 		if (channel.isOpen()) {
 			checkJvmRoute(jvmRoute);
-			String str = "Recycling channel {" + jvmRoute + " --> " + channel + "}  --> Before: " + this.connections.get(jvmRoute).size();
+			String str = "Recycling channel {" + jvmRoute + " --> " + channel + "}  --> Before: "
+					+ this.connections.get(jvmRoute).size();
 			this.connections.get(jvmRoute).offer(channel);
 			str += ", After: " + this.connections.get(jvmRoute).size();
 			System.out.println(str);
