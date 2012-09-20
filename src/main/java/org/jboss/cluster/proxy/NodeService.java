@@ -91,9 +91,9 @@ public class NodeService extends LifeCycleServiceAdapter {
 	@Override
 	public void start() throws Exception {
 		// start new thread for node status checker task
-		startNewDaemonThread(new NodeStatusChecker());
+		//startNewDaemonThread(new NodeStatusChecker());
 		// Start new thread for failed node health check
-		startNewDaemonThread(new HealthChecker());
+		//startNewDaemonThread(new HealthChecker());
 	}
 
 	/**
