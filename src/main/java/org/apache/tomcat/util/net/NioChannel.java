@@ -527,6 +527,7 @@ public class NioChannel implements AsynchronousByteChannel, NetworkChannel {
 		if (isClosed()) {
 			return;
 		}
+		System.out.println("Closing channel -> " + this);
 		// Closing the channel
 		this.channel.close();
 	}
