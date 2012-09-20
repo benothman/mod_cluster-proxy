@@ -189,6 +189,9 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 		if (channel == null) {
 			return;
 		}
+		
+		System.out.println("Recycling channel {"+jvmRoute+" --> "+channel+"}");
+		
 		if (channel.isOpen()) {
 			checkJvmRoute(jvmRoute);
 			this.connections.get(jvmRoute).offer(channel);
