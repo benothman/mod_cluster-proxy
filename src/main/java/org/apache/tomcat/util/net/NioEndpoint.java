@@ -391,7 +391,6 @@ public class NioEndpoint extends AbstractEndpoint<NioChannel> {
 		try {
 			ChannelProcessor processor = getChannelProcessor(channel, status);
 			this.executor.execute(processor);
-			System.out.println("Processing channel " + channel);
 			return true;
 		} catch (Throwable t) {
 			// This means we got an OOM or similar creating a thread, or that

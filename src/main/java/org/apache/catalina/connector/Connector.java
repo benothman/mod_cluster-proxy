@@ -196,9 +196,10 @@ public final class Connector {
 
 		this.initialized = true;
 
-		if (this.nodeService != null)
-			this.nodeService.init();
 		this.connectionManager.init();
+		if (this.nodeService != null) {
+			this.nodeService.init();
+		}
 
 		if (this.protocolHandler.getClass().equals(
 				org.jboss.cluster.proxy.http11.Http11NioProtocol.class)) {

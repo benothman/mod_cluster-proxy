@@ -79,6 +79,7 @@ public class NodeService extends LifeCycleServiceAdapter {
 			node.setPort(n.getPort());
 			this.nodes.add(node);
 		}
+
 		setInitialized(true);
 		logger.info("Node Service initialized");
 	}
@@ -91,9 +92,9 @@ public class NodeService extends LifeCycleServiceAdapter {
 	@Override
 	public void start() throws Exception {
 		// start new thread for node status checker task
-		//startNewDaemonThread(new NodeStatusChecker());
+		startNewDaemonThread(new NodeStatusChecker());
 		// Start new thread for failed node health check
-		//startNewDaemonThread(new HealthChecker());
+		startNewDaemonThread(new HealthChecker());
 	}
 
 	/**

@@ -130,14 +130,10 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 		NioChannel channel = null;
 		do {
 			channel = this.connections.get(node.getJvmRoute()).poll();
-			System.out.println("channel: " + channel);
-			if (channel != null) {
-				System.out.println(channel + "isClosed() --> " + channel.isClosed());
-			}
 		} while (channel != null && channel.isClosed());
 
 		if (channel == null) {
-			System.out.println("CHANNEL IS NULL --> OPEN NEW CONNECTION TO <" + node.getHostname()
+			System.out.println("\t--> OPEN NEW CONNECTION TO <" + node.getHostname()
 					+ ":" + node.getPort() + ">");
 			channel = connect(node);
 		}
@@ -234,8 +230,6 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 			return;
 		}
 
-		System.out.println(getClass().getName() + "#close(" + channel + ")");
-
 		try {
 			channel.close();
 		} catch (Exception exp) {
@@ -272,9 +266,8 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	 * @param jvmRoute
 	 *            the jvmRoute (it represents the ID of a node)
 	 */
-	private void checkJvmRoute(String jvmRoute) {
+	protected void checkJvmRoute(String jvmRoute) {
 		if (this.connections.get(jvmRoute) == null) {
-			System.out.println("CREATE NEW CHANNEL LIST FOR JVM-ROUTE : " + jvmRoute);
 			this.connections.put(jvmRoute, new ConcurrentLinkedQueue<NioChannel>());
 		}
 	}
