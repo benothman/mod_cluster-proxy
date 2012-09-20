@@ -222,7 +222,7 @@ public class NodeService extends LifeCycleServiceAdapter {
 						}
 					}
 				}
-
+				logger.info("Starting health check for previously failed nodes");
 				for (Node node : failedNodes) {
 					if (checkHealth(node)) {
 						node.setNodeUp();
@@ -230,16 +230,18 @@ public class NodeService extends LifeCycleServiceAdapter {
 					}
 				}
 
-				if (!tmp.isEmpty()) {
-					synchronized (nodes) {
-						nodes.addAll(tmp);
-					}
-
-					synchronized (failedNodes) {
-						failedNodes.removeAll(tmp);
-					}
-					tmp.clear();
+				if (tmp.isEmpty()) {
+					continue;
 				}
+
+				synchronized (nodes) {
+					nodes.addAll(tmp);
+				}
+
+				synchronized (failedNodes) {
+					failedNodes.removeAll(tmp);
+				}
+				tmp.clear();
 
 				try {
 					// Try after 5 seconds
@@ -303,11 +305,19 @@ public class NodeService extends LifeCycleServiceAdapter {
 							tmp.add(n);
 						}
 					}
-					if (!tmp.isEmpty()) {
-						nodes.removeAll(tmp);
-						failedNodes.addAll(tmp);
-						tmp.clear();
+
+					if (tmp.isEmpty()) {
+						continue;
 					}
+					// Remove failed nodes from the list of nodes
+					synchronized (nodes) {
+						nodes.removeAll(tmp);
+					}
+					// Add selected nodes to the list of failed nodes
+					synchronized (failedNodes) {
+						failedNodes.addAll(tmp);
+					}
+					tmp.clear();
 
 					// Retrieve nodes with status "UP"
 					for (Node n : failedNodes) {
@@ -315,14 +325,22 @@ public class NodeService extends LifeCycleServiceAdapter {
 							tmp.add(n);
 						}
 					}
-					if (!tmp.isEmpty()) {
-						failedNodes.removeAll(tmp);
-						nodes.addAll(tmp);
-						tmp.clear();
-					}
 
-					printNodes();
-				} catch (InterruptedException e) {
+					if (tmp.isEmpty()) {
+						continue;
+					}
+					// Remove all healthy nodes from the list of failed nodes
+					synchronized (failedNodes) {
+						failedNodes.removeAll(tmp);
+					}
+					// Add selected nodes to the list of healthy nodes
+					synchronized (nodes) {
+						nodes.addAll(tmp);
+					}
+					tmp.clear();
+
+					// printNodes();
+				} catch (Throwable e) {
 					e.printStackTrace();
 				}
 			}
