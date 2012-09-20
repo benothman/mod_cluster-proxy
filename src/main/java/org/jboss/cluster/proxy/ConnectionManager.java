@@ -135,7 +135,9 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 				System.out.println(channel + "isClosed() --> " + channel.isClosed());
 			}
 		} while (channel != null && channel.isClosed());
-
+		
+		
+		
 		if (channel == null) {
 			System.out.println("CHANNEL IS NULL --> OPEN NEW CONNECTION TO <" + node.getHostname()
 					+ ":" + node.getPort() + ">");

@@ -275,6 +275,10 @@ public class CoyoteAdapter implements Adapter {
 							try {
 								((AbstractInternalOutputBuffer) attachment.getOutputBuffer())
 										.sendError();
+								NioChannel nodeChannel = (NioChannel) attachment
+										.getNote(Constants.NODE_CHANNEL_NOTE);
+								Node node = (Node) attachment.getNote(Constants.NODE_NOTE);
+								connector.getConnectionManager().recycle(node, nodeChannel);
 							} catch (IOException e1) {
 								e1.printStackTrace();
 							}
