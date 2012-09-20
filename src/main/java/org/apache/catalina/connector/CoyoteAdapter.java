@@ -126,9 +126,10 @@ public class CoyoteAdapter implements Adapter {
 	 * @throws IOException
 	 */
 	private void sendError(Request request, Response response) throws IOException {
-		AbstractInternalOutputBuffer outputBuffer = (AbstractInternalOutputBuffer) response
-				.getOutputBuffer();
-		outputBuffer.sendError();
+		((AbstractInternalOutputBuffer) response.getOutputBuffer()).sendError();
+		NioChannel nodeChannel = (NioChannel) response.getNote(Constants.NODE_CHANNEL_NOTE);
+		Node node = (Node) response.getNote(Constants.NODE_NOTE);
+		this.connector.getConnectionManager().recycle(node, nodeChannel);
 	}
 
 	/**
@@ -176,11 +177,11 @@ public class CoyoteAdapter implements Adapter {
 				exc.printStackTrace();
 				try {
 					// try again with node
-					// tryWithNode(attachment.getRequest(), attachment);
-					// sendToNode(attachment.getRequest(), attachment);
+					tryWithNode(attachment.getRequest(), attachment);
+					sendToNode(attachment.getRequest(), attachment);
 				} catch (Throwable e) {
 					try {
-						((AbstractInternalOutputBuffer) attachment.getOutputBuffer()).sendError();
+						sendError(attachment.getRequest(), attachment);
 					} catch (IOException e1) {
 						e1.printStackTrace();
 					}
@@ -273,12 +274,7 @@ public class CoyoteAdapter implements Adapter {
 							sendToNode(attachment.getRequest(), attachment);
 						} catch (Throwable e) {
 							try {
-								((AbstractInternalOutputBuffer) attachment.getOutputBuffer())
-										.sendError();
-								NioChannel nodeChannel = (NioChannel) attachment
-										.getNote(Constants.NODE_CHANNEL_NOTE);
-								Node node = (Node) attachment.getNote(Constants.NODE_NOTE);
-								connector.getConnectionManager().recycle(node, nodeChannel);
+								sendError(attachment.getRequest(), attachment);
 							} catch (IOException e1) {
 								e1.printStackTrace();
 							}
