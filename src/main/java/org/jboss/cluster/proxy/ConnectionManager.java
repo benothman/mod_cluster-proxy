@@ -160,6 +160,8 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	 * @throws Exception
 	 */
 	private NioChannel connect(Node node) throws Exception {
+		System.out.println("OPEN NEW CONNCTION TO NODE <" + node.getHostname() + ":"
+				+ node.getPort() + ">");
 		return connect(node.getHostname(), node.getPort());
 	}
 
@@ -180,6 +182,21 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	/**
 	 * Recycle the node connection for next usage
 	 * 
+	 * @param node
+	 *            the node to which the channel is connected
+	 * @param channel
+	 *            the channel to be recycled
+	 * @see {@link #recycle(String, NioChannel)}
+	 */
+	public void recycle(Node node, NioChannel channel) {
+		if (node != null) {
+			recycle(node.getJvmRoute(), channel);
+		}
+	}
+
+	/**
+	 * Recycle the node connection for next usage
+	 * 
 	 * @param jvmRoute
 	 *            The node ID
 	 * @param channel
@@ -189,9 +206,9 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 		if (channel == null) {
 			return;
 		}
-		
-		System.out.println("Recycling channel {"+jvmRoute+" --> "+channel+"}");
-		
+
+		System.out.println("Recycling channel {" + jvmRoute + " --> " + channel + "}");
+
 		if (channel.isOpen()) {
 			checkJvmRoute(jvmRoute);
 			this.connections.get(jvmRoute).offer(channel);
