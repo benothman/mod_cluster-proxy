@@ -135,9 +135,7 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 				System.out.println(channel + "isClosed() --> " + channel.isClosed());
 			}
 		} while (channel != null && channel.isClosed());
-		
-		
-		
+
 		if (channel == null) {
 			System.out.println("CHANNEL IS NULL --> OPEN NEW CONNECTION TO <" + node.getHostname()
 					+ ":" + node.getPort() + ">");
@@ -220,11 +218,9 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 
 		if (channel.isOpen()) {
 			checkJvmRoute(jvmRoute);
-			String str = "Recycling channel {" + jvmRoute + " --> " + channel + "}  --> Before: "
-					+ this.connections.get(jvmRoute).size();
 			this.connections.get(jvmRoute).offer(channel);
-			str += ", After: " + this.connections.get(jvmRoute).size();
-			System.out.println(str);
+		} else {
+			close(channel);
 		}
 	}
 
@@ -237,6 +233,9 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 		if (channel == null) {
 			return;
 		}
+
+		System.out.println(getClass().getName() + "#close(" + channel + ")");
+
 		try {
 			channel.close();
 		} catch (Exception exp) {

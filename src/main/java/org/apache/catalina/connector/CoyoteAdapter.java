@@ -174,7 +174,6 @@ public class CoyoteAdapter implements Adapter {
 
 			@Override
 			public void failed(Throwable exc, Response attachment) {
-				exc.printStackTrace();
 				try {
 					// try again with node
 					tryWithNode(attachment.getRequest(), attachment);
@@ -183,7 +182,7 @@ public class CoyoteAdapter implements Adapter {
 					try {
 						sendError(attachment.getRequest(), attachment);
 					} catch (IOException e1) {
-						e1.printStackTrace();
+						logger.error(e1.getMessage(), e1);
 					}
 				}
 			}
@@ -276,7 +275,7 @@ public class CoyoteAdapter implements Adapter {
 							try {
 								sendError(attachment.getRequest(), attachment);
 							} catch (IOException e1) {
-								e1.printStackTrace();
+								logger.error(e1.getMessage(), e1);
 							}
 						}
 					}
@@ -382,10 +381,14 @@ public class CoyoteAdapter implements Adapter {
 			throws Exception {
 		// Closing the current channel
 		NioChannel channel = (NioChannel) response.getNote(Constants.NODE_CHANNEL_NOTE);
-		this.connector.getConnectionManager().close(channel);
-
 		// Retrieve the failed node
 		Node failedNode = (Node) response.getNote(Constants.NODE_NOTE);
+		if (channel.isClosed()) {
+			this.connector.getConnectionManager().close(channel);
+		} else {
+			
+		}
+
 		prepareNode(request, response, failedNode, 1);
 	}
 

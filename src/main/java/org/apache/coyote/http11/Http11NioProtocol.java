@@ -1,21 +1,23 @@
 /**
- * JBoss, Home of Professional Open Source. Copyright 2011, Red Hat, Inc., and individual
- * contributors as indicated by the
- *
- * @author tags. See the copyright.txt file in the distribution for a full listing of individual
+ * JBoss, Home of Professional Open Source. Copyright 2012, Red Hat, Inc., and
+ * individual contributors as indicated by the @author tags. See the
+ * copyright.txt file in the distribution for a full listing of individual
  * contributors.
- *
- * This is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser
- * General Public License as published by the Free Software Foundation; either version 2.1 of the
- * License, or (at your option) any later version.
- *
- * This software is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License along with this
- * software; if not, write to the Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
- * Boston, MA 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+ * 
+ * This is free software; you can redistribute it and/or modify it under the
+ * terms of the GNU Lesser General Public License as published by the Free
+ * Software Foundation; either version 2.1 of the License, or (at your option)
+ * any later version.
+ * 
+ * This software is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this software; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA, or see the FSF
+ * site: http://www.fsf.org.
  */
 package org.apache.coyote.http11;
 
@@ -55,7 +57,7 @@ public class Http11NioProtocol extends AbstractHttp11Protocol<NioChannel> {
 	private Http11ConnectionHandler cHandler = new Http11ConnectionHandler(this);
 	protected NioJSSESocketChannelFactory socketFactory = null;
 
-	/** 
+	/**
 	 * Create a new instance of {@code Http11NioProtocol}
 	 */
 	public Http11NioProtocol() {
@@ -90,13 +92,11 @@ public class Http11NioProtocol extends AbstractHttp11Protocol<NioChannel> {
 			if (isSSLEnabled()) {
 				sslImplementation = (SSLImplementation<NioChannel>) SSLImplementation
 						.getInstance(NioJSSEImplementation.class.getName());
-				socketFactory = sslImplementation
-						.getServerSocketChannelFactory();
+				socketFactory = sslImplementation.getServerSocketChannelFactory();
 				endpoint.setServerSocketChannelFactory(socketFactory);
 			}
 		} catch (Exception ex) {
-			log.error(sm.getString("http11protocol.socketfactory.initerror"),
-					ex);
+			log.error(sm.getString("http11protocol.socketfactory.initerror"), ex);
 			throw ex;
 		}
 
@@ -117,8 +117,7 @@ public class Http11NioProtocol extends AbstractHttp11Protocol<NioChannel> {
 				maxThreads = Integer.valueOf(property);
 				log.info("Configure max thread number : " + maxThreads);
 			} catch (Exception e) {
-				log.warn("Invalid MAX-THREAD number, using the default value "
-						+ maxThreads);
+				log.warn("Invalid MAX-THREAD number, using the default value " + maxThreads);
 			}
 		}
 
@@ -132,8 +131,7 @@ public class Http11NioProtocol extends AbstractHttp11Protocol<NioChannel> {
 				maxConnections = Integer.valueOf(property);
 				log.info("Configure max connection number : " + maxConnections);
 			} catch (Exception e) {
-				log.warn("Invalid MAX-CONNECTION number, using the default value "
-						+ maxConnections);
+				log.warn("Invalid MAX-CONNECTION number, using the default value " + maxConnections);
 			}
 		}
 
@@ -160,17 +158,13 @@ public class Http11NioProtocol extends AbstractHttp11Protocol<NioChannel> {
 		if (org.apache.tomcat.util.Constants.ENABLE_MODELER) {
 			if (this.domain != null) {
 				try {
-					tpOname = new ObjectName(domain + ":"
-							+ "type=ThreadPool,name=" + getName());
-					Registry.getRegistry(null, null).registerComponent(
-							endpoint, tpOname, null);
+					tpOname = new ObjectName(domain + ":" + "type=ThreadPool,name=" + getName());
+					Registry.getRegistry(null, null).registerComponent(endpoint, tpOname, null);
 				} catch (Exception e) {
 					log.error("Can't register threadpool");
 				}
-				rgOname = new ObjectName(domain
-						+ ":type=GlobalRequestProcessor,name=" + getName());
-				Registry.getRegistry(null, null).registerComponent(
-						cHandler.global, rgOname, null);
+				rgOname = new ObjectName(domain + ":type=GlobalRequestProcessor,name=" + getName());
+				Registry.getRegistry(null, null).registerComponent(cHandler.global, rgOname, null);
 			}
 		}
 		try {
@@ -260,9 +254,7 @@ public class Http11NioProtocol extends AbstractHttp11Protocol<NioChannel> {
 					}
 				}
 			} catch (Exception ex) {
-				log.error(
-						sm.getString("http11protocol.cannotDestroy", getName()),
-						ex);
+				log.error(sm.getString("http11protocol.cannotDestroy", getName()), ex);
 				throw ex;
 			}
 		}
@@ -286,8 +278,7 @@ public class Http11NioProtocol extends AbstractHttp11Protocol<NioChannel> {
 		if (getAddress() != null) {
 			encodedAddr = "" + getAddress();
 			try {
-				encodedAddr = URLEncoder.encode(encodedAddr.replace('/', '-'),
-						"UTF-8") + "-";
+				encodedAddr = URLEncoder.encode(encodedAddr.replace('/', '-'), "UTF-8") + "-";
 			} catch (UnsupportedEncodingException e) {
 				log.warn("UTF-8 encoding is not supported");
 			}
@@ -810,8 +801,7 @@ public class Http11NioProtocol extends AbstractHttp11Protocol<NioChannel> {
 		 */
 		@Override
 		public SocketState event(NioChannel channel, SocketStatus status) {
-			throw new UnsupportedOperationException(
-					"Not supported for mod_cluster proxy.");
+			throw new UnsupportedOperationException("Not supported for mod_cluster proxy.");
 		}
 
 		/*
@@ -831,8 +821,7 @@ public class Http11NioProtocol extends AbstractHttp11Protocol<NioChannel> {
 				}
 
 				if (proto.secure && (proto.sslImplementation != null)) {
-					processor.setSSLSupport(proto.sslImplementation
-							.getSSLSupport(channel));
+					processor.setSSLSupport(proto.sslImplementation.getSSLSupport(channel));
 				} else {
 					processor.setSSLSupport(null);
 				}
@@ -841,16 +830,12 @@ public class Http11NioProtocol extends AbstractHttp11Protocol<NioChannel> {
 			} catch (IOException e) {
 				if (e instanceof java.net.SocketException) {
 					// SocketExceptions are normal
-					Http11NioProtocol.log
-							.debug(sm
-									.getString("http11protocol.proto.socketexception.debug"),
-									e);
+					Http11NioProtocol.log.debug(
+							sm.getString("http11protocol.proto.socketexception.debug"), e);
 				} else {
 					// IOExceptions are normal
-					Http11NioProtocol.log
-							.debug(sm
-									.getString("http11protocol.proto.ioexception.debug"),
-									e);
+					Http11NioProtocol.log.debug(
+							sm.getString("http11protocol.proto.ioexception.debug"), e);
 				}
 			} // Future developers: if you discover any other
 				// rare-but-non-fatal exceptions, catch them here, and log as
@@ -859,8 +844,7 @@ public class Http11NioProtocol extends AbstractHttp11Protocol<NioChannel> {
 				// any other exception or error is odd. Here we log it
 				// with "ERROR" level, so it will show up even on
 				// less-than-verbose logs.
-				Http11NioProtocol.log.error(
-						sm.getString("http11protocol.proto.error"), e);
+				Http11NioProtocol.log.error(sm.getString("http11protocol.proto.error"), e);
 			}
 			recycledProcessors.offer(processor);
 			return SocketState.CLOSED;
@@ -871,8 +855,8 @@ public class Http11NioProtocol extends AbstractHttp11Protocol<NioChannel> {
 		 */
 		protected Http11NioProcessor createProcessor() {
 
-			Http11NioProcessor processor = new Http11NioProcessor(
-					proto.maxHttpHeaderSize, proto.endpoint);
+			Http11NioProcessor processor = new Http11NioProcessor(proto.maxHttpHeaderSize,
+					proto.endpoint);
 			processor.setAdapter(proto.adapter);
 			processor.setHttp11Protocol(proto);
 			processor.setMaxKeepAliveRequests(proto.maxKeepAliveRequests);
@@ -895,19 +879,17 @@ public class Http11NioProtocol extends AbstractHttp11Protocol<NioChannel> {
 		protected void register(Http11NioProcessor processor) {
 			RequestInfo rp = processor.getRequest().getRequestProcessor();
 			rp.setGlobalProcessor(global);
-			if (org.apache.tomcat.util.Constants.ENABLE_MODELER
-					&& proto.getDomain() != null) {
+			if (org.apache.tomcat.util.Constants.ENABLE_MODELER && proto.getDomain() != null) {
 				synchronized (this) {
 					try {
 						long count = registerCount.incrementAndGet();
 						ObjectName rpName = new ObjectName(proto.getDomain()
-								+ ":type=RequestProcessor,worker="
-								+ proto.getName() + ",name=HttpRequest" + count);
+								+ ":type=RequestProcessor,worker=" + proto.getName()
+								+ ",name=HttpRequest" + count);
 						if (log.isDebugEnabled()) {
 							log.debug("Register " + rpName);
 						}
-						Registry.getRegistry(null, null).registerComponent(rp,
-								rpName, null);
+						Registry.getRegistry(null, null).registerComponent(rp, rpName, null);
 						rp.setRpName(rpName);
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -923,16 +905,14 @@ public class Http11NioProtocol extends AbstractHttp11Protocol<NioChannel> {
 		protected void unregister(Http11NioProcessor processor) {
 			RequestInfo rp = processor.getRequest().getRequestProcessor();
 			rp.setGlobalProcessor(null);
-			if (org.apache.tomcat.util.Constants.ENABLE_MODELER
-					&& proto.getDomain() != null) {
+			if (org.apache.tomcat.util.Constants.ENABLE_MODELER && proto.getDomain() != null) {
 				synchronized (this) {
 					try {
 						ObjectName rpName = rp.getRpName();
 						if (log.isDebugEnabled()) {
 							log.debug("Unregister " + rpName);
 						}
-						Registry.getRegistry(null, null).unregisterComponent(
-								rpName);
+						Registry.getRegistry(null, null).unregisterComponent(rpName);
 						rp.setRpName(null);
 					} catch (Exception e) {
 						e.printStackTrace();
