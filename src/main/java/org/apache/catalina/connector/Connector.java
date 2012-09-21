@@ -28,9 +28,10 @@ import org.apache.coyote.Adapter;
 import org.apache.coyote.ProtocolHandler;
 import org.apache.tomcat.util.IntrospectionUtils;
 import org.apache.tomcat.util.res.StringManager;
+import org.jboss.cluster.proxy.CLNodeService;
 import org.jboss.cluster.proxy.ConnectionManager;
-import org.jboss.cluster.proxy.NodeService;
 import org.jboss.cluster.proxy.container.MCMPAdapter;
+import org.jboss.cluster.proxy.container.NodeService;
 import org.jboss.logging.Logger;
 
 /**

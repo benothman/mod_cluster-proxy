@@ -29,6 +29,7 @@ import java.util.UUID;
 import org.apache.LifeCycleServiceAdapter;
 import org.apache.coyote.Request;
 import org.jboss.cluster.proxy.container.Node;
+import org.jboss.cluster.proxy.container.NodeService;
 import org.jboss.cluster.proxy.xml.XmlConfig;
 import org.jboss.cluster.proxy.xml.XmlNode;
 import org.jboss.cluster.proxy.xml.XmlNodes;
@@ -41,17 +42,17 @@ import org.jboss.logging.Logger;
  * 
  * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
  */
-public class NodeService extends LifeCycleServiceAdapter {
+public class CLNodeService extends LifeCycleServiceAdapter implements NodeService {
 
-	private static final Logger logger = Logger.getLogger(NodeService.class);
+	private static final Logger logger = Logger.getLogger(CLNodeService.class);
 	private List<Node> nodes;
-	private List<Node> failedNodes;
 	private Random random;
+	private boolean failedExist;
 
 	/**
 	 * Create a new instance of {@code NodeService}
 	 */
-	public NodeService() {
+	public CLNodeService() {
 		super();
 	}
 
@@ -68,16 +69,14 @@ public class NodeService extends LifeCycleServiceAdapter {
 		logger.info("Initializing Node Service");
 		this.random = new Random();
 		this.nodes = new ArrayList<>();
-		this.failedNodes = new ArrayList<>();
 
 		XmlNodes xmlNodes = XmlConfig.loadNodes();
 		logger.info("Adding new nodes : " + xmlNodes);
 		for (XmlNode n : xmlNodes.getNodes()) {
 			Node node = new Node();
-			node.setJvmRoute(UUID.randomUUID().toString());
 			node.setHostname(n.getHostname());
 			node.setPort(n.getPort());
-			this.nodes.add(node);
+			this.addNode(node);
 		}
 
 		setInitialized(true);
@@ -91,29 +90,72 @@ public class NodeService extends LifeCycleServiceAdapter {
 	 */
 	@Override
 	public void start() throws Exception {
-		// start new thread for node status checker task
-		startNewDaemonThread(new NodeStatusChecker());
 		// Start new thread for failed node health check
-		startNewDaemonThread(new HealthChecker());
-	}
-
-	/**
-	 * Create and start a new thread for the specified target task
-	 * 
-	 * @param task
-	 */
-	private void startNewDaemonThread(Runnable task) {
-		Thread t = new Thread(task);
+		Thread t = new Thread(new HealthChecker());
 		t.setDaemon(true);
 		t.setPriority(Thread.MIN_PRIORITY);
 		t.start();
 	}
 
 	/**
-	 * @return the number of active nodes
+	 * Add new node to the list of nodes
+	 * 
+	 * @param node
+	 *            the node to be added
 	 */
+	public void addNode(Node node) {
+		if (node == null) {
+			return;
+		}
+
+		if (node.getJvmRoute() == null) {
+			node.setJvmRoute(UUID.randomUUID().toString());
+			synchronized (this.nodes) {
+				nodes.add(node);
+			}
+			return;
+		}
+
+		for (Node n : this.nodes) {
+			if (node.getJvmRoute().equals(n.getJvmRoute())) {
+				return;
+			}
+		}
+		// The node does not exist in the list, add it to the list
+		synchronized (this.nodes) {
+			nodes.add(node);
+		}
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.jboss.cluster.proxy.container.NodeService#getActiveNodes()
+	 */
+	@Override
 	public int getActiveNodes() {
-		return this.nodes.size();
+		int count = 0;
+		for (Node n : this.nodes) {
+			if (n.isNodeUp()) {
+				count++;
+			}
+		}
+
+		return count;
+	}
+
+	/**
+	 * @return the number of failed node
+	 */
+	public int getFailedNodes() {
+		int count = 0;
+		for (Node n : this.nodes) {
+			if (n.isNodeDown()) {
+				count++;
+			}
+		}
+
+		return count;
 	}
 
 	/**
@@ -141,12 +183,14 @@ public class NodeService extends LifeCycleServiceAdapter {
 		}
 	}
 
-	/**
-	 * Select a node for the specified {@code Request}
+	/*
+	 * (non-Javadoc)
 	 * 
-	 * @param request
-	 * @return a node instance form the list of nodes
+	 * @see
+	 * org.jboss.cluster.proxy.container.NodeService#getNode(org.apache.coyote
+	 * .Request)
 	 */
+	@Override
 	public Node getNode(Request request) {
 		// URI decoding
 		// String requestURI = request.decodedURI().toString();
@@ -176,20 +220,21 @@ public class NodeService extends LifeCycleServiceAdapter {
 		logger.info(sb);
 	}
 
-	/**
-	 * Select a new node for the specified request and mark the failed node as
-	 * unreachable
+	/*
+	 * (non-Javadoc)
 	 * 
-	 * @param request
-	 * @param failedNode
-	 * @return
+	 * @see
+	 * org.jboss.cluster.proxy.container.NodeService#getNode(org.apache.coyote
+	 * .Request, org.jboss.cluster.proxy.container.Node)
 	 */
+	@Override
 	public Node getNode(Request request, Node failedNode) {
 		if (failedNode != null) {
 			// Set the node status to down
 			logger.warn("The node [" + failedNode.getHostname() + ":" + failedNode.getPort()
 					+ "] is down");
 			failedNode.setNodeDown();
+			failedExist = true;
 		}
 
 		return getNode(request);
@@ -211,38 +256,32 @@ public class NodeService extends LifeCycleServiceAdapter {
 		 */
 		@Override
 		public void run() {
-			List<Node> tmp = new ArrayList<>();
+			int count = 0;
 			while (true) {
-				while (failedNodes.isEmpty()) {
-					synchronized (failedNodes) {
+				while (!failedExist) {
+					synchronized (this) {
 						try {
 							// Waits at most 5 seconds
-							failedNodes.wait(5000);
+							this.wait(5000);
 						} catch (InterruptedException e) {
 							// NOPE
 						}
 					}
 				}
-				logger.info("Starting health check for previously failed nodes");
-				for (Node node : failedNodes) {
-					if (checkHealth(node)) {
-						node.setNodeUp();
-						tmp.add(node);
+				logger.info("Starting health check for failed nodes");
+				count = 0;
+				for (Node node : nodes) {
+					if (node.isNodeDown()) {
+						if (checkHealth(node)) {
+							node.setNodeUp();
+							count++;
+						}
+					} else {
+						count++;
 					}
 				}
-
-				if (tmp.isEmpty()) {
-					continue;
-				}
-
-				synchronized (nodes) {
-					nodes.addAll(tmp);
-				}
-
-				synchronized (failedNodes) {
-					failedNodes.removeAll(tmp);
-				}
-				tmp.clear();
+				// Is there any failed node?
+				failedExist = (count != nodes.size());
 
 				try {
 					// Try after 5 seconds
@@ -282,69 +321,6 @@ public class NodeService extends LifeCycleServiceAdapter {
 			}
 
 			return ok;
-		}
-	}
-
-	/**
-	 * {@code NodeStatusChecker}
-	 * 
-	 * Created on Sep 18, 2012 at 3:49:56 PM
-	 * 
-	 * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
-	 */
-	private class NodeStatusChecker implements Runnable {
-
-		@Override
-		public void run() {
-			List<Node> tmp = new ArrayList<>();
-			while (true) {
-				try {
-					Thread.sleep(5000);
-					// Retrieve nodes with status "DOWN"
-					for (Node n : nodes) {
-						if (n.isNodeDown()) {
-							tmp.add(n);
-						}
-					}
-
-					if (tmp.isEmpty()) {
-						continue;
-					}
-					// Remove failed nodes from the list of nodes
-					synchronized (nodes) {
-						nodes.removeAll(tmp);
-					}
-					// Add selected nodes to the list of failed nodes
-					synchronized (failedNodes) {
-						failedNodes.addAll(tmp);
-					}
-					tmp.clear();
-
-					// Retrieve nodes with status "UP"
-					for (Node n : failedNodes) {
-						if (n.isNodeUp()) {
-							tmp.add(n);
-						}
-					}
-
-					if (tmp.isEmpty()) {
-						continue;
-					}
-					// Remove all healthy nodes from the list of failed nodes
-					synchronized (failedNodes) {
-						failedNodes.removeAll(tmp);
-					}
-					// Add selected nodes to the list of healthy nodes
-					synchronized (nodes) {
-						nodes.addAll(tmp);
-					}
-					tmp.clear();
-
-					// printNodes();
-				} catch (Throwable e) {
-					e.printStackTrace();
-				}
-			}
 		}
 	}
 }

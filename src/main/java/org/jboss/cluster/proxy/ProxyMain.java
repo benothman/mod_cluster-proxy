@@ -47,7 +47,7 @@ public class ProxyMain {
 	private static final String DEFAULT_SCHEME = "http";
 	private static final List<Thread> threads = new ArrayList<>();
 	private static final List<WebConnectorService> services = new ArrayList<>();
-	protected static final NodeService NODE_SERVICE = new NodeService();
+	protected static final CLNodeService NODE_SERVICE = new CLNodeService();
 	protected static final ConnectionManager CONNECTION_MANAGER = new ConnectionManager();
 	public static final int DEFAULT_MCM_PORT = 6666;
 	public static final int DEFAULT_HTTP_PORT = 8080;
@@ -84,7 +84,7 @@ public class ProxyMain {
 			String scheme = System.getProperty("org.apache.coyote.http11.SCHEME", DEFAULT_SCHEME);
 			// Creating the web connector service
 			// use the static NodeService if configured.
-			WebConnectorService service = new WebConnectorService(protocol, scheme, new NodeService());
+			WebConnectorService service = new WebConnectorService(protocol, scheme, new CLNodeService());
 			// configure the web connector service
 
 			// Setting the address (host:port)

@@ -133,8 +133,8 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 		} while (channel != null && channel.isClosed());
 
 		if (channel == null) {
-			System.out.println("\t--> OPEN NEW CONNECTION TO <" + node.getHostname()
-					+ ":" + node.getPort() + ">");
+			System.out.println("\t--> OPEN NEW CONNECTION TO <" + node.getHostname() + ":"
+					+ node.getPort() + ">");
 			channel = connect(node);
 		}
 
@@ -164,8 +164,6 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	 * @throws Exception
 	 */
 	private NioChannel connect(Node node) throws Exception {
-		System.out.println("OPEN NEW CONNCTION TO NODE <" + node.getHostname() + ":"
-				+ node.getPort() + ">");
 		return connect(node.getHostname(), node.getPort());
 	}
 
