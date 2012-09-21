@@ -60,18 +60,18 @@ public class WebConnectorService {
 	 * 
 	 * @param protocol
 	 * @param scheme
-	 * @param object 
+	 * @param service
 	 */
-	public WebConnectorService(String protocol, String scheme, NodeService  service) {
+	public WebConnectorService(String protocol, String scheme, NodeService service) {
 		if (protocol != null) {
 			this.protocol = protocol;
 		}
 		if (scheme != null) {
 			this.scheme = scheme;
 		}
-		
+
 		if (service != null)
-			this.service  = service;
+			this.service = service;
 	}
 
 	/**
@@ -86,14 +86,14 @@ public class WebConnectorService {
 			// Create connector
 			Connector connector = new Connector(protocol);
 			connector.setNodeService(service);
-	
+
 			connector.setConnectionManager(ProxyMain.CONNECTION_MANAGER);
 			connector.setPort(address.getPort());
 			connector.setScheme(scheme);
-			if("https".equalsIgnoreCase(getScheme())) {
+			if ("https".equalsIgnoreCase(getScheme())) {
 				connector.setSecure(true);
 			}
-			
+
 			if (enableLookups != null)
 				connector.setEnableLookups(enableLookups);
 			if (getMaxPostSize() != null)

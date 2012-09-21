@@ -139,6 +139,7 @@ public class CoyoteAdapter implements Adapter {
 	 *            a map containing all required parameters
 	 */
 	private void sendToNode(final Request request, final Response response) throws Exception {
+
 		final NioChannel nodeChannel = (NioChannel) response.getNote(Constants.NODE_CHANNEL_NOTE);
 		final ByteBuffer inBuffer = (ByteBuffer) response.getNote(Constants.IN_BUFFER_NOTE);
 
@@ -174,6 +175,7 @@ public class CoyoteAdapter implements Adapter {
 
 			@Override
 			public void failed(Throwable exc, Response attachment) {
+				exc.printStackTrace();
 				try {
 					// try again with node
 					tryWithNode(attachment.getRequest(), attachment);
@@ -255,10 +257,9 @@ public class CoyoteAdapter implements Adapter {
 										processor.closeSocket();
 									}
 									Node node = (Node) attachment.getNote(Constants.NODE_NOTE);
-									NioChannel channel = (NioChannel) attachment
+									NioChannel n_ch = (NioChannel) attachment
 											.getNote(Constants.NODE_CHANNEL_NOTE);
-									connector.getConnectionManager().recycle(node.getJvmRoute(),
-											channel);
+									connector.getConnectionManager().recycle(node, n_ch);
 								}
 							}
 						}
@@ -266,7 +267,7 @@ public class CoyoteAdapter implements Adapter {
 
 					@Override
 					public void failed(Throwable exc, org.apache.coyote.Response attachment) {
-
+						exc.printStackTrace();
 						try {
 							// try again with node
 							tryWithNode(attachment.getRequest(), attachment);
@@ -342,7 +343,7 @@ public class CoyoteAdapter implements Adapter {
 		boolean error = false;
 		Node node = this.connector.getNodeService().getNode(request, failedNode);
 		if (node == null) {
-			throw new IOException("No node available");
+			throw new Exception("No node available");
 		}
 
 		NioChannel nodeChannel = null;
@@ -352,6 +353,8 @@ public class CoyoteAdapter implements Adapter {
 				nodeChannel = this.connector.getConnectionManager().getChannel(node);
 				if (nodeChannel == null) {
 					throw new NullPointerException("Null node channel");
+				} else {
+					break;
 				}
 			}
 		} catch (Throwable t) {
@@ -386,7 +389,7 @@ public class CoyoteAdapter implements Adapter {
 		if (channel.isClosed()) {
 			this.connector.getConnectionManager().close(channel);
 		} else {
-			
+			this.connector.getConnectionManager().recycle(failedNode, channel);
 		}
 
 		prepareNode(request, response, failedNode, 1);

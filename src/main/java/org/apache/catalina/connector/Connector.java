@@ -28,7 +28,6 @@ import org.apache.coyote.Adapter;
 import org.apache.coyote.ProtocolHandler;
 import org.apache.tomcat.util.IntrospectionUtils;
 import org.apache.tomcat.util.res.StringManager;
-import org.jboss.cluster.proxy.CLNodeService;
 import org.jboss.cluster.proxy.ConnectionManager;
 import org.jboss.cluster.proxy.container.MCMPAdapter;
 import org.jboss.cluster.proxy.container.NodeService;
@@ -252,8 +251,8 @@ public final class Connector {
 		try {
 			this.nodeService.start();
 			this.connectionManager.start();
-			protocolHandler.start();
-		} catch (Exception e) {
+			this.protocolHandler.start();
+		} catch (Throwable e) {
 			throw new Exception(sm.getString("coyoteConnector.protocolHandlerStartFailed", e));
 		}
 	}
@@ -301,8 +300,20 @@ public final class Connector {
 		started = false;
 		try {
 			protocolHandler.destroy();
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			throw new Exception(sm.getString("coyoteConnector.protocolHandlerDestroyFailed", e));
+		}
+
+		try {
+			this.nodeService.destroy();
+		} catch (Throwable t) {
+			throw new Exception(sm.getString("coyoteConnector.nodeServiceDestroyFailed", t));
+		}
+
+		try {
+			this.connectionManager.destroy();
+		} catch (Throwable t) {
+			throw new Exception(sm.getString("coyoteConnector.connectionManagerDestroyFailed", t));
 		}
 	}
 

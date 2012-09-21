@@ -36,7 +36,6 @@ public abstract class LifeCycleServiceAdapter implements LifeCycleService {
 	private boolean initialized = false;
 	private boolean started;
 	private boolean paused;
-	private boolean stopped = true;
 
 	/**
 	 * Create a new instance of {@code LifeCycleServiceAdapter}
@@ -52,7 +51,11 @@ public abstract class LifeCycleServiceAdapter implements LifeCycleService {
 	 */
 	@Override
 	public void init() throws Exception {
-		// NOPE
+		if (initialized) {
+			return;
+		}
+
+		this.initialized = true;
 	}
 
 	/*
@@ -62,7 +65,11 @@ public abstract class LifeCycleServiceAdapter implements LifeCycleService {
 	 */
 	@Override
 	public void start() throws Exception {
-		// NOPE
+		if (!initialized) {
+			init();
+		}
+
+		this.started = true;
 	}
 
 	/*
@@ -72,7 +79,7 @@ public abstract class LifeCycleServiceAdapter implements LifeCycleService {
 	 */
 	@Override
 	public void pause() throws Exception {
-		// NOPE
+		this.paused = true;
 	}
 
 	/*
@@ -158,7 +165,7 @@ public abstract class LifeCycleServiceAdapter implements LifeCycleService {
 	 * @param value
 	 */
 	protected void setStopped(boolean value) {
-		this.stopped = value;
+		this.started = !value;
 	}
 
 	/*
@@ -168,6 +175,6 @@ public abstract class LifeCycleServiceAdapter implements LifeCycleService {
 	 */
 	@Override
 	public boolean isStopped() {
-		return this.stopped;
+		return !this.started;
 	}
 }

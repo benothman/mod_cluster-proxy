@@ -26,7 +26,11 @@ import org.apache.coyote.Request;
 
 /**
  * {@code NodeService}
- * 
+ * <p>
+ * This interface is an abstract facade to node service. Depending to the nature
+ * of the node service to provide, the user should implement this interface and
+ * write his/her own service.
+ * </p>
  * Created on Sep 21, 2012 at 10:37:53 AM
  * 
  * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>

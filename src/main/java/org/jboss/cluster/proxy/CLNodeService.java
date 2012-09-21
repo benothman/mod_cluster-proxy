@@ -48,6 +48,8 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 	private List<Node> nodes;
 	private Random random;
 	private boolean failedExist;
+	private boolean running = false;
+	private Object mutex;
 
 	/**
 	 * Create a new instance of {@code NodeService}
@@ -78,7 +80,7 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 			node.setPort(n.getPort());
 			this.addNode(node);
 		}
-
+		this.mutex = new Object();
 		setInitialized(true);
 		logger.info("Node Service initialized");
 	}
@@ -90,11 +92,46 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 	 */
 	@Override
 	public void start() throws Exception {
+		if (!isInitialized()) {
+			init();
+		}
 		// Start new thread for failed node health check
 		Thread t = new Thread(new HealthChecker());
 		t.setDaemon(true);
 		t.setPriority(Thread.MIN_PRIORITY);
 		t.start();
+		setStarted(true);
+		this.running = true;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.apache.LifeCycleServiceAdapter#stop()
+	 */
+	@Override
+	public void stop() throws Exception {
+		this.running = false;
+		setStarted(false);
+		setPaused(false);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.apache.LifeCycleServiceAdapter#destroy()
+	 */
+	@Override
+	public void destroy() throws Exception {
+		stop();
+		this.nodes.clear();
+		this.nodes = null;
+		this.random = null;
+		synchronized (this.mutex) {
+			this.mutex.notifyAll();
+		}
+
+		setInitialized(false);
 	}
 
 	/**
@@ -174,7 +211,7 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 	 * @see #getNode()
 	 */
 	private Node getNode(int n) {
-		if (n >= this.nodes.size()) {
+		if (n >= getActiveNodes()) {
 			return null;
 		} else {
 			int index = random.nextInt(this.nodes.size());
@@ -200,26 +237,6 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 		return getNode();
 	}
 
-	/**
-	 * 
-	 */
-	public void printNodes() {
-		if (this.nodes.isEmpty()) {
-			logger.info("No nodes available");
-			return;
-		}
-		StringBuilder sb = new StringBuilder("--> Available nodes : [");
-		int i = 0;
-		for (Node n : this.nodes) {
-			sb.append(n.getHostname() + ":" + n.getPort());
-			if ((i++) < this.nodes.size() - 1) {
-				sb.append(", ");
-			}
-		}
-		sb.append("]");
-		logger.info(sb);
-	}
-
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -241,6 +258,23 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 	}
 
 	/**
+	 * Print out the list nodes with their status
+	 */
+	public void printNodes() {
+		StringBuilder sb = new StringBuilder("--> Registered nodes : {");
+		int i = 0;
+		for (Node n : this.nodes) {
+			sb.append("[").append(n.getHostname()).append(":").append(n.getPort()).append(":")
+					.append(n.getStatus()).append("]");
+			if ((i++) < this.nodes.size() - 1) {
+				sb.append(", ");
+			}
+		}
+		sb.append("}");
+		logger.info(sb);
+	}
+
+	/**
 	 * {@code HealthChecker}
 	 * 
 	 * Created on Sep 18, 2012 at 3:46:36 PM
@@ -257,17 +291,24 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 		@Override
 		public void run() {
 			int count = 0;
-			while (true) {
-				while (!failedExist) {
-					synchronized (this) {
+			while (running) {
+				// Wait until there is at least one failed node or the system is
+				// paused
+				while (!failedExist || isPaused()) {
+					synchronized (mutex) {
 						try {
 							// Waits at most 5 seconds
-							this.wait(5000);
+							mutex.wait(5000);
 						} catch (InterruptedException e) {
 							// NOPE
 						}
 					}
 				}
+
+				if (!running) {
+					break;
+				}
+
 				logger.info("Starting health check for failed nodes");
 				count = 0;
 				for (Node node : nodes) {
