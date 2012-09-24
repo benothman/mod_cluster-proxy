@@ -211,7 +211,7 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 	 * @see #getNode()
 	 */
 	private Node getNode(int n) {
-		if (n >= getActiveNodes()) {
+		if (n >= this.nodes.size()) {
 			return null;
 		} else {
 			int index = random.nextInt(this.nodes.size());
@@ -316,7 +316,7 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 				// Wait until there is at least one failed node or the system is
 				// paused
 				while (!failedExist || isPaused()) {
-					System.out.println("[SEQ=" + (seq++) + "] Waiting for condition");
+					System.out.println("[SEQ=" + (seq++) + "] Waiting for condition (active nodes = "+getActiveNodes()+")");
 					synchronized (mutex) {
 						try {
 							// Waits at most 5 seconds

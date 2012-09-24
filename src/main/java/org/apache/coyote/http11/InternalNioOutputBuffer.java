@@ -212,7 +212,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 			// Perform the write operation
 			this.channel.write(buffer, timeout, unit, buffer, this.completionHandler);
 		} catch (Throwable t) {
-			log.error(t.getMessage(), t);
+			log.error(t, t);
 			t.printStackTrace();
 			if (log.isDebugEnabled()) {
 				log.debug(t.getMessage(), t);
