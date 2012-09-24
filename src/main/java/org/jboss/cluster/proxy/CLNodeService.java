@@ -265,6 +265,7 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 	 */
 	public void failedNode(Node node) {
 		if (node != null) {
+			logger.info("New failed node <"+node.getHostname()+":"+ node.getPort()+">");
 			node.setNodeDown();
 			failedExist = true;
 			this.activeNodes.decrementAndGet();
@@ -336,6 +337,7 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 					if (node.isNodeDown()) {
 						if (checkHealth(node)) {
 							node.setNodeUp();
+							logger.info("New available node <"+node.getHostname()+":"+ node.getPort()+">");
 							activeNodes.incrementAndGet();
 						}
 					}
