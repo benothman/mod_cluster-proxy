@@ -21,11 +21,8 @@
  */
 package org.jboss.cluster.proxy;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -84,7 +81,8 @@ public class ProxyMain {
 			String scheme = System.getProperty("org.apache.coyote.http11.SCHEME", DEFAULT_SCHEME);
 			// Creating the web connector service
 			// use the static NodeService if configured.
-			WebConnectorService service = new WebConnectorService(protocol, scheme, new CLNodeService());
+			WebConnectorService service = new WebConnectorService(protocol, scheme,
+					new CLNodeService());
 			// configure the web connector service
 
 			// Setting the address (host:port)
@@ -122,7 +120,8 @@ public class ProxyMain {
 			protocol = System.getProperty("http-protocol", DEFAULT_MCM_PROTOCOL);
 			scheme = System.getProperty("org.jboss.cluster.proxy.http11.SCHEME", DEFAULT_SCHEME);
 			// Creating the web connector service
-			WebConnectorService nodeService = new WebConnectorService(protocol, scheme, new MCMNodeService());
+			WebConnectorService nodeService = new WebConnectorService(protocol, scheme,
+					new MCMNodeService());
 			// configure the web connector service
 
 			// Setting the address (host:port)
@@ -160,31 +159,7 @@ public class ProxyMain {
 			System.exit(-1);
 		}
 
-		threads.add(new Thread(new Runnable() {
-
-			@Override
-			public void run() {
-				try (BufferedReader br = new BufferedReader(new InputStreamReader(System.in))) {
-					String line = null;
-					while ((line = br.readLine()) != null) {
-						line = line.trim();
-						if (line.isEmpty()) {
-							continue;
-						}
-						
-						if ("stop".equalsIgnoreCase(line) || "quit".equalsIgnoreCase(line) || "exit".equalsIgnoreCase(line)) {
-							logger.info("Processing command '" + line + "'");
-							break;
-						} else {
-							logger.error("Unknow command : " + line);
-						}
-					}
-				} catch (IOException e) {
-					logger.error(e.getMessage(), e);
-				}
-				System.exit(0);
-			}
-		}));
+		threads.add(new Thread(new CLI(System.out)));
 
 		time = System.currentTimeMillis() - time;
 		logger.info("JBoss Mod Cluster Proxy started in " + time + "ms");
@@ -192,6 +167,14 @@ public class ProxyMain {
 		addShutdownHook();
 		// Start all threads
 		startThreads();
+	}
+
+	protected static void pause() {
+		// TODO
+	}
+
+	protected static void start() {
+		// TODO
 	}
 
 	/**

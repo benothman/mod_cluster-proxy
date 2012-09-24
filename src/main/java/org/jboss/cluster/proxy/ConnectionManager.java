@@ -32,6 +32,7 @@ import org.apache.LifeCycleServiceAdapter;
 import org.apache.tomcat.util.net.NioChannel;
 import org.apache.tomcat.util.net.NioChannelFactory;
 import org.jboss.cluster.proxy.container.Node;
+import org.jboss.cluster.proxy.container.NodeService;
 import org.jboss.logging.Logger;
 
 /**
@@ -46,6 +47,8 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	private static final Logger logger = Logger.getLogger(ConnectionManager.class);
 	private ConcurrentHashMap<String, ConcurrentLinkedQueue<NioChannel>> connections;
 	private NioChannelFactory factory;
+
+	private NodeService nodeService;
 
 	/**
 	 * Create a new instance of {@code ConnectionManager}
@@ -132,7 +135,15 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 		} while (channel != null && channel.isClosed());
 
 		if (channel == null) {
-			channel = connect(node);
+			try {
+				channel = connect(node);
+			} catch (Exception exp) {
+				logger.error(exp.getMessage(), exp);
+				if (this.nodeService != null) {
+					this.nodeService.failedNode(node);
+				}
+				throw exp;
+			}
 		}
 
 		return channel;
@@ -265,5 +276,20 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 		if (this.connections.get(jvmRoute) == null) {
 			this.connections.put(jvmRoute, new ConcurrentLinkedQueue<NioChannel>());
 		}
+	}
+
+	/**
+	 * @return the nodeService
+	 */
+	public NodeService getNodeService() {
+		return nodeService;
+	}
+
+	/**
+	 * @param nodeService
+	 *            the nodeService to set
+	 */
+	public void setNodeService(NodeService nodeService) {
+		this.nodeService = nodeService;
 	}
 }

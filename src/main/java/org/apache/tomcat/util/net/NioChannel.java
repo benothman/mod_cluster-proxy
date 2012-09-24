@@ -1344,6 +1344,17 @@ public class NioChannel implements AsynchronousByteChannel, NetworkChannel {
 		return this.channel.supportedOptions();
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#finalize()
+	 */
+	@Override
+	protected void finalize() throws Throwable {
+		this.close(true);
+		super.finalize();
+	}
+
 	@Override
 	public String toString() {
 		return getName();

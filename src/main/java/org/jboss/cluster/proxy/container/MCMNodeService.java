@@ -103,4 +103,17 @@ public class MCMNodeService extends LifeCycleServiceAdapter implements NodeServi
 		return count;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * org.jboss.cluster.proxy.container.NodeService#failedNode(org.jboss.cluster
+	 * .proxy.container.Node)
+	 */
+	public void failedNode(Node node) {
+		if (node != null) {
+			node.setNodeDown();
+			conf.insertupdate(node);
+		}
+	}
 }

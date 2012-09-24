@@ -60,5 +60,11 @@ public interface NodeService extends LifeCycleService {
 	 *         status to <tt>UP</tt>
 	 */
 	public int getActiveNodes();
+	
+	/**
+	 * Set the node status to <tt>DOWN</tt>
+	 * @param node
+	 */
+	public void failedNode(Node node);
 
 }

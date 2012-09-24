@@ -199,6 +199,7 @@ public final class Connector {
 		this.connectionManager.init();
 		if (this.nodeService != null) {
 			this.nodeService.init();
+			this.connectionManager.setNodeService(nodeService);
 		}
 
 		if (this.protocolHandler.getClass().equals(

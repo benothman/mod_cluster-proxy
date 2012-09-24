@@ -175,7 +175,6 @@ public class CoyoteAdapter implements Adapter {
 
 			@Override
 			public void failed(Throwable exc, Response attachment) {
-				exc.printStackTrace();
 				try {
 					// try again with node
 					tryWithNode(attachment.getRequest(), attachment);
@@ -267,7 +266,7 @@ public class CoyoteAdapter implements Adapter {
 
 					@Override
 					public void failed(Throwable exc, org.apache.coyote.Response attachment) {
-						exc.printStackTrace();
+
 						try {
 							// try again with node
 							tryWithNode(attachment.getRequest(), attachment);
@@ -336,7 +335,7 @@ public class CoyoteAdapter implements Adapter {
 	private void prepareNode(final org.apache.coyote.Request request,
 			final org.apache.coyote.Response response, Node failedNode, int n) throws Exception {
 
-		if (n >= this.connector.getNodeService().getActiveNodes()) {
+		if (n >= this.connector.getNodeService().getActiveNodes() * 2) {
 			throw new IOException("No node available");
 		}
 
@@ -358,6 +357,8 @@ public class CoyoteAdapter implements Adapter {
 				}
 			}
 		} catch (Throwable t) {
+			logger.error(t.getMessage(), t);
+			this.connector.getNodeService().failedNode(node);
 			prepareNode(request, response, node, n + 1);
 			return;
 		}
@@ -386,11 +387,8 @@ public class CoyoteAdapter implements Adapter {
 		NioChannel channel = (NioChannel) response.getNote(Constants.NODE_CHANNEL_NOTE);
 		// Retrieve the failed node
 		Node failedNode = (Node) response.getNote(Constants.NODE_NOTE);
-		if (channel.isClosed()) {
-			this.connector.getConnectionManager().close(channel);
-		} else {
-			this.connector.getConnectionManager().recycle(failedNode, channel);
-		}
+		// try with another node
+		this.connector.getConnectionManager().recycle(failedNode, channel);
 
 		prepareNode(request, response, failedNode, 1);
 	}
@@ -488,7 +486,12 @@ public class CoyoteAdapter implements Adapter {
 
 				@Override
 				public void failed(Throwable exc, Integer attachment) {
-					exc.printStackTrace();
+					logger.error(exc.getMessage(), exc);
+					try {
+						sendError(request, response);
+					} catch (IOException e) {
+						logger.error(e.getMessage(), e);
+					}
 				}
 			});
 		} else {

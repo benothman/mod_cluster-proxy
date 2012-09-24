@@ -211,12 +211,22 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 	 * @see #getNode()
 	 */
 	private Node getNode(int n) {
+		Node selected = null;
+
 		if (n >= getActiveNodes()) {
+			System.out.println("Selected node " + selected);
 			return null;
 		} else {
 			int index = random.nextInt(this.nodes.size());
 			Node node = this.nodes.get(index);
-			return (node.isNodeUp() ? node : getNode(n + 1));
+			selected = (node.isNodeUp() ? node : getNode(n + 1));
+			if (selected != null) {
+				System.out.println("Selected node : <" + selected.getHostname() + ":"
+						+ selected.getPort() + ">");
+			} else {
+				System.out.println("Selected node " + selected);
+			}
+			return selected;
 		}
 	}
 
@@ -248,13 +258,34 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 	public Node getNode(Request request, Node failedNode) {
 		if (failedNode != null) {
 			// Set the node status to down
-			logger.warn("The node [" + failedNode.getHostname() + ":" + failedNode.getPort()
-					+ "] is down");
-			failedNode.setNodeDown();
-			failedExist = true;
+			// logger.warn("The node [" + failedNode.getHostname() + ":" +
+			// failedNode.getPort() + "] is down");
+			// failedNode.setNodeDown();
+			// this.failedExist = true;
+			// synchronized (this.mutex) {
+			// mutex.notifyAll();
+			// }
 		}
 
 		return getNode(request);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * org.jboss.cluster.proxy.container.NodeService#failedNode(org.jboss.cluster
+	 * .proxy.container.Node)
+	 */
+	public void failedNode(Node node) {
+		if (node != null) {
+			logger.info("New node failed <" + node.getHostname() + ":" + node.getPort() + ">");
+			node.setNodeDown();
+			failedExist = true;
+			synchronized (this.mutex) {
+				this.mutex.notifyAll();
+			}
+		}
 	}
 
 	/**
@@ -291,10 +322,12 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 		@Override
 		public void run() {
 			int count = 0;
+			int seq = 0;
 			while (running) {
 				// Wait until there is at least one failed node or the system is
 				// paused
 				while (!failedExist || isPaused()) {
+					System.out.println("[SEQ=" + (seq++) + "] Waiting for condition");
 					synchronized (mutex) {
 						try {
 							// Waits at most 5 seconds
@@ -304,6 +337,8 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 						}
 					}
 				}
+
+				System.out.println("failedExist = " + failedExist + ", paused = " + isPaused());
 
 				if (!running) {
 					break;

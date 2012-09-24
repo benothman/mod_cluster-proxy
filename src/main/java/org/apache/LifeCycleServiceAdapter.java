@@ -26,8 +26,9 @@ package org.apache;
  * cycle events. The methods in this class are empty. This class exists as
  * convenience for creating service objects.
  * 
+ * @see {@link LifeCycleService}
  * 
- * Created on Jul 6, 2012 at 7:08:24 PM
+ *      Created on Jul 6, 2012 at 7:08:24 PM
  * 
  * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
  */

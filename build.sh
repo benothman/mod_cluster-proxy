@@ -28,3 +28,5 @@
 mvn clean install
 mkdir target/conf
 cp conf/* target/conf
+mkdir target/logs
+touch target/logs/proxy.log
