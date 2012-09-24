@@ -119,6 +119,8 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 			public void failed(Throwable exc, ByteBuffer attachment) {
 				log.error(exc.getMessage(), exc);
 				endpoint.close(channel);
+				
+				exc.printStackTrace();
 			}
 		};
 	}
@@ -211,6 +213,7 @@ public class InternalNioOutputBuffer extends AbstractInternalOutputBuffer {
 			this.channel.write(buffer, timeout, unit, buffer, this.completionHandler);
 		} catch (Throwable t) {
 			log.error(t.getMessage(), t);
+			t.printStackTrace();
 			if (log.isDebugEnabled()) {
 				log.debug(t.getMessage(), t);
 			}
