@@ -211,22 +211,12 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 	 * @see #getNode()
 	 */
 	private Node getNode(int n) {
-		Node selected = null;
-
 		if (n >= getActiveNodes()) {
-			System.out.println("Selected node " + selected);
 			return null;
 		} else {
 			int index = random.nextInt(this.nodes.size());
 			Node node = this.nodes.get(index);
-			selected = (node.isNodeUp() ? node : getNode(n + 1));
-			if (selected != null) {
-				System.out.println("Selected node : <" + selected.getHostname() + ":"
-						+ selected.getPort() + ">");
-			} else {
-				System.out.println("Selected node " + selected);
-			}
-			return selected;
+			return (node.isNodeUp() ? node : getNode(n + 1));
 		}
 	}
 
@@ -279,7 +269,6 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 	 */
 	public void failedNode(Node node) {
 		if (node != null) {
-			logger.info("New node failed <" + node.getHostname() + ":" + node.getPort() + ">");
 			node.setNodeDown();
 			failedExist = true;
 			synchronized (this.mutex) {
