@@ -89,7 +89,7 @@ public class CLI implements Runnable {
 					case STOP_CMD:
 					case QUIT_CMD:
 					case EXIT_CMD:
-						logger.info("Processing command '" + line + "'");
+						out.println("Processing command '" + line + "'");
 						running = false;
 						break;
 					case PAUSE_CMD:
@@ -97,16 +97,27 @@ public class CLI implements Runnable {
 						if (paused) {
 							logger.error("The system is already paused");
 						} else {
-							ProxyMain.pause();
-							paused = true;
+
+							try {
+								ProxyMain.pause();
+								paused = true;
+							} catch (Exception e) {
+								logger.error(e.getMessage(), e);
+								e.printStackTrace();
+							}
 						}
 						break;
 					case RESUME_CMD:
 					case START_CMD:
 						logger.info("Processing command '" + line + "'");
 						if (paused) {
-							ProxyMain.start();
-							paused = false;
+							try {
+								ProxyMain.start();
+								paused = false;
+							} catch (StartException e) {
+								logger.error(e.getMessage(), e);
+								e.printStackTrace();
+							}
 						} else {
 							logger.error("The system is already running");
 						}

@@ -266,6 +266,7 @@ public final class Connector {
 	public void pause() throws Exception {
 		try {
 			protocolHandler.pause();
+			this.nodeService.pause();
 		} catch (Exception e) {
 			log.error(sm.getString("coyoteConnector.protocolHandlerPauseFailed"), e);
 		}
@@ -279,6 +280,7 @@ public final class Connector {
 	public void resume() throws Exception {
 		try {
 			protocolHandler.resume();
+			this.nodeService.resume();
 		} catch (Exception e) {
 			log.error(sm.getString("coyoteConnector.protocolHandlerResumeFailed"), e);
 		}

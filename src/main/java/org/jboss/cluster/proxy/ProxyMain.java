@@ -169,12 +169,24 @@ public class ProxyMain {
 		startThreads();
 	}
 
-	protected static void pause() {
-		// TODO
+	/**
+	 * 
+	 * @throws Exception
+	 */
+	protected static void pause() throws Exception {
+		for (WebConnectorService service : services) {
+			service.pause();
+		}
 	}
 
-	protected static void start() {
-		// TODO
+	/**
+	 * 
+	 * @throws StartException
+	 */
+	protected static void start() throws StartException {
+		for (WebConnectorService service : services) {
+			service.start();
+		}
 	}
 
 	/**

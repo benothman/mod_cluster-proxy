@@ -53,6 +53,13 @@ public interface LifeCycleService {
 	public void pause() throws Exception;
 
 	/**
+	 * Resume the service to make it available again if it was paused.
+	 * 
+	 * @throws Exception
+	 */
+	public void resume() throws Exception;
+
+	/**
 	 * Stop the service to make it unavailable.
 	 * 
 	 * @throws Exception

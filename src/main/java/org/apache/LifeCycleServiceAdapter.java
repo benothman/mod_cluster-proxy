@@ -86,6 +86,15 @@ public abstract class LifeCycleServiceAdapter implements LifeCycleService {
 	/*
 	 * (non-Javadoc)
 	 * 
+	 * @see org.apache.LifeCycleService#resume()
+	 */
+	public void resume() throws Exception {
+		this.paused = false;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.apache.LifeCycleService#stop()
 	 */
 	@Override

@@ -82,66 +82,85 @@ public class WebConnectorService {
 	 */
 	public synchronized void start() throws StartException {
 		logger.info("Starting Web Connector Service");
+
 		try {
-			// Create connector
-			Connector connector = new Connector(protocol);
-			connector.setNodeService(service);
+			if (this.connector != null) {
+				this.connector.resume();
+			} else {
+				// Create connector
+				Connector connector = new Connector(protocol);
+				connector.setNodeService(service);
 
-			connector.setConnectionManager(ProxyMain.CONNECTION_MANAGER);
-			connector.setPort(address.getPort());
-			connector.setScheme(scheme);
-			if ("https".equalsIgnoreCase(getScheme())) {
-				connector.setSecure(true);
-			}
-
-			if (enableLookups != null)
-				connector.setEnableLookups(enableLookups);
-			if (getMaxPostSize() != null)
-				connector.setMaxPostSize(maxPostSize);
-			if (maxSavePostSize != null)
-				connector.setMaxSavePostSize(maxSavePostSize);
-			if (proxyName != null)
-				connector.setProxyName(proxyName);
-			if (proxyPort != null)
-				connector.setProxyPort(proxyPort);
-			if (redirectPort != null)
-				connector.setRedirectPort(redirectPort);
-			if (secure != null)
-				connector.setSecure(secure);
-
-			if (executor != null) {
-				Method m = connector.getProtocolHandler().getClass()
-						.getMethod("setExecutor", Executor.class);
-				m.invoke(connector.getProtocolHandler(), executor);
-			}
-			if (address != null && address.getAddress() != null) {
-				Method m = connector.getProtocolHandler().getClass()
-						.getMethod("setAddress", InetAddress.class);
-				m.invoke(connector.getProtocolHandler(), address.getAddress());
-			}
-			if (maxConnections != null) {
-				try {
-					Method m = connector.getProtocolHandler().getClass()
-							.getMethod("setPollerSize", Integer.TYPE);
-					m.invoke(connector.getProtocolHandler(), maxConnections);
-				} catch (NoSuchMethodException e) {
-					// Not all connectors will have this
+				connector.setConnectionManager(ProxyMain.CONNECTION_MANAGER);
+				connector.setPort(address.getPort());
+				connector.setScheme(scheme);
+				if ("https".equalsIgnoreCase(getScheme())) {
+					connector.setSecure(true);
 				}
 
-				Method m = connector.getProtocolHandler().getClass()
-						.getMethod("setMaxThreads", Integer.TYPE);
-				m.invoke(connector.getProtocolHandler(), maxConnections);
+				if (enableLookups != null)
+					connector.setEnableLookups(enableLookups);
+				if (getMaxPostSize() != null)
+					connector.setMaxPostSize(maxPostSize);
+				if (maxSavePostSize != null)
+					connector.setMaxSavePostSize(maxSavePostSize);
+				if (proxyName != null)
+					connector.setProxyName(proxyName);
+				if (proxyPort != null)
+					connector.setProxyPort(proxyPort);
+				if (redirectPort != null)
+					connector.setRedirectPort(redirectPort);
+				if (secure != null)
+					connector.setSecure(secure);
+
+				if (executor != null) {
+					Method m = connector.getProtocolHandler().getClass()
+							.getMethod("setExecutor", Executor.class);
+					m.invoke(connector.getProtocolHandler(), executor);
+				}
+				if (address != null && address.getAddress() != null) {
+					Method m = connector.getProtocolHandler().getClass()
+							.getMethod("setAddress", InetAddress.class);
+					m.invoke(connector.getProtocolHandler(), address.getAddress());
+				}
+				if (maxConnections != null) {
+					try {
+						Method m = connector.getProtocolHandler().getClass()
+								.getMethod("setPollerSize", Integer.TYPE);
+						m.invoke(connector.getProtocolHandler(), maxConnections);
+					} catch (NoSuchMethodException e) {
+						// Not all connectors will have this
+					}
+
+					Method m = connector.getProtocolHandler().getClass()
+							.getMethod("setMaxThreads", Integer.TYPE);
+					m.invoke(connector.getProtocolHandler(), maxConnections);
+				}
+
+				// Initialize the connector
+				connector.init();
+				// Start the connector
+				connector.start();
+				this.connector = connector;
+
 			}
 
-			// Initialize the connector
-			connector.init();
-			// Start the connector
-			connector.start();
-			this.connector = connector;
 			logger.info("Web Connector Service started successfully");
 		} catch (Throwable e) {
 			throw new StartException("Error starting web connector service", e);
 		}
+	}
+
+	/**
+	 * 
+	 * @throws Exception
+	 */
+	public synchronized void pause() throws Exception {
+		logger.info("Pausing Web Connector Service");
+		if (this.connector != null) {
+			this.connector.pause();
+		}
+		logger.info("Web Connector Service paused successfully");
 	}
 
 	/**
