@@ -293,13 +293,11 @@ public class CoyoteAdapter implements Adapter {
 			final org.apache.coyote.Response response) throws Exception {
 
 		postParseRequest(request, response);
-
-		try {
-			prepareNode(request, response, null, 0);
-		} catch (Throwable t) {
-			logger.error("No node is available", t);
+		if (!prepareNode(request, response, null, 0)) {
+			// If prepare node fails, return false
 			return false;
 		}
+
 		// Client request
 		AbstractInternalInputBuffer inputBuffer = (AbstractInternalInputBuffer) request
 				.getInputBuffer();
@@ -332,48 +330,32 @@ public class CoyoteAdapter implements Adapter {
 	 * @param response
 	 * @throws Exception
 	 */
-	private void prepareNode(final org.apache.coyote.Request request,
+	private boolean prepareNode(final org.apache.coyote.Request request,
 			final org.apache.coyote.Response response, Node failedNode, int n) throws Exception {
 
-		if (n >= this.connector.getNodeService().getActiveNodes() * 2) {
-			throw new IOException("No node available");
-		}
+		Node node = null;
 
-		boolean error = false;
-		Node node = this.connector.getNodeService().getNode(request, failedNode);
-		if (node == null) {
-			throw new Exception("No node available");
+		// If there is no active node or the get node returns null
+		if ((node = this.connector.getNodeService().getNode(request, failedNode)) == null) {
+			return false;
 		}
 
 		NioChannel nodeChannel = null;
 		try {
-			int tries = 0;
-			while ((tries++) <= 3) {
-				nodeChannel = this.connector.getConnectionManager().getChannel(node);
-				if (nodeChannel == null) {
-					throw new NullPointerException("Null node channel");
-				} else {
-					break;
-				}
+			nodeChannel = this.connector.getConnectionManager().getChannel(node);
+			if (nodeChannel == null) {
+				throw new NullPointerException("Null node channel");
 			}
-		} catch (Throwable t) {
-			logger.error(t.getMessage(), t);
+		} catch (Throwable th) {
+			logger.error(th, th);
 			this.connector.getNodeService().failedNode(node);
-			prepareNode(request, response, node, n + 1);
-			return;
+			return prepareNode(request, response, node, n + 1);
 		}
 
 		response.setNote(Constants.NODE_NOTE, node);
 		response.setNote(Constants.NODE_CHANNEL_NOTE, nodeChannel);
 
-		if (error) {
-			response.setStatus(503);
-			response.setMessage("Service Unavailable");
-			response.addHeader("Server", "Apache-Coyote/1.1");
-
-			throw new IOException("Unable to connect to node");
-		}
-
+		return true;
 	}
 
 	/**

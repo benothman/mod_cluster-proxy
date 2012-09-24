@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.LifeCycleServiceAdapter;
 import org.apache.coyote.Request;
@@ -50,6 +51,7 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 	private boolean failedExist;
 	private boolean running = false;
 	private Object mutex;
+	private AtomicInteger activeNodes = new AtomicInteger(0);
 
 	/**
 	 * Create a new instance of {@code NodeService}
@@ -82,6 +84,7 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 		}
 		this.mutex = new Object();
 		setInitialized(true);
+		this.activeNodes.set(nodes.size());
 		logger.info("Node Service initialized");
 	}
 
@@ -171,35 +174,21 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 	 */
 	@Override
 	public int getActiveNodes() {
-		int count = 0;
-		for (Node n : this.nodes) {
-			if (n.isNodeUp()) {
-				count++;
-			}
-		}
-
-		return count;
+		return this.activeNodes.get();
 	}
 
 	/**
 	 * @return the number of failed node
 	 */
 	public int getFailedNodes() {
-		int count = 0;
-		for (Node n : this.nodes) {
-			if (n.isNodeDown()) {
-				count++;
-			}
-		}
-
-		return count;
+		return this.nodes.size() - getActiveNodes();
 	}
 
 	/**
 	 * @return a node
 	 */
 	private Node getNode() {
-		return (this.nodes.isEmpty() ? null : getNode(0));
+		return ((this.nodes.isEmpty() || getActiveNodes() <= 0) ? null : getNode(0));
 	}
 
 	/**
@@ -211,7 +200,14 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 	 * @see #getNode()
 	 */
 	private Node getNode(int n) {
+		// This means that we made enough random tests, so check all nodes and
+		// return the first node available (if any)
 		if (n >= this.nodes.size()) {
+			for (Node nod : this.nodes) {
+				if (nod.isNodeUp()) {
+					return nod;
+				}
+			}
 			return null;
 		} else {
 			int index = random.nextInt(this.nodes.size());
@@ -271,6 +267,7 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 		if (node != null) {
 			node.setNodeDown();
 			failedExist = true;
+			this.activeNodes.decrementAndGet();
 			synchronized (this.mutex) {
 				this.mutex.notifyAll();
 			}
@@ -310,13 +307,13 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 		 */
 		@Override
 		public void run() {
-			int count = 0;
 			int seq = 0;
 			while (running) {
 				// Wait until there is at least one failed node or the system is
 				// paused
 				while (!failedExist || isPaused()) {
-					System.out.println("[SEQ=" + (seq++) + "] Waiting for condition (active nodes = "+getActiveNodes()+")");
+					System.out.println("[SEQ=" + (seq++)
+							+ "] Waiting for condition (active nodes = " + getActiveNodes() + ")");
 					synchronized (mutex) {
 						try {
 							// Waits at most 5 seconds
@@ -334,19 +331,17 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 				}
 
 				logger.info("Starting health check for failed nodes");
-				count = 0;
+
 				for (Node node : nodes) {
 					if (node.isNodeDown()) {
 						if (checkHealth(node)) {
 							node.setNodeUp();
-							count++;
+							activeNodes.incrementAndGet();
 						}
-					} else {
-						count++;
 					}
 				}
 				// Is there any failed node?
-				failedExist = (count != nodes.size());
+				failedExist = (activeNodes.get() != nodes.size());
 
 				try {
 					// Try after 5 seconds

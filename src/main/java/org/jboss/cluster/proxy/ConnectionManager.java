@@ -135,15 +135,9 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 		} while (channel != null && channel.isClosed());
 
 		if (channel == null) {
-			try {
-				channel = connect(node);
-			} catch (Exception exp) {
-				logger.error(exp.getMessage(), exp);
-				if (this.nodeService != null) {
-					this.nodeService.failedNode(node);
-				}
-				throw exp;
-			}
+			// This means that there is no connection available to the node, so
+			// we should create a new connection.
+			channel = connect(node);
 		}
 
 		return channel;
