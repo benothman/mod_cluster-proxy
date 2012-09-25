@@ -3,7 +3,7 @@
 
 <!-- Local nodes -->
 
-	<!-- node>
+	<node>
 		<hostname>localhost</hostname>
 		<port>8080</port>
 	</node>
@@ -14,11 +14,11 @@
 	<node>
 		<hostname>localhost</hostname>
 		<port>8083</port>
-	</node -->
+	</node>
 	
 	<!-- Remote nodes -->
 	
-	<node>
+	<!-- node>
 		<hostname>172.17.33.254</hostname>
 		<port>8080</port>
 	</node>
@@ -33,5 +33,5 @@
 	<node>
 		<hostname>172.17.37.254</hostname>
 		<port>8080</port>
-	</node>
+	</node -->
 </nodes>

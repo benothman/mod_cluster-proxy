@@ -180,10 +180,11 @@ public class CoyoteAdapter implements Adapter {
 					tryWithNode(attachment.getRequest(), attachment);
 					sendToNode(attachment.getRequest(), attachment);
 				} catch (Throwable e) {
+					logger.error(e, e);
 					try {
 						sendError(attachment.getRequest(), attachment);
 					} catch (IOException e1) {
-						logger.error(e1.getMessage(), e1);
+						logger.error(e1, e1);
 					}
 				}
 			}
@@ -266,16 +267,15 @@ public class CoyoteAdapter implements Adapter {
 
 					@Override
 					public void failed(Throwable exc, org.apache.coyote.Response attachment) {
-
 						try {
 							// try again with node
 							tryWithNode(attachment.getRequest(), attachment);
 							sendToNode(attachment.getRequest(), attachment);
-						} catch (Throwable e) {
+						} catch (Throwable t) {
 							try {
 								sendError(attachment.getRequest(), attachment);
-							} catch (IOException e1) {
-								logger.error(e1.getMessage(), e1);
+							} catch (Throwable e1) {
+								logger.error(e1, e1);
 							}
 						}
 					}
@@ -293,7 +293,7 @@ public class CoyoteAdapter implements Adapter {
 			final org.apache.coyote.Response response) throws Exception {
 
 		postParseRequest(request, response);
-		if (!prepareNode(request, response, null, 0)) {
+		if (!prepareNode(request, response, null)) {
 			// If prepare node fails, return false
 			return false;
 		}
@@ -331,7 +331,7 @@ public class CoyoteAdapter implements Adapter {
 	 * @throws Exception
 	 */
 	private boolean prepareNode(final org.apache.coyote.Request request,
-			final org.apache.coyote.Response response, Node failedNode, int n) throws Exception {
+			final org.apache.coyote.Response response, Node failedNode) throws Exception {
 
 		Node node = null;
 
@@ -349,7 +349,7 @@ public class CoyoteAdapter implements Adapter {
 		} catch (Throwable th) {
 			logger.error(th, th);
 			this.connector.getNodeService().failedNode(node);
-			return prepareNode(request, response, node, n + 1);
+			return prepareNode(request, response, node);
 		}
 
 		response.setNote(Constants.NODE_NOTE, node);
@@ -367,12 +367,23 @@ public class CoyoteAdapter implements Adapter {
 			throws Exception {
 		// Closing the current channel
 		NioChannel channel = (NioChannel) response.getNote(Constants.NODE_CHANNEL_NOTE);
-		// Retrieve the failed node
-		Node failedNode = (Node) response.getNote(Constants.NODE_NOTE);
-		// try with another node
-		this.connector.getConnectionManager().recycle(failedNode, channel);
-
-		prepareNode(request, response, failedNode, 1);
+		// close the channel
+		this.connector.getConnectionManager().close(channel);
+		// Retrieve the node
+		Node node = (Node) response.getNote(Constants.NODE_NOTE);
+		// Try to retrieve another channel
+		try {
+			channel = this.connector.getConnectionManager().getChannel(node);
+			if (channel == null) {
+				throw new Exception("null node parameter");
+			}
+			response.setNote(Constants.NODE_CHANNEL_NOTE, channel);
+		} catch (Throwable t) {
+			// Node is unreachable
+			if (!prepareNode(request, response, node)) {
+				throw new Exception("No node available");
+			}
+		}
 	}
 
 	/**

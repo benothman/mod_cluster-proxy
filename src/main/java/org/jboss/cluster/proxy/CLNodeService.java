@@ -21,6 +21,7 @@
  */
 package org.jboss.cluster.proxy;
 
+import java.net.StandardSocketOptions;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -29,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.LifeCycleServiceAdapter;
 import org.apache.coyote.Request;
+import org.apache.tomcat.util.net.NioChannel;
 import org.jboss.cluster.proxy.container.Node;
 import org.jboss.cluster.proxy.container.NodeService;
 import org.jboss.cluster.proxy.xml.XmlConfig;
@@ -48,10 +50,10 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 	private static final Logger logger = Logger.getLogger(CLNodeService.class);
 	private List<Node> nodes;
 	private Random random;
-	private boolean failedExist;
 	private boolean running = false;
 	private Object mutex;
 	private AtomicInteger activeNodes = new AtomicInteger(0);
+	private ConnectionManager connectionManager;
 
 	/**
 	 * Create a new instance of {@code NodeService}
@@ -185,6 +187,14 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 	}
 
 	/**
+	 * @return <tt>true</tt> if there exist at least one failed node, else
+	 *         <tt>false</tt>
+	 */
+	public boolean failedExist() {
+		return getActiveNodes() != this.nodes.size();
+	}
+
+	/**
 	 * @return a node
 	 */
 	private Node getNode() {
@@ -203,12 +213,15 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 		// This means that we made enough random tests, so check all nodes and
 		// return the first node available (if any)
 		if (n >= this.nodes.size()) {
+			int pos = 0;
+			Node array[] = new Node[getActiveNodes()];
 			for (Node nod : this.nodes) {
 				if (nod.isNodeUp()) {
-					return nod;
+					array[pos++] = nod;
 				}
 			}
-			return null;
+
+			return (pos > 0 ? array[random.nextInt(pos)] : null);
 		} else {
 			int index = random.nextInt(this.nodes.size());
 			Node node = this.nodes.get(index);
@@ -242,17 +255,9 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 	 */
 	@Override
 	public Node getNode(Request request, Node failedNode) {
-		if (failedNode != null) {
-			// Set the node status to down
-			// logger.warn("The node [" + failedNode.getHostname() + ":" +
-			// failedNode.getPort() + "] is down");
-			// failedNode.setNodeDown();
-			// this.failedExist = true;
-			// synchronized (this.mutex) {
-			// mutex.notifyAll();
-			// }
-		}
-
+		// Mark the node as failed
+		failedNode(failedNode);
+		// Check for another node
 		return getNode(request);
 	}
 
@@ -265,12 +270,16 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 	 */
 	public void failedNode(Node node) {
 		if (node != null) {
-			logger.info("New failed node <"+node.getHostname()+":"+ node.getPort()+">");
-			node.setNodeDown();
-			failedExist = true;
-			this.activeNodes.decrementAndGet();
-			synchronized (this.mutex) {
-				this.mutex.notifyAll();
+			synchronized (node) {
+				if (!node.isNodeDown()) {
+					logger.info("New failed node <" + node.getHostname() + ":" + node.getPort()
+							+ ">");
+					node.setNodeDown();
+					this.activeNodes.decrementAndGet();
+					synchronized (this.mutex) {
+						this.mutex.notifyAll();
+					}
+				}
 			}
 		}
 	}
@@ -293,6 +302,21 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 	}
 
 	/**
+	 * @param connectionManager
+	 *            the connectionManager to set
+	 */
+	public void setConnectionManager(ConnectionManager connectionManager) {
+		this.connectionManager = connectionManager;
+	}
+
+	/**
+	 * @return the connectionManager
+	 */
+	public ConnectionManager getConnectionManager() {
+		return connectionManager;
+	}
+
+	/**
 	 * {@code HealthChecker}
 	 * 
 	 * Created on Sep 18, 2012 at 3:46:36 PM
@@ -308,42 +332,34 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 		 */
 		@Override
 		public void run() {
-			int seq = 0;
 			while (running) {
 				// Wait until there is at least one failed node or the system is
 				// paused
-				while (!failedExist || isPaused()) {
-					System.out.println("[SEQ=" + (seq++)
-							+ "] Waiting for condition (active nodes = " + getActiveNodes() + ")");
+				while (!failedExist() || isPaused()) {
 					synchronized (mutex) {
 						try {
-							// Waits at most 5 seconds
-							mutex.wait(5000);
+							// Waits at most 10 seconds
+							mutex.wait(10000);
 						} catch (InterruptedException e) {
 							// NOPE
 						}
 					}
 				}
 
-				System.out.println("failedExist = " + failedExist + ", paused = " + isPaused());
-
 				if (!running) {
 					break;
 				}
-
-				logger.info("Starting health check for failed nodes");
 
 				for (Node node : nodes) {
 					if (node.isNodeDown()) {
 						if (checkHealth(node)) {
 							node.setNodeUp();
-							logger.info("New available node <"+node.getHostname()+":"+ node.getPort()+">");
+							logger.info("New available node <" + node.getHostname() + ":"
+									+ node.getPort() + ">");
 							activeNodes.incrementAndGet();
 						}
 					}
 				}
-				// Is there any failed node?
-				failedExist = (activeNodes.get() != nodes.size());
 
 				try {
 					// Try after 5 seconds
@@ -361,9 +377,44 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 		 * @return <tt>true</tt> if the node is reachable else <tt>false</tt>
 		 */
 		public boolean checkHealth(Node node) {
-			if (node == null) {
+			return (node == null) ? false : ((connectionManager != null) ? checkHealth0(node)
+					: checkHealth1(node));
+		}
+
+		/**
+		 * Check node health using the connection manager
+		 * 
+		 * @param node
+		 *            the node to check
+		 * @return <tt>true</tt> if the node is reachable else <tt>false</tt>
+		 */
+		private boolean checkHealth0(Node node) {
+			try {
+				NioChannel channel = connectionManager.getChannel(node.getHostname(),
+						node.getPort());
+
+				if (channel.isOpen()) {
+					// Put the channel in the recycled channel's list
+					connectionManager.recycle(node, channel);
+				} else {
+					channel.setOption(StandardSocketOptions.SO_LINGER, 0);
+					channel.close();
+				}
+				return true;
+			} catch (Throwable th) {
+				// NOPE
 				return false;
 			}
+		}
+
+		/**
+		 * Check node health using standard Java Socket API
+		 * 
+		 * @param node
+		 *            the node to check
+		 * @return <tt>true</tt> if the node is reachable else <tt>false</tt>
+		 */
+		private boolean checkHealth1(Node node) {
 			boolean ok = false;
 			java.net.Socket s = null;
 			try {

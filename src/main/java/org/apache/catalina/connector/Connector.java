@@ -200,6 +200,14 @@ public final class Connector {
 		if (this.nodeService != null) {
 			this.nodeService.init();
 			this.connectionManager.setNodeService(nodeService);
+
+			try {
+				Method m = this.nodeService.getClass().getMethod("setConnectionManager",
+						ConnectionManager.class);
+				m.invoke(this.nodeService, this.connectionManager);
+			} catch (Throwable e) {
+				// NOT all protocols have this method
+			}
 		}
 
 		if (this.protocolHandler.getClass().equals(

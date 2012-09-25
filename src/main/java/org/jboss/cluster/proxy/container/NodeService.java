@@ -47,22 +47,26 @@ public interface NodeService extends LifeCycleService {
 
 	/**
 	 * Select a new node for the specified request and mark the failed node as
-	 * unreachable
+	 * unreachable. This method behaves exactly in the same way if the
+	 * {@code failedNode} is <i>null</i>
 	 * 
 	 * @param request
 	 * @param failedNode
-	 * @return
+	 * @return a node instance from the list of nodes and update the status of
+	 *         the failed node.
+	 * @see {@link #getNode(Request)}
 	 */
 	public Node getNode(Request request, Node failedNode);
 
 	/**
 	 * @return the number of active nodes, i.e., the number of nodes having
-	 *         status to <tt>UP</tt>
+	 *         status to {@link Node.NodeStatus#NODE_UP}
 	 */
 	public int getActiveNodes();
-	
+
 	/**
 	 * Set the node status to <tt>DOWN</tt>
+	 * 
 	 * @param node
 	 */
 	public void failedNode(Node node);
