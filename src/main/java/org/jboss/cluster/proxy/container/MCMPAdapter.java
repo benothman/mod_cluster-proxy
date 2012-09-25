@@ -172,18 +172,20 @@ public class MCMPAdapter implements Adapter {
 					digestString(md, seq);
 					digestString(md, server);
 					byte[] digest = md.digest();
-					StringBuilder str = new StringBuilder();
-					for (int i = 0; i < digest.length; i++)
-						str.append(String.format("%x", digest[i]));
+					StringBuilder sbuf = new StringBuilder().append("HTTP/1.0 200 OK\r\nDate: ")
+							.append(date).append("\r\nSequence: ").append(seq)
+							.append("\r\nDigest: ");
 
-					String sbuf = "HTTP/1.0 200 OK\r\n" + "Date: " + date + "\r\n" + "Sequence: "
-							+ seq + "\r\n" + "Digest: " + str.toString() + "\r\n" + "Server: "
-							+ server + "\r\n" + "X-Manager-Address: " + chost + ":" + cport
-							+ "\r\n" + "X-Manager-Url: /" + server + "\r\n"
-							+ "X-Manager-Protocol: " + scheme + "\r\n" + "X-Manager-Host: " + chost
-							+ "\r\n";
+					for (int i = 0; i < digest.length; i++) {
+						sbuf.append(String.format("%x", digest[i]));
+					}
 
-					byte[] buf = sbuf.getBytes();
+					sbuf.append("\r\nServer: ").append(server).append("\r\nX-Manager-Address: ")
+							.append(chost).append(":").append(cport).append("\r\nX-Manager-Url: /")
+							.append(server).append("\r\nX-Manager-Protocol: ").append(scheme)
+							.append("\r\nX-Manager-Host: ").append(chost).append("\r\n");
+
+					byte[] buf = sbuf.toString().getBytes();
 					DatagramPacket data = new DatagramPacket(buf, buf.length, group, sport);
 					s.send(data);
 					Thread.sleep(1000);
@@ -467,17 +469,18 @@ public class MCMPAdapter implements Adapter {
 	 * @param res
 	 */
 	private void process_dump(Request req, Response res) {
-		String data = "";
+		StringBuffer data = new StringBuffer();
 		int i = 1;
 		for (Balancer balancer : conf.getBalancers()) {
-			String bal = "balancer: [" + i + "] Name: " + balancer.getName() + " Sticky: "
-					+ (balancer.isStickySession() ? "1" : "0") + " ["
-					+ balancer.getStickySessionCookie() + "]/[" + balancer.getStickySessionPath()
-					+ "] remove: " + (balancer.isStickySessionRemove() ? "1" : "0") + " force: "
-					+ (balancer.isStickySessionForce() ? "1" : "0") + " Timeout: "
-					+ balancer.getWaitWorker() + " maxAttempts: " + balancer.getMaxattempts()
-					+ "\n";
-			data = data.concat(bal);
+			data.append("balancer: [").append(i).append("] Name: ").append(balancer.getName())
+					.append(" Sticky: ").append((balancer.isStickySession() ? "1" : "0"))
+					.append(" [").append(balancer.getStickySessionCookie()).append("]/[")
+					.append(balancer.getStickySessionPath()).append("] remove: ")
+					.append((balancer.isStickySessionRemove() ? "1" : "0")).append(" force: ")
+					.append((balancer.isStickySessionForce() ? "1" : "0")).append(" Timeout: ")
+					.append(balancer.getWaitWorker()).append(" maxAttempts: ")
+					.append(balancer.getMaxattempts()).append("\n");
+
 			i++;
 		}
 		// TODO Add more...
