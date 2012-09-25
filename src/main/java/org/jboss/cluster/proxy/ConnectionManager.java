@@ -120,7 +120,9 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	}
 
 	/**
-	 * @param node
+	 * Try to retrieve a channel connected to the specified node
+	 * 
+	 * @param node the targeted node
 	 * @return a channel
 	 * @throws Exception
 	 */
@@ -276,7 +278,7 @@ public class ConnectionManager extends LifeCycleServiceAdapter {
 	 * @return the nodeService
 	 */
 	public NodeService getNodeService() {
-		return nodeService;
+		return this.nodeService;
 	}
 
 	/**

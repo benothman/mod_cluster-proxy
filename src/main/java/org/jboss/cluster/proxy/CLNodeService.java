@@ -272,10 +272,13 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 		if (node != null) {
 			synchronized (node) {
 				if (!node.isNodeDown()) {
+					// Update the node status to DOWN
+					node.setNodeDown();
+					// Update the number of active nodes
+					this.activeNodes.decrementAndGet();
 					logger.info("New failed node <" + node.getHostname() + ":" + node.getPort()
 							+ ">");
-					node.setNodeDown();
-					this.activeNodes.decrementAndGet();
+					// Notify health checker thread
 					synchronized (this.mutex) {
 						this.mutex.notifyAll();
 					}
@@ -353,10 +356,12 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 				for (Node node : nodes) {
 					if (node.isNodeDown()) {
 						if (checkHealth(node)) {
+							// Update the node status to UP
 							node.setNodeUp();
+							// Update the number of active nodes
+							activeNodes.incrementAndGet();
 							logger.info("New available node <" + node.getHostname() + ":"
 									+ node.getPort() + ">");
-							activeNodes.incrementAndGet();
 						}
 					}
 				}

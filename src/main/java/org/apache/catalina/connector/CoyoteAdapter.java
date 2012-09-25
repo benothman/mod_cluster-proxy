@@ -180,11 +180,12 @@ public class CoyoteAdapter implements Adapter {
 					tryWithNode(attachment.getRequest(), attachment);
 					sendToNode(attachment.getRequest(), attachment);
 				} catch (Throwable e) {
-					logger.error(e, e);
 					try {
 						sendError(attachment.getRequest(), attachment);
 					} catch (IOException e1) {
-						logger.error(e1, e1);
+						if (logger.isDebugEnabled()) {
+							logger.debug(e1, e1);
+						}
 					}
 				}
 			}
@@ -275,7 +276,9 @@ public class CoyoteAdapter implements Adapter {
 							try {
 								sendError(attachment.getRequest(), attachment);
 							} catch (Throwable e1) {
-								logger.error(e1, e1);
+								if (logger.isDebugEnabled()) {
+									logger.debug(e1, e1);
+								}
 							}
 						}
 					}
@@ -347,8 +350,10 @@ public class CoyoteAdapter implements Adapter {
 				throw new NullPointerException("Null node channel");
 			}
 		} catch (Throwable th) {
-			logger.error(th, th);
-			this.connector.getNodeService().failedNode(node);
+			if (logger.isDebugEnabled()) {
+				logger.debug(th, th);
+			}
+
 			return prepareNode(request, response, node);
 		}
 
