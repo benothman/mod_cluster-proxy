@@ -430,6 +430,8 @@ public class CoyoteAdapter implements Adapter {
 		int lastValid = inputBuffer.getLastValid();
 		int end = inputBuffer.getEnd();
 
+		System.out.println("LastValid = " + lastValid + ", End = " + end + ", available = " + n);
+
 		if (lastValid >= end + request.getContentLength()) {
 			// All data are read from client and transfered to node
 			// Wait for node response
@@ -447,13 +449,16 @@ public class CoyoteAdapter implements Adapter {
 			th = t;
 		}
 
+		System.out.println("Content-length: " + request.getContentLength() + ", total: "
+				+ (n + nRead));
+
 		if (nRead > 0) {
 			buffer.flip();
 			nodeChannel.write(buffer, n + nRead, new CompletionHandler<Integer, Integer>() {
 
 				@Override
-				public void completed(Integer result, Integer attachment) {
-					if (result < 0) {
+				public void completed(Integer nWritten, Integer attachment) {
+					if (nWritten < 0) {
 						failed(new ClosedChannelException(), attachment);
 						return;
 					}
@@ -466,17 +471,16 @@ public class CoyoteAdapter implements Adapter {
 							if (attachment < len) {
 								buffer.clear();
 								int nRead = inputBuffer.readBytes(buffer);
-								if (nRead > 0) {
+								if (nRead < 0) {
+									failed(new ClosedChannelException(), attachment);
+								} else {
 									buffer.flip();
 									nodeChannel.write(buffer, attachment + nRead, this);
-								} else {
-									failed(new ClosedChannelException(), attachment);
 								}
-
 							} else {
 								readFromNode(request, response);
 							}
-						} catch (Exception e) {
+						} catch (Throwable e) {
 							failed(e, attachment);
 						}
 					}
@@ -484,7 +488,7 @@ public class CoyoteAdapter implements Adapter {
 
 				@Override
 				public void failed(Throwable exc, Integer attachment) {
-					logger.error(exc.getMessage(), exc);
+					logger.error(exc, exc);
 					try {
 						sendError(request, response);
 					} catch (IOException e) {
@@ -636,7 +640,7 @@ public class CoyoteAdapter implements Adapter {
 	 *            URI to be normalized
 	 * @return true
 	 */
-	public static boolean normalize(MessageBytes uriMB) {
+	protected static boolean normalize(MessageBytes uriMB) {
 
 		ByteChunk uriBC = uriMB.getByteChunk();
 		byte[] b = uriBC.getBytes();
@@ -748,7 +752,7 @@ public class CoyoteAdapter implements Adapter {
 	 *            URI to be checked (should be chars)
 	 * @return true if the URI is normalized
 	 */
-	public static boolean checkNormalize(MessageBytes uriMB) {
+	protected static boolean checkNormalize(MessageBytes uriMB) {
 
 		CharChunk uriCC = uriMB.getCharChunk();
 		char[] c = uriCC.getChars();
@@ -805,26 +809,8 @@ public class CoyoteAdapter implements Adapter {
 	 */
 	protected static void copyBytes(byte[] b, int dest, int src, int len) {
 		for (int pos = 0; pos < len; pos++) {
-			b[pos + dest] = b[pos + src];
+			b[dest + pos] = b[src + pos];
 		}
 	}
 
-	/**
-	 * {@code Pair}
-	 * 
-	 * @param <A>
-	 * @param <B>
-	 * 
-	 *            Created on Sep 4, 2012 at 11:41:47 AM
-	 * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
-	 */
-	private static class Pair<A, B> {
-		A first;
-		B last;
-
-		public Pair(A a, B b) {
-			this.first = a;
-			this.last = b;
-		}
-	}
 }

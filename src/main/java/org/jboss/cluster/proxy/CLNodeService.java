@@ -21,7 +21,14 @@
  */
 package org.jboss.cluster.proxy;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.StandardSocketOptions;
+import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -328,6 +335,8 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 	 */
 	private class HealthChecker implements Runnable {
 
+		private ByteBuffer buffer;
+
 		/*
 		 * (non-Javadoc)
 		 * 
@@ -335,6 +344,9 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 		 */
 		@Override
 		public void run() {
+			if (connectionManager != null) {
+				buffer = ByteBuffer.allocateDirect(1024);
+			}
 			while (running) {
 				// Wait until there is at least one failed node or the system is
 				// paused
@@ -368,7 +380,7 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 
 				try {
 					// Try after 5 seconds
-					Thread.sleep(5000);
+					Thread.sleep(10000);
 				} catch (InterruptedException e) {
 					// NOPE
 				}
@@ -394,22 +406,50 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 		 * @return <tt>true</tt> if the node is reachable else <tt>false</tt>
 		 */
 		private boolean checkHealth0(Node node) {
+
 			try {
 				NioChannel channel = connectionManager.getChannel(node.getHostname(),
 						node.getPort());
 
 				if (channel.isOpen()) {
 					// Put the channel in the recycled channel's list
-					connectionManager.recycle(node, channel);
+					buffer.clear();
+					buffer.put(getRequest(node).getBytes()).flip();
+
+					channel.writeBytes(buffer);
+					buffer.clear();
+					int n = channel.readBytes(buffer);
+					if (n < 0) {
+						throw new ClosedChannelException();
+					} else {
+						buffer.flip();
+						byte bytes[] = new byte[n];
+						buffer.get(bytes);
+						String response = new String(bytes);
+						System.out.println(response);
+						// Just retrieve the response line
+						String tab[] = response.split("\r\n")[0].split("\\s+");
+						int status = Integer.valueOf(tab[1]);
+						String phrase = tab[2];
+						if (status == 200 && "OK".equalsIgnoreCase(phrase)) {
+							logger.info("");
+							connectionManager.recycle(node, channel);
+							return true;
+						} else if (status == 501) {
+							return false;
+						}
+					}
 				} else {
 					channel.setOption(StandardSocketOptions.SO_LINGER, 0);
 					channel.close();
+					return false;
 				}
-				return true;
 			} catch (Throwable th) {
 				// NOPE
 				return false;
 			}
+
+			return false;
 		}
 
 		/**
@@ -420,18 +460,33 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 		 * @return <tt>true</tt> if the node is reachable else <tt>false</tt>
 		 */
 		private boolean checkHealth1(Node node) {
+
 			boolean ok = false;
-			java.net.Socket s = null;
+			java.net.Socket socket = null;
 			try {
-				s = new java.net.Socket(node.getHostname(), node.getPort());
-				s.setSoLinger(true, 0);
-				ok = true;
+				socket = new java.net.Socket(node.getHostname(), node.getPort());
+				OutputStream os = socket.getOutputStream();
+				os.write(getRequest(node).getBytes());
+				os.flush();
+				InputStream is = socket.getInputStream();
+				BufferedReader br = new BufferedReader(new InputStreamReader(is));
+				String requestLine = br.readLine();
+				if (requestLine == null) {
+					throw new IOException("The Socket is closed");
+				}
+
+				String tab[] = requestLine.split("\\s+");
+				int status = Integer.valueOf(tab[1]);
+				String phrase = tab[2];
+				// Check result
+				ok = (status == 200 && "OK".equalsIgnoreCase(phrase));
 			} catch (Exception e) {
 				// Ignore
 			} finally {
-				if (s != null) {
+				if (socket != null) {
 					try {
-						s.close();
+						socket.setSoLinger(true, 0);
+						socket.close();
 					} catch (Exception e) {
 						// Ignore
 					}
@@ -440,5 +495,16 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 
 			return ok;
 		}
+
+		/**
+		 * Build the request to send to the specified node
+		 * @param node the destination host
+		 * @return 
+		 */
+		private String getRequest(Node node) {
+			return "OPTIONS * HTTP/1.1\r\nHost: " + node.getHostname() + ":" + node.getPort()
+					+ "\r\n\r\n";
+		}
+
 	}
 }
