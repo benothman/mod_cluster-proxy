@@ -412,6 +412,10 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 						node.getPort());
 
 				if (channel.isOpen()) {
+					if (!node.isOptionsEnabled()) {
+						return true;
+					}
+
 					// Put the channel in the recycled channel's list
 					buffer.clear();
 					buffer.put(getRequest(node).getBytes()).flip();
@@ -435,7 +439,10 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 							connectionManager.recycle(node, channel);
 							return true;
 						} else if (status == 501) {
-							return false;
+							node.setOptionsEnabled(false);
+
+							// TODO
+							return true;
 						}
 					}
 				} else {
@@ -464,29 +471,39 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 			java.net.Socket socket = null;
 			try {
 				socket = new java.net.Socket(node.getHostname(), node.getPort());
-				OutputStream os = socket.getOutputStream();
-				os.write(getRequest(node).getBytes());
-				os.flush();
-				InputStream is = socket.getInputStream();
-				BufferedReader br = new BufferedReader(new InputStreamReader(is));
-				String requestLine = br.readLine();
-				if (requestLine == null) {
-					throw new IOException("The Socket is closed");
-				}
+				if (!node.isOptionsEnabled()) {
+					ok = true;
+				} else {
+					OutputStream os = socket.getOutputStream();
+					os.write(getRequest(node).getBytes());
+					os.flush();
+					InputStream is = socket.getInputStream();
+					BufferedReader br = new BufferedReader(new InputStreamReader(is));
+					String requestLine = br.readLine();
+					if (requestLine == null) {
+						throw new IOException("The Socket is closed");
+					}
 
-				String tab[] = requestLine.split("\\s+");
-				int status = Integer.valueOf(tab[1]);
-				String phrase = tab[2];
-				// Check result
-				ok = (status == 200 && "OK".equalsIgnoreCase(phrase));
-			} catch (Exception e) {
+					String tab[] = requestLine.split("\\s+");
+					int status = Integer.valueOf(tab[1]);
+					String phrase = tab[2];
+					if (status == 200 && "OK".equalsIgnoreCase(phrase)) {
+						ok = true;
+					} else if (status == 501) {
+						node.setOptionsEnabled(false);
+
+						// TODO
+						ok = true;
+					}
+				}
+			} catch (Throwable e) {
 				// Ignore
 			} finally {
 				if (socket != null) {
 					try {
 						socket.setSoLinger(true, 0);
 						socket.close();
-					} catch (Exception e) {
+					} catch (Throwable e) {
 						// Ignore
 					}
 				}

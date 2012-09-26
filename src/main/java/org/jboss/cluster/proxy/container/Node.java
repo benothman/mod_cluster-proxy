@@ -124,6 +124,8 @@ public class Node implements Serializable {
 	 */
 	private int load;
 
+	private boolean optionsEnabled = true;
+
 	/**
 	 * Create a new instance of {@code Node}
 	 */
@@ -522,6 +524,21 @@ public class Node implements Serializable {
 	 */
 	public void setLoad(int load) {
 		this.load = load;
+	}
+
+	/**
+	 * @return the optionsEnabled
+	 */
+	public boolean isOptionsEnabled() {
+		return optionsEnabled;
+	}
+
+	/**
+	 * @param optionsEnabled
+	 *            the optionsEnabled to set
+	 */
+	public void setOptionsEnabled(boolean optionsEnabled) {
+		this.optionsEnabled = optionsEnabled;
 	}
 
 	/**
