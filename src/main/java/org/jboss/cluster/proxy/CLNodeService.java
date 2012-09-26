@@ -498,8 +498,10 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 
 		/**
 		 * Build the request to send to the specified node
-		 * @param node the destination host
-		 * @return 
+		 * 
+		 * @param node
+		 *            the destination host
+		 * @return the request to send to the node
 		 */
 		private String getRequest(Node node) {
 			return "OPTIONS * HTTP/1.1\r\nHost: " + node.getHostname() + ":" + node.getPort()
