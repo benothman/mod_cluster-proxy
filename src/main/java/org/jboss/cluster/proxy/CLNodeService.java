@@ -432,7 +432,6 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 						int status = Integer.valueOf(tab[1]);
 						String phrase = tab[2];
 						if (status == 200 && "OK".equalsIgnoreCase(phrase)) {
-							logger.info("");
 							connectionManager.recycle(node, channel);
 							return true;
 						} else if (status == 501) {
