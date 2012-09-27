@@ -154,7 +154,7 @@ public final class Connector {
 	/**
 	 * The string manager for this package.
 	 */
-	private StringManager sm = StringManager.getManager(Constants.Package);
+	private StringManager sm = StringManager.getManager(Constants.PACKAGE);
 
 	/**
 	 * Coyote Protocol handler class name. Defaults to the Coyote HTTP/1.1
@@ -215,6 +215,7 @@ public final class Connector {
 		} catch (Throwable e) {
 			// NOPE
 		}
+		log.info("Configuration of Request failure strategy: " + this.requestFailureStrategy);
 
 		this.connectionManager.init();
 		if (this.nodeService != null) {

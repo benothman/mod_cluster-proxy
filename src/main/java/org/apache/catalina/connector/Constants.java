@@ -26,7 +26,7 @@ public final class Constants {
 	/**
 	 * The package name
 	 */
-	public static final String Package = Constants.class.getPackage().getName();
+	public static final String PACKAGE = Constants.class.getPackage().getName();
 
 	
 	public static final int MAX_TRIES = 3;

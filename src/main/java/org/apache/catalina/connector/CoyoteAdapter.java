@@ -73,7 +73,7 @@ public class CoyoteAdapter implements Adapter {
 	 * The string manager for this package.
 	 */
 	protected org.apache.tomcat.util.res.StringManager sm = org.apache.tomcat.util.res.StringManager
-			.getManager(Constants.Package);
+			.getManager(Constants.PACKAGE);
 
 	/**
 	 * Create a new instance of {@code CoyoteAdapter}
@@ -111,8 +111,6 @@ public class CoyoteAdapter implements Adapter {
 	 * Service method.
 	 */
 	public void service(final Request request, Response response) throws Exception {
-
-		System.out.println("IDEMPOTENCE = " + isIdempotent(request));
 
 		if (prepare(request, response)) {
 			// Send the request to the selected node
@@ -220,7 +218,6 @@ public class CoyoteAdapter implements Adapter {
 						if (nBytes < 0) {
 							failed(new ClosedChannelException(), attachment);
 						} else if (nBytes > 0) {
-
 							contentLength += nBytes;
 							ByteBuffer buff = (ByteBuffer) response
 									.getNote(Constants.OUT_BUFFER_NOTE);
@@ -235,8 +232,11 @@ public class CoyoteAdapter implements Adapter {
 							byte data[] = outputBuffer.getBytes();
 							buff.get(data, 0, nBytes);
 
-							if (httpResponseParser.parsingHeader()) {
+							boolean parsingHeader = httpResponseParser.parsingHeader();
+
+							if (parsingHeader) {
 								httpResponseParser.parse(attachment, data, nBytes);
+								parsingHeader = httpResponseParser.parsingHeader();
 							}
 
 							outputBuffer.setContentLength(attachment.getContentLengthLong()
@@ -244,12 +244,30 @@ public class CoyoteAdapter implements Adapter {
 							buff.clear();
 							outputBuffer.writeToClient(outputBuffer.getBytes(), 0, nBytes);
 
-							if (this.contentLength < attachment.getContentLength()
-									+ httpResponseParser.getHeaderLength()) {
-								final NioChannel ch = (NioChannel) response
-										.getNote(Constants.NODE_CHANNEL_NOTE);
-								ch.read(buff, attachment, this);
+							final NioChannel n_ch = (NioChannel) response
+									.getNote(Constants.NODE_CHANNEL_NOTE);
+							if (parsingHeader) {
+								// If the header is not completely received,
+								// read again
+								n_ch.read(buff, attachment, this);
+								return;
+							}
+
+							String method = attachment.getRequest().method().toString();
+							// Check whether we finish receiving the response
+							boolean finished = "HEAD".equals(method);
+
+							if (!finished
+									&& (this.contentLength < attachment.getContentLength()
+											+ httpResponseParser.getHeaderLength())) {
+								// Need to read again
+								n_ch.read(buff, attachment, this);
 							} else {
+								finished = true;
+							}
+
+							// If the response is finished
+							if (finished) {
 								AbstractHttp11Processor<?> processor = (AbstractHttp11Processor<?>) attachment.hook;
 								boolean chunked = attachment.isChunked();
 								processor.endRequest();
@@ -264,11 +282,10 @@ public class CoyoteAdapter implements Adapter {
 										processor.closeSocket();
 									}
 									Node node = (Node) attachment.getNote(Constants.NODE_NOTE);
-									NioChannel n_ch = (NioChannel) attachment
-											.getNote(Constants.NODE_CHANNEL_NOTE);
 									connector.getConnectionManager().recycle(node, n_ch);
 								}
 							}
+
 						}
 					}
 
@@ -279,6 +296,7 @@ public class CoyoteAdapter implements Adapter {
 						}
 
 						try {
+							// Try to repeat the request if it is allowed
 							tryRepeatRequest(attachment.getRequest(), attachment);
 						} catch (Throwable t) {
 							logger.error(t, t);
@@ -435,11 +453,17 @@ public class CoyoteAdapter implements Adapter {
 	}
 
 	/**
+	 * Check if the request has a body content (content-length a positive
+	 * integer). If body is not empty and the content length is less than
+	 * maximum post size then proceed to <tt>POST</tt> action.
+	 * 
 	 * 
 	 * @param request
 	 * @param response
-	 * @return
+	 * @return <tt>true</tt> if the request has a body content, else
+	 *         <tt>false</tt>
 	 * @throws IOException
+	 * @see {@link #doPost(Request, Response)}
 	 */
 	private boolean checkPostMethod(final org.apache.coyote.Request request,
 			final org.apache.coyote.Response response) throws Exception {
@@ -458,12 +482,18 @@ public class CoyoteAdapter implements Adapter {
 	}
 
 	/**
+	 * If the request is a <tt>POST</tt>, then send request data before starting
+	 * reading from the node
 	 * 
 	 * @param request
+	 *            the request
 	 * @param response
+	 *            the corresponding response
 	 * @throws IOException
 	 */
 	private void doPost(final Request request, final Response response) throws Exception {
+
+		System.out.println(getClass().getName() + "#doPost(...)");
 
 		final AbstractInternalInputBuffer inputBuffer = (AbstractInternalInputBuffer) request
 				.getInputBuffer();
@@ -547,20 +577,14 @@ public class CoyoteAdapter implements Adapter {
 	protected boolean postParseRequest(org.apache.coyote.Request req, org.apache.coyote.Response res)
 			throws Exception {
 
-		// FIXME: The processor needs to set a correct scheme and port prior to
-		// this point,
-		// in ajp13 protocol does not make sense to get the port from the
-		// connector..
-		// otherwise, use connector configuration
+		// The processor needs to set a correct scheme and port prior to this
+		// point, otherwise, use connector configuration
 		if (req.scheme().isNull()) {
 			// Use connector scheme and secure configuration, (defaults to
 			// "http" and false respectively)
 			req.scheme().setString(connector.getScheme());
 		}
 
-		// FIXME: the code below doesnt belongs to here,
-		// this is only have sense
-		// in Http11, not in ajp13..
 		// At this point the Host header has been processed.
 		// Override if the proxyPort/proxyHost are set
 		String proxyName = connector.getProxyName();
@@ -622,10 +646,12 @@ public class CoyoteAdapter implements Adapter {
 	}
 
 	/**
-	 * Check whether the HTTP request method is idempotent or not. The
+	 * Check whether the HTTP request method is idempotent or not according to
+	 * RFC <a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html">2616
+	 * section 9</a> . The
 	 * idempotent HTTP methods are:
 	 * <ul>
-	 * <li>GET</li>
+	 * <li>GET: If the query string is null</li>
 	 * <li>PUT</li>
 	 * <li>DELETE</li>
 	 * <li>HEAD</li>
@@ -640,8 +666,10 @@ public class CoyoteAdapter implements Adapter {
 	 * @return <tt>true</tt> if the request method is idempotent else
 	 *         <tt>false</tt>
 	 */
-	private boolean isIdempotent(Request req) {
-
+	protected boolean isIdempotent(Request req) {
+		if (req == null) {
+			return false;
+		}
 		switch (req.method().toString()) {
 		// Idempotent methods
 			case "TRACE":
@@ -679,7 +707,6 @@ public class CoyoteAdapter implements Adapter {
 			cbuf[i] = (char) (bbuf[i + start] & 0xff);
 		}
 		uri.setChars(cbuf, 0, length);
-
 	}
 
 	/**

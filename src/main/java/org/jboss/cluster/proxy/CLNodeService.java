@@ -430,7 +430,6 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 						byte bytes[] = new byte[n];
 						buffer.get(bytes);
 						String response = new String(bytes);
-						System.out.println(response);
 						// Just retrieve the response line
 						String tab[] = response.split("\r\n")[0].split("\\s+");
 						int status = Integer.valueOf(tab[1]);
@@ -441,7 +440,6 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 						} else if (status == 501) {
 							node.setOptionsEnabled(false);
 							connectionManager.recycle(node, channel);
-							// TODO
 							return true;
 						}
 					}
@@ -491,7 +489,6 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 						ok = true;
 					} else if (status == 501) {
 						node.setOptionsEnabled(false);
-						// TODO
 						ok = true;
 					}
 				}
