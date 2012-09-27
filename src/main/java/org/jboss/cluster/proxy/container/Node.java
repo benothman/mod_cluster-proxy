@@ -124,6 +124,10 @@ public class Node implements Serializable {
 	 */
 	private int load;
 
+	/**
+	 * Does the node support the HTTP OPTIONS method?
+	 * Default value is <tt>true</tt>
+	 */
 	private boolean optionsEnabled = true;
 
 	/**
@@ -140,6 +144,14 @@ public class Node implements Serializable {
 	 */
 	public long getId() {
 		return this.id;
+	}
+
+	/**
+	 * @param id
+	 *            the id to set
+	 */
+	public void setId(long id) {
+		this.id = id;
 	}
 
 	/**
@@ -579,15 +591,17 @@ public class Node implements Serializable {
 		return sb.toString();
 	}
 
+	/**
+	 * @return
+	 */
 	public int getOldelected() {
 		return oldelected;
 	}
 
+	/**
+	 * @param oldelected
+	 */
 	public void setOldelected(int oldelected) {
 		this.oldelected = oldelected;
-	}
-
-	public void setId(long id) {
-		this.id = id;
 	}
 }

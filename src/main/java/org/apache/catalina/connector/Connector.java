@@ -43,13 +43,13 @@ import org.jboss.logging.Logger;
 public final class Connector {
 
 	/**
-	 * {@code RequestFailure}
+	 * {@code RequestFailureRepeat}
 	 * 
 	 * Created on Sep 26, 2012 at 2:22:26 PM
 	 * 
 	 * @author <a href="mailto:nbenothm@redhat.com">Nabil Benothman</a>
 	 */
-	public static enum RequestFailure {
+	public static enum RequestFailureStrategy {
 		NO_REPEAT, REPEAT_IDEMPOTENT, REPEAT_ALL;
 	}
 
@@ -58,12 +58,10 @@ public final class Connector {
 	protected static final String URI_ENCODING = System.getProperty(
 			"org.apache.catalina.connector.URI_ENCODING", "UTF-8");
 
-	
-	public static final RequestFailure REQUEST_FAILURE = RequestFailure.valueOf(System.getProperty(
-			"org.apache.catalina.connector.REPEAT_REQUEST", "NO_REPEAT"));
-
 	private ProtocolHandler protocolHandler;
 	private String protocol;
+	private RequestFailureStrategy requestFailureStrategy = RequestFailureStrategy.NO_REPEAT;
+
 	/**
 	 * Has this component been initialized yet?
 	 */
@@ -210,6 +208,13 @@ public final class Connector {
 		}
 
 		this.initialized = true;
+
+		try {
+			this.requestFailureStrategy = RequestFailureStrategy.valueOf(System.getProperty(
+					"org.apache.catalina.connector.REPEAT_REQUEST", "NO_REPEAT"));
+		} catch (Throwable e) {
+			// NOPE
+		}
 
 		this.connectionManager.init();
 		if (this.nodeService != null) {
@@ -761,5 +766,20 @@ public final class Connector {
 	 */
 	public void setURIEncoding(String uRIEncoding) {
 		this.URIEncoding = uRIEncoding;
+	}
+
+	/**
+	 * @return the requestFailureRepeat
+	 */
+	public RequestFailureStrategy getRequestFailureStrategy() {
+		return requestFailureStrategy;
+	}
+
+	/**
+	 * @param requestFailureRepeat
+	 *            the requestFailureRepeat to set
+	 */
+	public void setRequestFailureStrategy(RequestFailureStrategy requestFailureRepeat) {
+		this.requestFailureStrategy = requestFailureRepeat;
 	}
 }

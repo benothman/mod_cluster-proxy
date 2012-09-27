@@ -440,7 +440,7 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 							return true;
 						} else if (status == 501) {
 							node.setOptionsEnabled(false);
-
+							connectionManager.recycle(node, channel);
 							// TODO
 							return true;
 						}
@@ -491,7 +491,6 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 						ok = true;
 					} else if (status == 501) {
 						node.setOptionsEnabled(false);
-
 						// TODO
 						ok = true;
 					}

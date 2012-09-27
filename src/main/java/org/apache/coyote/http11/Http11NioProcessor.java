@@ -329,10 +329,10 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 								|| statusDropsConnection(response.getStatus());
 					}
 				} catch (InterruptedIOException e) {
-					log.error(e.getMessage());
+					log.error(e, e);
 					error = true;
 				} catch (Throwable t) {
-					log.error(t.getMessage());
+					log.error(t, t);
 					log.error(sm.getString("http11processor.request.process"), t);
 					// 500 - Internal Server Error
 					response.setStatus(500);

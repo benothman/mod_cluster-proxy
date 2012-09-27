@@ -112,6 +112,8 @@ public class CoyoteAdapter implements Adapter {
 	 */
 	public void service(final Request request, Response response) throws Exception {
 
+		System.out.println("IDEMPOTENCE = " + isIdempotent(request));
+
 		if (prepare(request, response)) {
 			// Send the request to the selected node
 			sendToNode(request, response);
@@ -125,11 +127,18 @@ public class CoyoteAdapter implements Adapter {
 	 * @param response
 	 * @throws IOException
 	 */
-	private void sendError(Request request, Response response) throws IOException {
-		((AbstractInternalOutputBuffer) response.getOutputBuffer()).sendError();
-		NioChannel nodeChannel = (NioChannel) response.getNote(Constants.NODE_CHANNEL_NOTE);
-		Node node = (Node) response.getNote(Constants.NODE_NOTE);
-		this.connector.getConnectionManager().recycle(node, nodeChannel);
+	private void sendError(Request request, Response response) {
+		try {
+			((AbstractInternalOutputBuffer) response.getOutputBuffer()).sendError();
+		} catch (Throwable e) {
+			if (logger.isDebugEnabled()) {
+				logger.debug(e, e);
+			}
+		} finally {
+			NioChannel nodeChannel = (NioChannel) response.getNote(Constants.NODE_CHANNEL_NOTE);
+			Node node = (Node) response.getNote(Constants.NODE_NOTE);
+			this.connector.getConnectionManager().recycle(node, nodeChannel);
+		}
 	}
 
 	/**
@@ -175,18 +184,15 @@ public class CoyoteAdapter implements Adapter {
 
 			@Override
 			public void failed(Throwable exc, Response attachment) {
+				if (logger.isDebugEnabled()) {
+					logger.debug(exc, exc);
+				}
+
 				try {
-					// try again with node
-					tryWithNode(attachment.getRequest(), attachment);
-					sendToNode(attachment.getRequest(), attachment);
-				} catch (Throwable e) {
-					try {
-						sendError(attachment.getRequest(), attachment);
-					} catch (IOException e1) {
-						if (logger.isDebugEnabled()) {
-							logger.debug(e1, e1);
-						}
-					}
+					tryRepeatRequest(attachment.getRequest(), attachment);
+				} catch (Throwable t) {
+					logger.error(t, t);
+					t.printStackTrace();
 				}
 			}
 		});
@@ -268,18 +274,15 @@ public class CoyoteAdapter implements Adapter {
 
 					@Override
 					public void failed(Throwable exc, org.apache.coyote.Response attachment) {
+						if (logger.isDebugEnabled()) {
+							logger.debug(exc, exc);
+						}
+
 						try {
-							// try again with node
-							tryWithNode(attachment.getRequest(), attachment);
-							sendToNode(attachment.getRequest(), attachment);
+							tryRepeatRequest(attachment.getRequest(), attachment);
 						} catch (Throwable t) {
-							try {
-								sendError(attachment.getRequest(), attachment);
-							} catch (Throwable e1) {
-								if (logger.isDebugEnabled()) {
-									logger.debug(e1, e1);
-								}
-							}
+							logger.error(t, t);
+							t.printStackTrace();
 						}
 					}
 				});
@@ -361,6 +364,46 @@ public class CoyoteAdapter implements Adapter {
 		response.setNote(Constants.NODE_CHANNEL_NOTE, nodeChannel);
 
 		return true;
+	}
+
+	/**
+	 * Check whether the request failure strategy allows to repeat the request
+	 * or not.
+	 * 
+	 * @param request
+	 *            the request
+	 * @param response
+	 *            the corresponding response
+	 * @throws Exception
+	 */
+	private void tryRepeatRequest(final org.apache.coyote.Request request,
+			final org.apache.coyote.Response response) throws Exception {
+
+		switch (this.connector.getRequestFailureStrategy()) {
+			case NO_REPEAT:
+				// Send error 503 to client
+				sendError(request, response);
+				break;
+			case REPEAT_IDEMPOTENT:
+				// If the request is not idempotent, send error 503 to client
+				if (!isIdempotent(request)) {
+					// Send error 503 to client
+					sendError(request, response);
+					break;
+				}
+
+			case REPEAT_ALL:
+				try {
+					// try again with node
+					tryWithNode(request, response);
+					sendToNode(request, response);
+				} catch (Throwable e) {
+					// Send error 503 to client
+					sendError(request, response);
+				}
+				break;
+		}
+
 	}
 
 	/**
@@ -489,11 +532,8 @@ public class CoyoteAdapter implements Adapter {
 				@Override
 				public void failed(Throwable exc, Integer attachment) {
 					logger.error(exc, exc);
-					try {
-						sendError(request, response);
-					} catch (IOException e) {
-						logger.error(e.getMessage(), e);
-					}
+					// Send error 503 to client
+					sendError(request, response);
 				}
 			});
 		} else {
@@ -579,6 +619,44 @@ public class CoyoteAdapter implements Adapter {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Check whether the HTTP request method is idempotent or not. The
+	 * idempotent HTTP methods are:
+	 * <ul>
+	 * <li>GET</li>
+	 * <li>PUT</li>
+	 * <li>DELETE</li>
+	 * <li>HEAD</li>
+	 * <li>OPTIONS</li>
+	 * <li>TRACE</li>
+	 * </ul>
+	 * 
+	 * The POST method is not idempotent.
+	 * 
+	 * @param req
+	 *            the request to check
+	 * @return <tt>true</tt> if the request method is idempotent else
+	 *         <tt>false</tt>
+	 */
+	private boolean isIdempotent(Request req) {
+
+		switch (req.method().toString()) {
+		// Idempotent methods
+			case "TRACE":
+			case "OPTIONS":
+			case "DELETE":
+			case "HEAD":
+			case "PUT":
+			case "GET":
+				String queryString = req.queryString().toString();
+				return (queryString == null || queryString.isEmpty());
+				// Non idempotent methods
+			case "POST":
+			default:
+				return false;
+		}
 	}
 
 	/**
