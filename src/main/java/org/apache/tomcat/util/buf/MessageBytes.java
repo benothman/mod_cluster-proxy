@@ -34,6 +34,11 @@ import java.util.Locale;
  * @author Costin Manolache
  */
 public final class MessageBytes implements Cloneable, Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
 	// primary type ( whatever is set as original value )
 	private int type = T_NULL;
 
@@ -190,7 +195,8 @@ public final class MessageBytes implements Cloneable, Serializable {
 
 	/**
 	 * Set the content to be a string
-	 * @param s 
+	 * 
+	 * @param s
 	 */
 	public void setString(String s) {
 		strValue = s;
@@ -216,14 +222,14 @@ public final class MessageBytes implements Cloneable, Serializable {
 			return strValue;
 
 		switch (type) {
-		case T_CHARS:
-			strValue = charC.toString();
-			hasStrValue = true;
-			return strValue;
-		case T_BYTES:
-			strValue = byteC.toString();
-			hasStrValue = true;
-			return strValue;
+			case T_CHARS:
+				strValue = charC.toString();
+				hasStrValue = true;
+				return strValue;
+			case T_BYTES:
+				strValue = byteC.toString();
+				hasStrValue = true;
+				return strValue;
 		}
 		return null;
 	}
@@ -322,16 +328,16 @@ public final class MessageBytes implements Cloneable, Serializable {
 		if (!caseSensitive)
 			return equalsIgnoreCase(s);
 		switch (type) {
-		case T_STR:
-			if (strValue == null && s != null)
+			case T_STR:
+				if (strValue == null && s != null)
+					return false;
+				return strValue.equals(s);
+			case T_CHARS:
+				return charC.equals(s);
+			case T_BYTES:
+				return byteC.equals(s);
+			default:
 				return false;
-			return strValue.equals(s);
-		case T_CHARS:
-			return charC.equals(s);
-		case T_BYTES:
-			return byteC.equals(s);
-		default:
-			return false;
 		}
 	}
 
@@ -344,23 +350,23 @@ public final class MessageBytes implements Cloneable, Serializable {
 	 */
 	public boolean equalsIgnoreCase(String s) {
 		switch (type) {
-		case T_STR:
-			if (strValue == null && s != null)
+			case T_STR:
+				if (strValue == null && s != null)
+					return false;
+				return strValue.equalsIgnoreCase(s);
+			case T_CHARS:
+				return charC.equalsIgnoreCase(s);
+			case T_BYTES:
+				return byteC.equalsIgnoreCase(s);
+			default:
 				return false;
-			return strValue.equalsIgnoreCase(s);
-		case T_CHARS:
-			return charC.equalsIgnoreCase(s);
-		case T_BYTES:
-			return byteC.equalsIgnoreCase(s);
-		default:
-			return false;
 		}
 	}
 
 	public boolean equals(MessageBytes mb) {
 		switch (type) {
-		case T_STR:
-			return mb.equals(strValue);
+			case T_STR:
+				return mb.equals(strValue);
 		}
 
 		if (mb.type != T_CHARS && mb.type != T_BYTES) {
@@ -396,14 +402,14 @@ public final class MessageBytes implements Cloneable, Serializable {
 	 */
 	public boolean startsWith(String s) {
 		switch (type) {
-		case T_STR:
-			return strValue.startsWith(s);
-		case T_CHARS:
-			return charC.startsWith(s);
-		case T_BYTES:
-			return byteC.startsWith(s);
-		default:
-			return false;
+			case T_STR:
+				return strValue.startsWith(s);
+			case T_CHARS:
+				return charC.startsWith(s);
+			case T_BYTES:
+				return byteC.startsWith(s);
+			default:
+				return false;
 		}
 	}
 
@@ -417,24 +423,24 @@ public final class MessageBytes implements Cloneable, Serializable {
 	 */
 	public boolean startsWithIgnoreCase(String s, int pos) {
 		switch (type) {
-		case T_STR:
-			if (strValue == null)
-				return false;
-			if (strValue.length() < pos + s.length())
-				return false;
-
-			for (int i = 0; i < s.length(); i++) {
-				if (Ascii.toLower(s.charAt(i)) != Ascii.toLower(strValue.charAt(pos + i))) {
+			case T_STR:
+				if (strValue == null)
 					return false;
+				if (strValue.length() < pos + s.length())
+					return false;
+
+				for (int i = 0; i < s.length(); i++) {
+					if (Ascii.toLower(s.charAt(i)) != Ascii.toLower(strValue.charAt(pos + i))) {
+						return false;
+					}
 				}
-			}
-			return true;
-		case T_CHARS:
-			return charC.startsWithIgnoreCase(s, pos);
-		case T_BYTES:
-			return byteC.startsWithIgnoreCase(s, pos);
-		default:
-			return false;
+				return true;
+			case T_CHARS:
+				return charC.startsWithIgnoreCase(s, pos);
+			case T_BYTES:
+				return byteC.startsWithIgnoreCase(s, pos);
+			default:
+				return false;
 		}
 	}
 
@@ -457,18 +463,18 @@ public final class MessageBytes implements Cloneable, Serializable {
 	private int hash() {
 		int code = 0;
 		switch (type) {
-		case T_STR:
-			// We need to use the same hash function
-			for (int i = 0; i < strValue.length(); i++) {
-				code = code * 37 + strValue.charAt(i);
-			}
-			return code;
-		case T_CHARS:
-			return charC.hash();
-		case T_BYTES:
-			return byteC.hash();
-		default:
-			return 0;
+			case T_STR:
+				// We need to use the same hash function
+				for (int i = 0; i < strValue.length(); i++) {
+					code = code * 37 + strValue.charAt(i);
+				}
+				return code;
+			case T_CHARS:
+				return charC.hash();
+			case T_BYTES:
+				return byteC.hash();
+			default:
+				return 0;
 		}
 	}
 
@@ -476,17 +482,17 @@ public final class MessageBytes implements Cloneable, Serializable {
 	private int hashIgnoreCase() {
 		int code = 0;
 		switch (type) {
-		case T_STR:
-			for (int i = 0; i < strValue.length(); i++) {
-				code = code * 37 + Ascii.toLower(strValue.charAt(i));
-			}
-			return code;
-		case T_CHARS:
-			return charC.hashIgnoreCase();
-		case T_BYTES:
-			return byteC.hashIgnoreCase();
-		default:
-			return 0;
+			case T_STR:
+				for (int i = 0; i < strValue.length(); i++) {
+					code = code * 37 + Ascii.toLower(strValue.charAt(i));
+				}
+				return code;
+			case T_CHARS:
+				return charC.hashIgnoreCase();
+			case T_BYTES:
+				return byteC.hashIgnoreCase();
+			default:
+				return 0;
 		}
 	}
 
@@ -524,14 +530,14 @@ public final class MessageBytes implements Cloneable, Serializable {
 	 */
 	public int indexOf(char c, int starting) {
 		switch (type) {
-		case T_STR:
-			return strValue.indexOf(c, starting);
-		case T_CHARS:
-			return charC.indexOf(c, starting);
-		case T_BYTES:
-			return byteC.indexOf(c, starting);
-		default:
-			return -1;
+			case T_STR:
+				return strValue.indexOf(c, starting);
+			case T_CHARS:
+				return charC.indexOf(c, starting);
+			case T_BYTES:
+				return byteC.indexOf(c, starting);
+			default:
+				return -1;
 		}
 	}
 
@@ -540,23 +546,23 @@ public final class MessageBytes implements Cloneable, Serializable {
 	 */
 	public void duplicate(MessageBytes src) throws IOException {
 		switch (src.getType()) {
-		case MessageBytes.T_BYTES:
-			type = T_BYTES;
-			ByteChunk bc = src.getByteChunk();
-			byteC.allocate(2 * bc.getLength(), -1);
-			byteC.append(bc);
-			break;
-		case MessageBytes.T_CHARS:
-			type = T_CHARS;
-			CharChunk cc = src.getCharChunk();
-			charC.allocate(2 * cc.getLength(), -1);
-			charC.append(cc);
-			break;
-		case MessageBytes.T_STR:
-			type = T_STR;
-			String sc = src.getString();
-			this.setString(sc);
-			break;
+			case MessageBytes.T_BYTES:
+				type = T_BYTES;
+				ByteChunk bc = src.getByteChunk();
+				byteC.allocate(2 * bc.getLength(), -1);
+				byteC.append(bc);
+				break;
+			case MessageBytes.T_CHARS:
+				type = T_CHARS;
+				CharChunk cc = src.getCharChunk();
+				charC.allocate(2 * cc.getLength(), -1);
+				charC.append(cc);
+				break;
+			case MessageBytes.T_STR:
+				type = T_STR;
+				String sc = src.getString();
+				this.setString(sc);
+				break;
 		}
 	}
 
@@ -664,11 +670,11 @@ public final class MessageBytes implements Cloneable, Serializable {
 			return intValue;
 
 		switch (type) {
-		case T_BYTES:
-			intValue = byteC.getInt();
-			break;
-		default:
-			intValue = Integer.parseInt(toString());
+			case T_BYTES:
+				intValue = byteC.getInt();
+				break;
+			default:
+				intValue = Integer.parseInt(toString());
 		}
 		hasIntValue = true;
 		return intValue;
@@ -683,11 +689,11 @@ public final class MessageBytes implements Cloneable, Serializable {
 			return longValue;
 
 		switch (type) {
-		case T_BYTES:
-			longValue = byteC.getLong();
-			break;
-		default:
-			longValue = Long.parseLong(toString());
+			case T_BYTES:
+				longValue = byteC.getLong();
+				break;
+			default:
+				longValue = Long.parseLong(toString());
 		}
 
 		hasLongValue = true;

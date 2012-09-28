@@ -338,7 +338,7 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 					response.setStatus(500);
 					error = true;
 				}
-				//break;
+				break;
 			}
 
 			if (error) {
@@ -402,7 +402,6 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 	 * @see org.apache.coyote.http11.Http11AbstractProcessor#recycle()
 	 */
 	public void recycle() {
-		System.out.println("Recycling processor");
 		inputBuffer.recycle();
 		outputBuffer.recycle();
 		this.channel = null;
@@ -873,6 +872,8 @@ public class Http11NioProcessor extends AbstractHttp11Processor<NioChannel> {
 		} else if (methodMB.equals(Constants.POST)) {
 			methodMB.setString(Constants.POST);
 		}
+		// Convert the method name form array of bytes to string
+		methodMB.toString();
 
 		MimeHeaders headers = request.getMimeHeaders();
 

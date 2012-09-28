@@ -232,11 +232,8 @@ public class CoyoteAdapter implements Adapter {
 							byte data[] = outputBuffer.getBytes();
 							buff.get(data, 0, nBytes);
 
-							boolean parsingHeader = httpResponseParser.parsingHeader();
-
-							if (parsingHeader) {
+							if (httpResponseParser.parsingHeader()) {
 								httpResponseParser.parse(attachment, data, nBytes);
-								parsingHeader = httpResponseParser.parsingHeader();
 							}
 
 							outputBuffer.setContentLength(attachment.getContentLengthLong()
@@ -246,7 +243,7 @@ public class CoyoteAdapter implements Adapter {
 
 							final NioChannel n_ch = (NioChannel) response
 									.getNote(Constants.NODE_CHANNEL_NOTE);
-							if (parsingHeader) {
+							if (httpResponseParser.parsingHeader()) {
 								// If the header is not completely received,
 								// read again
 								n_ch.read(buff, attachment, this);
@@ -503,8 +500,6 @@ public class CoyoteAdapter implements Adapter {
 		int lastValid = inputBuffer.getLastValid();
 		int end = inputBuffer.getEnd();
 
-		System.out.println("LastValid = " + lastValid + ", End = " + end + ", available = " + n);
-
 		if (lastValid >= end + request.getContentLength()) {
 			// All data are read from client and transfered to node
 			// Wait for node response
@@ -521,9 +516,6 @@ public class CoyoteAdapter implements Adapter {
 		} catch (Throwable t) {
 			th = t;
 		}
-
-		System.out.println("Content-length: " + request.getContentLength() + ", total: "
-				+ (n + nRead));
 
 		if (nRead > 0) {
 			buffer.flip();
@@ -697,7 +689,7 @@ public class CoyoteAdapter implements Adapter {
 		CharChunk cc = uri.getCharChunk();
 		cc.allocate(length, -1);
 
-		String enc = connector.getURIEncoding();
+		//String enc = connector.getURIEncoding();
 
 		// Default encoding: fast conversion
 		byte[] bbuf = bc.getBuffer();

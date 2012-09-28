@@ -477,14 +477,16 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 					os.flush();
 					InputStream is = socket.getInputStream();
 					BufferedReader br = new BufferedReader(new InputStreamReader(is));
-					String requestLine = br.readLine();
-					if (requestLine == null) {
+					// Read the response line
+					String responseLine = br.readLine();
+					if (responseLine == null) {
 						throw new IOException("The Socket is closed");
 					}
 
-					String tab[] = requestLine.split("\\s+");
+					String tab[] = responseLine.split("\\s+");
 					int status = Integer.valueOf(tab[1]);
 					String phrase = tab[2];
+
 					if (status == 200 && "OK".equalsIgnoreCase(phrase)) {
 						ok = true;
 					} else if (status == 501) {
@@ -494,6 +496,7 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 				}
 			} catch (Throwable e) {
 				// Ignore
+				e.printStackTrace();
 			} finally {
 				if (socket != null) {
 					try {
@@ -504,6 +507,8 @@ public class CLNodeService extends LifeCycleServiceAdapter implements NodeServic
 					}
 				}
 			}
+
+			System.out.println("OK = " + ok);
 
 			return ok;
 		}
