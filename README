@@ -54,6 +54,6 @@ To run the project, you can follow the steps below:
    
     install_dir/mod_cluster-proxy$ sh run.sh
    
-    You can also edit the file "run.sh" to modify start up configurations. 
+    You can also edit the file "conf/run.conf" to modify start up configurations. 
 
 
